@@ -1,0 +1,426 @@
+REQUISITOS DE IMPLEMENTAÇÃO
+1. CABEÇALHOS DE SEGURANÇA HTTP (PRIORIDADE MÁXIMA)
+Implementar no middleware Express:
+
+javascript
+// Adicionar ao servidor Express (antes das rotas)
+app.use((req, res, next) => {
+  // Content Security Policy - Previne XSS
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.openai.com; " +
+    "frame-ancestors 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self'"
+  );
+  
+  // Previne clickjacking
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  // Previne MIME-sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Controle de referrer
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Controle de permissões
+  res.setHeader(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(), payment=()'
+  );
+  
+  // Remove header que expõe tecnologia
+  res.removeHeader('X-Powered-By');
+  
+  next();
+});
+Ou usando capacete.js (recomendado):
+
+bash
+npm install helmet
+javascript
+const helmet = require('helmet');
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+2. SANITIZAÇÃO E VALIDAÇÃO DE ENTRADAS (CRÍTICO)
+instalado js:
+
+bash
+npm install validator express-validator sanitize-html
+Implementar validação em todos os formulários:
+
+javascript
+const { body, validationResult } = require('express-validator');
+const sanitizeHtml = require('sanitize-html');
+
+// Middleware de sanitização
+const sanitizeInput = (req, res, next) => {
+  const sanitizeConfig = {
+    allowedTags: [],
+    allowedAttributes: {}
+  };
+  
+  // Sanitizar todos os campos do body
+  Object.keys(req.body).forEach(key => {
+    if (typeof req.body[key] === 'string') {
+      req.body[key] = sanitizeHtml(req.body[key], sanitizeConfig);
+    }
+  });
+  
+  next();
+};
+
+// Validação para formulário de contato
+app.post('/api/contact',
+  sanitizeInput,
+  [
+    body('name')
+      .trim()
+      .isLength({ min: 2, max: 100 })
+      .escape()
+      .withMessage('Nome inválido'),
+    body('email')
+      .trim()
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Email inválido'),
+    body('phone')
+      .optional()
+      .trim()
+      .matches(/^[0-9+\s()-]+$/)
+      .withMessage('Telefone inválido'),
+    body('message')
+      .trim()
+      .isLength({ min: 10, max: 1000 })
+      .escape()
+      .withMessage('Mensagem inválida')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    // Processar dados sanitizados
+    // ...
+  }
+);
+3. PROTEÇÃO CONTRA SQL INJEÇÃO
+Para MongoDB (se usar):
+
+javascript
+const mongoose = require('mongoose');
+
+// Usar sempre queries preparadas
+const findUser = async (email) => {
+  // CORRETO - usa parameterização
+  return await User.findOne({ email: email });
+  
+  // NUNCA fazer concatenação de strings
+  // ERRADO: db.collection.find({ email: req.body.email })
+};
+Para SQL (PostgreSQL/MySQL):
+
+javascript
+const { Pool } = require('pg');
+const pool = new Pool();
+
+// SEMPRE usar prepared statements
+const getUserByEmail = async (email) => {
+  const query = 'SELECT * FROM users WHERE email = $1';
+  const result = await pool.query(query, [email]);
+  return result.rows[0];
+};
+4. AUTENTICAÇÃO E SESSÕES SEGURAS
+bash
+npm install express-session bcrypt jsonwebtoken express-rate-limit
+javascript
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const session = require('express-session');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting para login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas
+  message: 'Muitas tentativas de login. Tente novamente em 15 minutos.'
+});
+
+// Configurar sessões seguras
+app.use(session({
+  secret: process.env.SESSION_SECRET, // Usar variável de ambiente
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true, // HTTPS only
+    httpOnly: true, // Não acessível via JavaScript
+    sameSite: 'strict', // Proteção CSRF
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
+// Hash de passwords
+const hashPassword = async (password) => {
+  const saltRounds = 12;
+  return await bcrypt.hash(password, saltRounds);
+};
+
+// Verificar password
+const verifyPassword = async (password, hash) => {
+  return await bcrypt.compare(password, hash);
+};
+
+// Login endpoint
+app.post('/api/login', loginLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Buscar usuário (com delay para prevenir timing attacks)
+    const user = await User.findOne({ email });
+    
+    // Verificar password
+    const isValid = user ? await verifyPassword(password, user.passwordHash) : false;
+    
+    if (!isValid) {
+      // Delay intencional
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+    
+    // Gerar token JWT
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro no servidor' });
+  }
+});
+
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Token inválido' });
+    }
+    req.user = user;
+    next();
+  });
+};
+5. PROTEÇÃO DE DADOS SENSÍVEIS (RGPD)
+javascript
+const crypto = require('crypto');
+
+// Encriptação de dados sensíveis
+class DataEncryption {
+  constructor() {
+    this.algorithm = 'aes-256-gcm';
+    this.key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex'); // 32 bytes
+  }
+  
+  encrypt(text) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+    
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    const authTag = cipher.getAuthTag();
+    
+    return {
+      encrypted,
+      iv: iv.toString('hex'),
+      authTag: authTag.toString('hex')
+    };
+  }
+  
+  decrypt(encrypted, iv, authTag) {
+    const decipher = crypto.createDecipheriv(
+      this.algorithm,
+      this.key,
+      Buffer.from(iv, 'hex')
+    );
+    
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  }
+}
+
+// Schema exemplo com encriptação
+const leadSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  emailEncrypted: { type: String, required: true },
+  emailIv: { type: String, required: true },
+  emailAuthTag: { type: String, required: true },
+  phoneEncrypted: String,
+  phoneIv: String,
+  phoneAuthTag: String,
+  createdAt: { type: Date, default: Date.now },
+  consentGDPR: { type: Boolean, required: true }
+});
+
+// Métodos para encriptar antes de salvar
+leadSchema.pre('save', function(next) {
+  const encryption = new DataEncryption();
+  
+  if (this.isModified('email')) {
+    const encrypted = encryption.encrypt(this.email);
+    this.emailEncrypted = encrypted.encrypted;
+    this.emailIv = encrypted.iv;
+    this.emailAuthTag = encrypted.authTag;
+  }
+  
+  next();
+});
+6. REGISTRO E MONITORAMENTO
+bash
+npm install winston
+javascript
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
+
+// Middleware de logging
+app.use((req, res, next) => {
+  logger.info({
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
+
+// Log de tentativas de acesso suspeitas
+app.use((req, res, next) => {
+  const suspiciousPatterns = /<script|javascript:|onerror=|onclick=/i;
+  
+  const checkInput = (obj) => {
+    for (let key in obj) {
+      if (typeof obj[key] === 'string' && suspiciousPatterns.test(obj[key])) {
+        logger.warn({
+          type: 'SUSPICIOUS_INPUT',
+          ip: req.ip,
+          input: obj[key],
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  };
+  
+  checkInput(req.body);
+  checkInput(req.query);
+  next();
+});
+7. VARIÁVEIS DE AMBIENTE (.env)
+bash
+# .env (NUNCA commitar este arquivo)
+NODE_ENV=production
+PORT=3000
+
+# Secrets (gerar com: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+SESSION_SECRET=your-session-secret-here
+JWT_SECRET=your-jwt-secret-here
+ENCRYPTION_KEY=your-encryption-key-32-bytes-hex
+
+# Database
+DATABASE_URL=your-database-url
+
+# APIs
+OPENAI_API_KEY=your-openai-key
+CASAFARI_API_KEY=your-casafari-key
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+javascript
+// Carregar variáveis de ambiente
+require('dotenv').config();
+
+// Validar variáveis obrigatórias no início
+const requiredEnvVars = [
+  'SESSION_SECRET',
+  'JWT_SECRET',
+  'ENCRYPTION_KEY',
+  'DATABASE_URL'
+];
+
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    throw new Error(`Variável de ambiente ${varName} não definida`);
+  }
+});
+8. PROTEÇÃO CSRF
+bash
+npm install csurf
+javascript
+const csrf = require('csurf');
+const csrfProtection = csrf({ cookie: true });
+
+// Aplicar em rotas que modificam dados
+app.post('/api/leads', csrfProtection, async (req, res) => {
+  // Processar lead
+});
+
+// Endpoint para obter token CSRF
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+9. CORS SEGURO
+bash
+npm install cors
+javascript
+const cors = require('cors');
+
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://imo-lead-ai-pro.replit.app'
+    : 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 

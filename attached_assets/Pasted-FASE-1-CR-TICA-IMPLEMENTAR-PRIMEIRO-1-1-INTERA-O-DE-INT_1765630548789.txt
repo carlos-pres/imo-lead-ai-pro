@@ -1,0 +1,399 @@
+FASE 1: CRÍTICA (IMPLEMENTAR PRIMEIRO)
+1.1 INTERAÇÃO DE INTEGRAÇÃO (Painel de Controle)
+Local : /dashboard- primeiro acesso após registo
+
+Implementar :
+
+javascript
+// Componente: OnboardingTour.jsx
+- Tutorial interativo com tooltips guiados (usar biblioteca como react-joyride ou intro.js)
+- Checklist de configuração inicial:
+  ☐ Completar perfil
+  ☐ Fazer primeira pesquisa Casafari
+  ☐ Ver detalhes de um lead
+  ☐ Testar Assistente IA
+- Progresso visual: "2/4 passos completados"
+- Botão "Skip tour" mas com tracking
+- Guardar estado no localStorage para não repetir
+Projeto :
+
+Sobreposição semitransparente (fundo)
+
+Tooltip com seta apontando para elemento
+
+Botões: "Anterior", "Próximo", "Concluir"
+
+Posição: centralizado no elemento destacado
+
+1.2 LEAD DE EXEMPLO PRÉ-CARREGADO
+Local : /dashboard/leads- utilizadores novos
+
+Implementar :
+
+javascript
+// Ao criar conta, inserir 1-2 leads de demonstração na BD
+const exampleLeads = [
+  {
+    name: "Exemplo: João Silva",
+    property: "T3 Cascais - Quinta da Marinha",
+    location: "Cascais",
+    price: "750000€",
+    score: 92,
+    status: "hot",
+    source: "Casafari",
+    isExample: true, // flag para identificar
+    aiAnalysis: "Lead de alta qualidade: imóvel premium...",
+    notes: "Este é um lead de exemplo para demonstração"
+  }
+];
+
+// Adicionar badge visual "EXEMPLO" nos cards
+// Botão "Remover exemplos" após user adicionar leads reais
+1.3 SEÇÃO HERÓI - VÍDEO DEMO
+Local : Landing page /- seção herói (primeira dobra)
+
+Implementar :
+
+jsx
+// Substituir/complementar a imagem de fundo
+<div className="hero-media">
+  <video 
+    autoPlay 
+    loop 
+    muted 
+    playsInline
+    className="hero-video"
+    poster="/images/dashboard-preview.png"
+  >
+    <source src="/videos/demo-platform.mp4" type="video/mp4" />
+    {/* Ou usar GIF animado se vídeo não estiver pronto */}
+    <img src="/images/demo-animation.gif" alt="Demo" />
+  </video>
+  
+  {/* Play button para abrir modal com demo completa */}
+  <button className="play-demo-btn" onClick={openDemoModal}>
+    <PlayIcon />
+    Ver Demo Completa
+  </button>
+</div>
+
+// Modal com vídeo explicativo de 2-3 min
+Ativos necessários :
+
+Gravar screencast da plataforma (usar Loom/ScreenFlow)
+
+Duração: 30-45s para herói, 2-3min para modal
+
+Mostrar: Login → Pesquisa → Lead encontrado → IA analisa → Mensagem enviada
+
+1.4 ESTADOS VAZIOS MELHORADOS
+:​
+
+/dashboard/agenda(Agenda)
+
+/dashboard/relatorios(Relatórios)
+
+/dashboard/leadsquando sem leads
+
+Implementar :
+
+jsx
+// Componente: EmptyState.jsx
+function EmptyState({ type }) {
+  const configs = {
+    agenda: {
+      icon: <CalendarIcon />,
+      title: "Agendamento Inteligente",
+      description: "Sincronize com Google Calendar e agende visitas automaticamente",
+      preview: "/images/preview-agenda.png",
+      launchDate: "Janeiro 2025",
+      cta: "Notificar-me quando estiver pronto",
+      features: [
+        "Sincronização Google Calendar",
+        "Lembretes automáticos",
+        "Reagendamento inteligente"
+      ]
+    },
+    relatorios: {
+      icon: <ChartIcon />,
+      title: "Relatórios Detalhados",
+      description: "Dashboards com métricas de conversão e análise preditiva",
+      preview: "/images/preview-relatorios.png",
+      launchDate: "Fevereiro 2025",
+      cta: "Notificar-me quando estiver pronto"
+    },
+    noLeads: {
+      icon: <SearchIcon />,
+      title: "Nenhum lead encontrado ainda",
+      description: "Comece por fazer uma pesquisa no Casafari",
+      cta: "Fazer Primeira Pesquisa",
+      ctaLink: "/dashboard/pesquisa-casafari"
+    }
+  };
+  
+  return (
+    <div className="empty-state">
+      {/* Icon, título, descrição */}
+      {preview && <img src={preview} className="feature-preview" />}
+      {launchDate && <span className="launch-badge">Lançamento: {launchDate}</span>}
+      <ul className="features-list">{features?.map(...)}</ul>
+      <button className="cta-btn">{cta}</button>
+    </div>
+  );
+}
+Styling : Estilo "coming Soon" atrativo, não desencorajador
+
+FASE 2: IMPORTANTE (IMPLEMENTAR APÓS FASE 1)
+2.1 CONTAGEM REGRESSIVA E E-MAILS PARA O PERÍODO DE TESTE
+No Dashboard - adicionar banner persistente:
+
+jsx
+// Componente: TrialBanner.jsx
+function TrialBanner({ trialDaysLeft }) {
+  if (trialDaysLeft <= 0) return null;
+  
+  const isUrgent = trialDaysLeft <= 2;
+  
+  return (
+    <div className={`trial-banner ${isUrgent ? 'urgent' : ''}`}>
+      <ClockIcon />
+      <span>
+        Restam <strong>{trialDaysLeft} dias</strong> do seu teste grátis
+      </span>
+      <button onClick={handleUpgrade}>Subscrever Agora</button>
+      <button className="link-btn" onClick={handleDismiss}>×</button>
+    </div>
+  );
+}
+Automação de e-mail (se não tiver back-end de e-mail):
+
+javascript
+// Integrar com serviço de email (SendGrid, Mailgun, Resend)
+// Criar templates para:
+
+// Email 1 - Dia 0 (Welcome)
+subject: "Bem-vindo ao ImoLead AI Pro! 🚀"
+content: `
+  - Tutorial rápido 
+  - Link para documentação
+  - Suporte: responder a este email
+`
+
+// Email 2 - Dia 3 (Feature Highlight)
+subject: "Já descobriu o Assistente IA? 🤖"
+content: `
+  - Caso de uso prático
+  - Vídeo tutorial
+  - Call-to-action: "Experimente agora"
+`
+
+// Email 3 - Dia 5 (Urgência suave)
+subject: "2 dias restantes - Oferta especial 🎁"
+content: `
+  - Resumo do que usou no trial
+  - Desconto exclusivo: "Use código TRIAL20"
+  - Depoimento de cliente
+`
+
+// Email 4 - Dia 7 (Last chance)
+subject: "Último dia do seu teste grátis"
+content: `
+  - Urgência: "Hoje expira o seu acesso"
+  - Comparação: tempo poupado vs tempo investido
+  - CTA grande: "Subscrever agora"
+`
+Configuração no backend :
+
+javascript
+// Ao criar user, agendar emails
+await scheduleTrialEmails(user.email, user.trialEndDate);
+2.2 FILTROS E AÇÕES EM BULK - GESTÃO DE LEADS
+Local :/dashboard/leads
+
+Implementar :
+
+jsx
+// Adicionar barra de filtros
+<div className="leads-filters">
+  <select onChange={filterByStatus}>
+    <option value="all">Todos os estados</option>
+    <option value="hot">🔥 Quentes</option>
+    <option value="warm">🟡 Mornos</option>
+    <option value="cold">❄️ Frios</option>
+  </select>
+  
+  <select onChange={filterByDate}>
+    <option value="all">Todas as datas</option>
+    <option value="today">Hoje</option>
+    <option value="week">Esta semana</option>
+    <option value="month">Este mês</option>
+  </select>
+  
+  <input 
+    type="range" 
+    min="0" 
+    max="100" 
+    onChange={filterByScore}
+    placeholder="Score IA mínimo"
+  />
+  
+  <button onClick={clearFilters}>Limpar filtros</button>
+</div>
+
+// Checkbox para seleção múltipla
+<table>
+  <thead>
+    <tr>
+      <th>
+        <input 
+          type="checkbox" 
+          onChange={selectAll}
+          checked={allSelected}
+        />
+      </th>
+      <th>Nome</th>
+      {/* ... */}
+    </tr>
+  </thead>
+  <tbody>
+    {leads.map(lead => (
+      <tr key={lead.id}>
+        <td>
+          <input 
+            type="checkbox" 
+            checked={selected.includes(lead.id)}
+            onChange={() => toggleSelect(lead.id)}
+          />
+        </td>
+        {/* ... */}
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+// Bulk actions bar
+{selected.length > 0 && (
+  <div className="bulk-actions-bar">
+    <span>{selected.length} selecionados</span>
+    <button onClick={bulkChangeStatus}>Alterar estado</button>
+    <button onClick={bulkExport}>Exportar CSV</button>
+    <button onClick={bulkDelete} className="danger">Eliminar</button>
+  </div>
+)}
+
+// Função de exportação
+function exportToCSV(leads) {
+  const csv = [
+    ["Nome", "Email", "Telefone", "Imóvel", "Localização", "Preço", "Score", "Estado"],
+    ...leads.map(l => [l.name, l.email, l.phone, l.property, l.location, l.price, l.score, l.status])
+  ].map(row => row.join(",")).join("\n");
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `leads-${new Date().toISOString()}.csv`;
+  a.click();
+}
+2.3 ESTADOS DE CARREGAMENTO E FEEDBACK
+Problema : Assistente IA demora sem feedback claro
+
+Implementar :
+
+jsx
+// Componente: AssistenteIA.jsx
+
+// Loading com skeleton + mensagem contextual
+{loading && (
+  <div className="ai-loading">
+    <div className="skeleton-text"></div>
+    <div className="skeleton-text short"></div>
+    <span className="loading-message">
+      {messages[Math.floor(Math.random() * messages.length)]}
+    </span>
+  </div>
+)}
+
+const messages = [
+  "🔍 Analisando os seus leads quentes...",
+  "🤖 O assistente IA está a pensar...",
+  "📊 A processar dados do Casafari...",
+  "✨ Quase lá, a finalizar análise..."
+];
+
+// Streaming de resposta (se a API suportar)
+async function streamAIResponse(prompt) {
+  const response = await fetch('/api/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const chunk = decoder.decode(value);
+    setResponse(prev => prev + chunk); // Append em tempo real
+  }
+}
+Estilização de esqueletos :
+
+CSS
+.skeleton-text {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+2.4 NOTIFICAÇÕES PUSH/EMAIL
+Implementar sistema de notificações :
+
+javascript
+// Backend: criar tabela de notificações
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  type VARCHAR(50), // 'new_hot_lead', 'lead_responded', 'weekly_report'
+  title VARCHAR(255),
+  message TEXT,
+  link VARCHAR(255),
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+// API endpoint
+app.post('/api/notifications/subscribe', async (req, res) => {
+  const { subscription, userId } = req.body;
+  // Guardar subscription do web push
+  await saveSubscription(userId, subscription);
+});
+
+// Trigger notificação quando lead novo
+async function onNewHotLead(lead, userId) {
+  // In-app notification
+  await createNotification({
+    userId,
+    type: 'new_hot_lead',
+    title: '🔥 Novo lead quente!',
+    message: `${lead.name} - ${lead.property}`,
+    link: `/dashboard/leads/${lead.id}`
+  });
+  
+  // Web push
+  await sendPushNotification(userId, {
+    title: 'Novo lead quente detectado',
+    body: lead.property,
+    icon: '/icon.png',
+    badge: '/badge.png',
+    data: { url: `/dashboard/leads

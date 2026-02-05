@@ -1,0 +1,76 @@
+1:14:48.67
+3ccab63e
+User
+}
+2026-01-29 01:14:48.67
+3ccab63e
+User
+at Object.keyGenerator (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:754:20)
+2026-01-29 01:14:48.67
+3ccab63e
+User
+help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-01-29 01:14:48.67
+3ccab63e
+User
+at async file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:796:5 {
+2026-01-29 01:14:48.67
+3ccab63e
+User
+at Object.xForwardedForHeader (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:337:13)
+2026-01-29 01:14:48.67
+3ccab63e
+User
+code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-01-29 01:14:48.67
+3ccab63e
+User
+at wrappedValidations. [as xForwardedForHeader] (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:651:22)
+2026-01-29 01:14:48.67
+3ccab63e
+User
+ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-01-29 01:14:48.67
+3ccab63e
+User
+at file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:815:32
+2026-01-29 01:14:48.69
+3ccab63e
+User
+help: 'https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/'
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at async file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:796:5 {
+2026-01-29 01:14:48.69
+3ccab63e
+User
+code: 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+2026-01-29 01:14:48.69
+3ccab63e
+User
+ValidationError: The 'X-Forwarded-For' header is set but the Express 'trust proxy' setting is false (default). This could indicate a misconfiguration which would prevent express-rate-limit from accurately identifying users. See https://express-rate-limit.github.io/ERR_ERL_UNEXPECTED_X_FORWARDED_FOR/ for more information.
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at Object.keyGenerator (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:754:20)
+2026-01-29 01:14:48.69
+3ccab63e
+User
+}
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:815:32
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at wrappedValidations. [as xForwardedForHeader] (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:651:22)
+2026-01-29 01:14:48.69
+3ccab63e
+User
+at Object.xForwardedForHeader (file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:337:13)

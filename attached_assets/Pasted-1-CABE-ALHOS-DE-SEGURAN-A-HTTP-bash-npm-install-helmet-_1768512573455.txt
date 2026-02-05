@@ -1,0 +1,374 @@
+1. CABEÇALHOS DE SEGURANÇA HTTP
+bash
+npm install helmet
+javascript
+const helmet = require('helmet');
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  },
+  hsts: {
+    maxAge: 63072000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: { action: 'sameorigin' },
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+app.use((req, res, next) => {
+  res.removeHeader('X-Powered-By');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  next();
+});
+2. SANITIZAÇÃO COMPLETA DE ENTRADAS
+bash
+npm install validator express-validator sanitize-html dompurify
+javascript
+const { body, validationResult } = require('express-validator');
+const sanitizeHtml = require('sanitize-html');
+
+// Middleware global de sanitização
+const sanitizeAllInputs = (req, res, next) => {
+  const sanitizeConfig = {
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'escape'
+  };
+  
+  const sanitizeObject = (obj) => {
+    Object.keys(obj).forEach(key => {
+      if (typeof obj[key] === 'string') {
+        obj[key] = sanitizeHtml(obj[key], sanitizeConfig);
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        sanitizeObject(obj[key]);
+      }
+    });
+  };
+  
+  sanitizeObject(req.body);
+  sanitizeObject(req.query);
+  sanitizeObject(req.params);
+  
+  next();
+};
+
+app.use(sanitizeAllInputs);
+
+// Validação específica para formulário de contato
+app.post('/api/contact', [
+  body('name')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .matches(/^[a-zA-ZÀ-ÿ\s'-]+$/)
+    .escape()
+    .withMessage('Nome inválido'),
+  body('email')
+    .trim()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Email inválido'),
+  body('phone')
+    .optional()
+    .trim()
+    .matches(/^[0-9+\s()-]{9,15}$/)
+    .withMessage('Telefone inválido'),
+  body('message')
+    .trim()
+    .isLength({ min: 10, max: 1000 })
+    .escape()
+    .withMessage('Mensagem deve ter entre 10 e 1000 caracteres')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  // Processar dados seguros
+});
+3. AUTENTICAÇÃO SEGURA
+bash
+npm install bcrypt jsonwebtoken express-rate-limit express-session
+javascript
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting para endpoints críticos
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Muitas tentativas. Aguarde 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Hash de passwords (mínimo 12 rounds)
+const hashPassword = async (password) => {
+  const saltRounds = 12;
+  return await bcrypt.hash(password, saltRounds);
+};
+
+// Login com proteção contra timing attacks
+app.post('/api/login', authLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const user = await User.findOne({ email });
+    const isValid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+    
+    // Delay constante para prevenir timing attacks
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    if (!isValid) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+    
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h', algorithm: 'HS256' }
+    );
+    
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro no servidor' });
+  }
+});
+
+// Middleware de autenticação
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) return res.status(401).json({ error: 'Acesso negado' });
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token inválido' });
+    req.user = user;
+    next();
+  });
+};
+4. PROTEÇÃO CONTRA INJEÇÃO DE SQL
+javascript
+// Para MongoDB (sempre usar queries parametrizadas)
+const getUserByEmail = async (email) => {
+  return await User.findOne({ email: email }); // Correto
+};
+
+// Para PostgreSQL/MySQL
+const { Pool } = require('pg');
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+const getLeadById = async (id) => {
+  const query = 'SELECT * FROM leads WHERE id = $1';
+  const result = await pool.query(query, [id]);
+  return result.rows[0];
+};
+5. ENCRIPTAÇÃO DE DADOS SENSÍVEIS (RGPD)
+javascript
+const crypto = require('crypto');
+
+class DataEncryption {
+  constructor() {
+    this.algorithm = 'aes-256-gcm';
+    this.key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+  }
+  
+  encrypt(text) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+    
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+    
+    return {
+      encrypted,
+      iv: iv.toString('hex'),
+      authTag: authTag.toString('hex')
+    };
+  }
+  
+  decrypt(encrypted, iv, authTag) {
+    const decipher = crypto.createDecipheriv(
+      this.algorithm,
+      this.key,
+      Buffer.from(iv, 'hex')
+    );
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  }
+}
+
+// Schema com dados encriptados
+const leadSchema = new mongoose.Schema({
+  name: String,
+  emailEncrypted: String,
+  emailIv: String,
+  emailAuthTag: String,
+  phoneEncrypted: String,
+  phoneIv: String,
+  phoneAuthTag: String,
+  consentGDPR: { type: Boolean, required: true },
+  consentDate: Date,
+  createdAt: { type: Date, default: Date.now }
+});
+6. REGISTRO E MONITORAMENTO
+bash
+npm install winston
+javascript
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'security.log', level: 'warn' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
+
+// Middleware de logging
+app.use((req, res, next) => {
+  logger.info({
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
+  next();
+});
+
+// Detector de atividades suspeitas
+app.use((req, res, next) => {
+  const suspiciousPatterns = /<script|javascript:|onerror=|onclick=|onload=|eval\(|base64/i;
+  
+  const checkSuspicious = (obj) => {
+    for (let key in obj) {
+      if (typeof obj[key] === 'string' && suspiciousPatterns.test(obj[key])) {
+        logger.warn({
+          type: 'SUSPICIOUS_INPUT_DETECTED',
+          ip: req.ip,
+          path: req.path,
+          input: obj[key],
+          userAgent: req.get('user-agent')
+        });
+      }
+    }
+  };
+  
+  checkSuspicious(req.body);
+  checkSuspicious(req.query);
+  next();
+});
+7. VARIÁVEIS DE AMBIENTE
+bash
+# .env (NUNCA commitar!)
+NODE_ENV=production
+PORT=3000
+
+# Gerar com: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+SESSION_SECRET=seu-secret-64-caracteres-aqui
+JWT_SECRET=seu-jwt-secret-64-caracteres-aqui
+ENCRYPTION_KEY=seu-encryption-key-64-caracteres-aqui
+
+DATABASE_URL=postgresql://user:pass@host:port/db
+OPENAI_API_KEY=sk-...
+CASAFARI_API_KEY=...
+javascript
+require('dotenv').config();
+
+const requiredEnvVars = ['SESSION_SECRET', 'JWT_SECRET', 'ENCRYPTION_KEY', 'DATABASE_URL'];
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    throw new Error(`ERRO: ${varName} não definida`);
+  }
+});
+8. PROTEÇÃO CSRF
+bash
+npm install csurf cookie-parser
+javascript
+const csrf = require('csurf');
+const cookieParser = require('cookie-parser');
+
+app.use(cookieParser());
+const csrfProtection = csrf({ cookie: { httpOnly: true, secure: true, sameSite: 'strict' } });
+
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+app.post('/api/leads', csrfProtection, async (req, res) => {
+  // Processar lead com proteção CSRF
+});
+9. CORS SEGURO
+bash
+npm install cors
+javascript
+const cors = require('cors');
+
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://imo-lead-ai-pro.replit.app'
+    : 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+};
+
+app.use(cors(corsOptions));
+10. LIMITAÇÃO DE TAXA GLOBAL
+javascript
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Limite de requisições excedido'
+});
+
+app.use('/api/', generalLimiter);
+📋 CHECKLIST DE IMPLEMENTAÇÃO
+ Instalar todas as dependências:npm install helmet express-validator sanitize-html bcrypt jsonwebtoken express-rate-limit winston csurf cors cookie-parser
+
+ Criar arquivo .envcom todos os segredos gerados
+
+ Implementar capacete com CSP completo
+
+ Adicionar sanitização global de insumos
+
+ Configurar autenticação JWT com bcrypt
+
+ Implementar limitação de tarifa em todas as rotas
+
+ proteção CSRF
+
+ » CORS restrito
+
+ Implementar criptografia de dados sensíveis
+
+ Adicionar registro de segurança
+
+ Testar todos os formulários contra XSS
+
+ Testar injeção SQL em todos os endpoints
+
+ Validar RGPD
