@@ -180,51 +180,7 @@ export class MemStorage implements IStorage {
   private seedDemoData() {
     // Seed some demo customers and payments for the admin panel
     const demoCustomers: Customer[] = [
-      {
-        id: "cust-001",
-        name: "Maria Santos",
-        email: "maria@imobiliaria-santos.pt",
-        phone: "+351912345678",
-        company: "Imobiliária Santos",
-        password: null,
-        taxId: "123456789",
-        stripeCustomerId: null,
-        status: "active",
-        plan: "pro",
-        trialEndsAt: null,
-        createdAt: new Date("2024-01-15"),
-        updatedAt: new Date("2024-01-15"),
-      },
-      {
-        id: "cust-002",
-        name: "João Silva",
-        email: "joao@realtor-lisboa.pt",
-        phone: "+351923456789",
-        company: "Realtor Lisboa",
-        password: null,
-        taxId: "987654321",
-        stripeCustomerId: null,
-        status: "active",
-        plan: "basic",
-        trialEndsAt: null,
-        createdAt: new Date("2024-02-10"),
-        updatedAt: new Date("2024-02-10"),
-      },
-      {
-        id: "cust-003",
-        name: "Ana Costa",
-        email: "ana@costa-imoveis.pt",
-        phone: "+351934567890",
-        company: "Costa Imóveis",
-        password: null,
-        taxId: "456789123",
-        stripeCustomerId: null,
-        status: "active",
-        plan: "pro",
-        trialEndsAt: null,
-        createdAt: new Date("2024-03-05"),
-        updatedAt: new Date("2024-03-05"),
-      },
+           
     ];
 
     demoCustomers.forEach(c => this.customers.set(c.id, c));
@@ -455,7 +411,10 @@ export class MemStorage implements IStorage {
       location: insertLead.location,
       price: insertLead.price,
       status: insertLead.status || "frio",
+      qualification: null,        
+      ownerType: null,   
       source: insertLead.source,
+      sourceUrl: null, 
       contact: insertLead.contact,
       email: insertLead.email || null,
       notes: insertLead.notes || null,
@@ -582,14 +541,19 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const now = new Date();
     const event: CalendarEvent = {
-      ...insertEvent,
-      id,
-      leadId: insertEvent.leadId || null,
-      description: insertEvent.description || null,
-      location: insertEvent.location || null,
-      createdAt: now,
-      updatedAt: now,
-    };
+  id,
+  leadId: insertEvent.leadId ?? null,
+  title: insertEvent.title,
+  description: insertEvent.description ?? null,
+  location: insertEvent.location ?? null,
+  startTime: insertEvent.startTime,
+  endTime: insertEvent.endTime,
+  status: insertEvent.status,
+  eventType: insertEvent.eventType ?? null,
+  customerId: insertEvent.customerId ?? null,
+  createdAt: now,
+  updatedAt: now,
+};
     this.calendarEvents.set(id, event);
     return event;
   }
@@ -697,27 +661,33 @@ export class MemStorage implements IStorage {
   }
 
   // Customer methods
-  async createCustomer(insertCustomer: InsertCustomer & { password?: string | null }): Promise<Customer> {
-    const id = randomUUID();
-    const now = new Date();
-    const customer: Customer = {
-      id,
-      name: insertCustomer.name,
-      email: insertCustomer.email,
+  async createCustomer(
+  insertCustomer: InsertCustomer & { password?: string | null }
+): Promise<Customer> {
+
+  const now = new Date();
+
+  const [customer] = await db
+    .insert(customers)
+    .values({
+      ...insertCustomer,
+      password: insertCustomer.password || null,
       phone: insertCustomer.phone || null,
       company: insertCustomer.company || null,
-      password: insertCustomer.password || null,
       taxId: insertCustomer.taxId || null,
       stripeCustomerId: null,
       status: insertCustomer.status || "active",
       plan: insertCustomer.plan || "trial",
       trialEndsAt: insertCustomer.trialEndsAt || null,
+      emailVerified: false,
+      googleCalendarConnected: false,
       createdAt: now,
       updatedAt: now,
-    };
-    this.customers.set(id, customer);
-    return customer;
-  }
+    })
+    .returning();
+
+  return customer;
+}
 
   async getCustomers(filters?: { status?: string; search?: string }): Promise<Customer[]> {
     let results = Array.from(this.customers.values());
@@ -1030,43 +1000,115 @@ export class MemStorage implements IStorage {
     return Array.from(this.automationSettingsMap.values());
   }
 
-  async createOrUpdateAutomationSettings(settings: InsertAutomationSettings): Promise<AutomationSettings> {
-    const existing = await this.getAutomationSettings(settings.customerId);
-    const now = new Date();
+  async createOrUpdateAutomationSettings(
+  settings: InsertAutomationSettings
+): Promise<AutomationSettings> {
 
-    if (existing) {
-      const updated: AutomationSettings = {
-        ...existing,
-        ...settings,
-        updatedAt: now,
-      };
-      this.automationSettingsMap.set(existing.id, updated);
-      return updated;
-    }
+  const existing = await this.getAutomationSettings(settings.customerId);
+  const now = new Date();
 
-    const id = randomUUID();
-    const newSettings: AutomationSettings = {
-      id,
-      customerId: settings.customerId,
-      enabled: settings.enabled ?? false,
-      autoMessageNewLead: settings.autoMessageNewLead ?? true,
-      autoFollowup3Days: settings.autoFollowup3Days ?? true,
-      autoFollowup7Days: settings.autoFollowup7Days ?? false,
-      preferredChannel: settings.preferredChannel || "whatsapp",
-      quietHoursStart: settings.quietHoursStart ?? 21,
-      quietHoursEnd: settings.quietHoursEnd ?? 9,
-      casafariEnabled: settings.casafariEnabled ?? false,
-      casafariSearchParams: settings.casafariSearchParams || null,
-      casafariSchedule: settings.casafariSchedule || "daily",
-      newLeadTemplateId: settings.newLeadTemplateId || null,
-      followupTemplateId: settings.followupTemplateId || null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.automationSettingsMap.set(id, newSettings);
-    return newSettings;
-  }
+  if (existing) {
+  const updated: AutomationSettings = {
+    ...existing,
 
+    enabled: settings.enabled ?? existing.enabled,
+    autoMessageNewLead: settings.autoMessageNewLead ?? existing.autoMessageNewLead,
+    autoFollowup3Days: settings.autoFollowup3Days ?? existing.autoFollowup3Days,
+    autoFollowup7Days: settings.autoFollowup7Days ?? existing.autoFollowup7Days,
+    preferredChannel: settings.preferredChannel ?? existing.preferredChannel,
+    quietHoursStart: settings.quietHoursStart ?? existing.quietHoursStart,
+    quietHoursEnd: settings.quietHoursEnd ?? existing.quietHoursEnd,
+    casafariEnabled: settings.casafariEnabled ?? existing.casafariEnabled,
+    casafariSearchParams: settings.casafariSearchParams ?? existing.casafariSearchParams,
+    casafariSchedule: settings.casafariSchedule ?? existing.casafariSchedule,
+    newLeadTemplateId: settings.newLeadTemplateId ?? existing.newLeadTemplateId,
+    followupTemplateId: settings.followupTemplateId ?? existing.followupTemplateId,
+
+    searchEnabled: settings.searchEnabled ?? existing.searchEnabled,
+
+    searchSources: Array.isArray(settings.searchSources)
+      ? settings.searchSources
+      : existing.searchSources,
+
+    searchLocations: Array.isArray(settings.searchLocations)
+      ? settings.searchLocations
+      : existing.searchLocations,
+
+    searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+      ? settings.searchPropertyTypes
+      : existing.searchPropertyTypes,
+
+    searchTransactionType: settings.searchTransactionType ?? existing.searchTransactionType,
+    searchPriceMin: settings.searchPriceMin ?? existing.searchPriceMin,
+    searchPriceMax: settings.searchPriceMax ?? existing.searchPriceMax,
+    searchBedrooms: settings.searchBedrooms ?? existing.searchBedrooms,
+    searchAreaMin: settings.searchAreaMin ?? existing.searchAreaMin,
+    searchAreaMax: settings.searchAreaMax ?? existing.searchAreaMax,
+    searchSchedule: settings.searchSchedule ?? existing.searchSchedule,
+    searchMinScore: settings.searchMinScore ?? existing.searchMinScore,
+    autoClassifyLeads: settings.autoClassifyLeads ?? existing.autoClassifyLeads,
+    autoContactNewLeads: settings.autoContactNewLeads ?? existing.autoContactNewLeads,
+    lastSearchAt: settings.lastSearchAt ?? existing.lastSearchAt,
+
+    updatedAt: now,
+  };
+
+  this.automationSettingsMap.set(existing.id, updated);
+  return updated;
+}
+
+const id = randomUUID();
+
+  const newSettings: AutomationSettings = {
+    id,
+    customerId: settings.customerId,
+    enabled: settings.enabled ?? false,
+    autoMessageNewLead: settings.autoMessageNewLead ?? true,
+    autoFollowup3Days: settings.autoFollowup3Days ?? true,
+    autoFollowup7Days: settings.autoFollowup7Days ?? false,
+    preferredChannel: settings.preferredChannel || "whatsapp",
+    quietHoursStart: settings.quietHoursStart ?? 21,
+    quietHoursEnd: settings.quietHoursEnd ?? 9,
+    casafariEnabled: settings.casafariEnabled ?? false,
+    casafariSearchParams: settings.casafariSearchParams || null,
+    casafariSchedule: settings.casafariSchedule || "daily",
+    newLeadTemplateId: settings.newLeadTemplateId || null,
+    followupTemplateId: settings.followupTemplateId || null,
+
+    // CAMPOS NOVOS
+    searchEnabled: settings.searchEnabled ?? false,
+    searchSources: Array.isArray(settings.searchSources)
+  ? settings.searchSources
+  : ["casafari", "idealista", "olx"],
+
+searchLocations: Array.isArray(settings.searchLocations)
+  ? settings.searchLocations
+  : ["Lisboa", "Porto"],
+
+searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+  ? settings.searchPropertyTypes
+  : ["Apartamento", "Moradia"],
+
+    searchTransactionType: settings.searchTransactionType ?? "sale",
+    searchPriceMin: settings.searchPriceMin ?? 100000,
+    searchPriceMax: settings.searchPriceMax ?? 500000,
+    searchBedrooms: settings.searchBedrooms ?? null,
+    searchAreaMin: settings.searchAreaMin ?? null,
+    searchAreaMax: settings.searchAreaMax ?? null,
+    searchSchedule: settings.searchSchedule ?? "daily",
+    searchMinScore: settings.searchMinScore ?? 40,
+    autoClassifyLeads: settings.autoClassifyLeads ?? true,
+    autoContactNewLeads: settings.autoContactNewLeads ?? false,
+    lastSearchAt: settings.lastSearchAt ?? null,
+
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  this.automationSettingsMap.set(id, newSettings);
+  return newSettings;
+}
+  
   // Usage Ledger
   async createUsageRecord(usage: InsertUsageLedger): Promise<UsageLedger> {
     const id = randomUUID();
@@ -1265,25 +1307,175 @@ export class MemStorage implements IStorage {
 
 // Database Storage Implementation
 export class DatabaseStorage implements IStorage {
+
+  /* ================================
+     LEADS
+  ================================= */
+
   async createLead(insertLead: InsertLead & Partial<Pick<Lead, 'aiScore' | 'aiReasoning' | 'lastContact'>> & { customerId?: string | null }): Promise<Lead> {
     const [lead] = await db.insert(leads).values({
-      name: insertLead.name,
-      property: insertLead.property,
-      propertyType: insertLead.propertyType,
-      location: insertLead.location,
-      price: insertLead.price,
-      status: insertLead.status || "frio",
-      source: insertLead.source,
-      contact: insertLead.contact,
-      customerId: insertLead.customerId || null,
-      email: insertLead.email || null,
-      notes: insertLead.notes || null,
-      aiScore: insertLead.aiScore || null,
-      aiReasoning: insertLead.aiReasoning || null,
-      lastContact: insertLead.lastContact || new Date(),
+      ...insertLead,
+      status: insertLead.status ?? "frio",
+      customerId: insertLead.customerId ?? null,
+      email: insertLead.email ?? null,
+      notes: insertLead.notes ?? null,
+      aiScore: insertLead.aiScore ?? null,
+      aiReasoning: insertLead.aiReasoning ?? null,
+      lastContact: insertLead.lastContact ?? new Date(),
     }).returning();
+
     return lead;
   }
+
+  async getLeads(filters?: {
+    status?: string;
+    source?: string;
+    location?: string;
+    search?: string;
+  }): Promise<Lead[]> {
+    return db.select().from(leads);
+  }
+
+  async getLead(id: string): Promise<Lead | undefined> {
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead;
+  }
+
+  async updateLead(id: string, updates: Partial<InsertLead>): Promise<Lead | undefined> {
+    const [updated] = await db
+      .update(leads)
+      .set({ ...updates })
+      .where(eq(leads.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
+    await db.delete(leads).where(eq(leads.id, id));
+    return true;
+  }
+
+  async getLeadsByCustomer(customerId: string): Promise<Lead[]> {
+    return db.select().from(leads).where(eq(leads.customerId, customerId));
+  }
+
+  async getLastInteraction(leadId: string): Promise<InteractionHistory | undefined> {
+    const [interaction] = await db
+      .select()
+      .from(interactionHistory)
+      .where(eq(interactionHistory.leadId, leadId))
+      .orderBy(desc(interactionHistory.createdAt))
+      .limit(1);
+
+    return interaction;
+  }
+
+  /* ================================
+     AUTOMATION SETTINGS
+  ================================= */
+
+  async getAutomationSettings(customerId: string): Promise<AutomationSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(automationSettings)
+      .where(eq(automationSettings.customerId, customerId));
+
+    return settings;
+  }
+
+  async getAllAutomationSettings(): Promise<AutomationSettings[]> {
+    return db.select().from(automationSettings);
+  }
+
+  async createOrUpdateAutomationSettings(
+    settings: InsertAutomationSettings
+  ): Promise<AutomationSettings> {
+
+    const existing = await this.getAutomationSettings(settings.customerId);
+
+    if (existing) {
+      const [updated] = await db
+        .update(automationSettings)
+        .set({
+          ...settings,
+
+          searchSources: Array.isArray(settings.searchSources)
+            ? settings.searchSources
+            : undefined,
+
+          searchLocations: Array.isArray(settings.searchLocations)
+            ? settings.searchLocations
+            : undefined,
+
+          searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+            ? settings.searchPropertyTypes
+            : undefined,
+
+          updatedAt: new Date(),
+        })
+        .where(eq(automationSettings.customerId, settings.customerId))
+        .returning();
+
+      return updated;
+    }
+
+    const [newSettings] = await db
+      .insert(automationSettings)
+      .values({
+        ...settings,
+
+        searchSources: Array.isArray(settings.searchSources)
+          ? settings.searchSources
+          : ["casafari", "idealista", "olx"],
+
+        searchLocations: Array.isArray(settings.searchLocations)
+          ? settings.searchLocations
+          : ["Lisboa", "Porto"],
+
+        searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+          ? settings.searchPropertyTypes
+          : ["Apartamento", "Moradia"],
+      })
+      .returning();
+
+    return newSettings;
+  }
+
+  /* ================================
+     USAGE LEDGER
+  ================================= */
+
+  async createUsageRecord(usage: InsertUsageLedger): Promise<UsageLedger> {
+    const [record] = await db.insert(usageLedger).values(usage).returning();
+    return record;
+  }
+
+  async getUsageByCustomer(customerId: string, period?: string): Promise<UsageLedger[]> {
+    if (period) {
+      return db
+        .select()
+        .from(usageLedger)
+        .where(and(eq(usageLedger.customerId, customerId), eq(usageLedger.period, period)));
+    }
+
+    return db
+      .select()
+      .from(usageLedger)
+      .where(eq(usageLedger.customerId, customerId));
+  }
+
+  async getUsageSummary(customerId: string, period: string): Promise<Record<string, number>> {
+    const records = await this.getUsageByCustomer(customerId, period);
+    const summary: Record<string, number> = {};
+
+    records.forEach(r => {
+      summary[r.metric] = (summary[r.metric] || 0) + r.quantity;
+    });
+
+    return summary;
+  }
+
+}
 
   async getLeads(filters?: { status?: string; source?: string; location?: string; search?: string }): Promise<Lead[]> {
     let conditions = [];
@@ -1699,219 +1891,60 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(automationSettings);
   }
 
-  async createOrUpdateAutomationSettings(settings: InsertAutomationSettings): Promise<AutomationSettings> {
-    const existing = await this.getAutomationSettings(settings.customerId);
-    
-    if (existing) {
-      const [updated] = await db.update(automationSettings)
-        .set({ ...settings, updatedAt: new Date() })
-        .where(eq(automationSettings.customerId, settings.customerId))
-        .returning();
-      return updated;
-    }
-    
-    const [newSettings] = await db.insert(automationSettings).values(settings).returning();
-    return newSettings;
-  }
+ async createOrUpdateAutomationSettings(
+  settings: InsertAutomationSettings
+): Promise<AutomationSettings> {
 
-  // Usage Ledger
-  async createUsageRecord(usage: InsertUsageLedger): Promise<UsageLedger> {
-    const [record] = await db.insert(usageLedger).values(usage).returning();
-    return record;
-  }
+  const existing = await this.getAutomationSettings(settings.customerId);
 
-  async getUsageByCustomer(customerId: string, period?: string): Promise<UsageLedger[]> {
-    if (period) {
-      return db.select().from(usageLedger)
-        .where(and(eq(usageLedger.customerId, customerId), eq(usageLedger.period, period)));
-    }
-    return db.select().from(usageLedger)
-      .where(eq(usageLedger.customerId, customerId));
-  }
+  if (existing) {
+    const [updated] = await db
+      .update(automationSettings)
+      .set({
+        ...settings,
 
-  async getUsageSummary(customerId: string, period: string): Promise<Record<string, number>> {
-    const records = await this.getUsageByCustomer(customerId, period);
-    const summary: Record<string, number> = {};
-    records.forEach(r => {
-      summary[r.metric] = (summary[r.metric] || 0) + r.quantity;
-    });
-    return summary;
-  }
+        searchSources: Array.isArray(settings.searchSources)
+          ? settings.searchSources
+          : undefined,
 
-  // Extended Lead operations
-  async getLeadsByCustomer(customerId: string): Promise<Lead[]> {
-    return db.select().from(leads).where(eq(leads.customerId, customerId));
-  }
+        searchLocations: Array.isArray(settings.searchLocations)
+          ? settings.searchLocations
+          : undefined,
 
-  async getLastInteraction(leadId: string): Promise<InteractionHistory | undefined> {
-    const [interaction] = await db.select().from(interactionHistory)
-      .where(eq(interactionHistory.leadId, leadId))
-      .orderBy(desc(interactionHistory.createdAt))
-      .limit(1);
-    return interaction;
-  }
+        searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+          ? settings.searchPropertyTypes
+          : undefined,
 
-  // Email verification - DatabaseStorage implementation
-  async createEmailVerificationToken(customerId: string): Promise<string> {
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date();
-    // Token valid for 7 days instead of 24 hours
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    
-    await db.insert(emailVerificationTokens).values({
-      customerId,
-      token,
-      expiresAt
-    });
-    
-    return token;
-  }
-
-  async verifyEmailToken(token: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
-    const [tokenData] = await db.select().from(emailVerificationTokens)
-      .where(eq(emailVerificationTokens.token, token));
-    
-    if (!tokenData) {
-      return { success: false, error: 'Token inválido' };
-    }
-    
-    if (tokenData.usedAt) {
-      return { success: false, error: 'Este token já foi utilizado' };
-    }
-    
-    if (new Date() > tokenData.expiresAt) {
-      return { success: false, error: 'Token expirado' };
-    }
-    
-    await db.update(emailVerificationTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(emailVerificationTokens.token, token));
-    
-    await db.update(customers)
-      .set({ 
-        emailVerified: true, 
-        emailVerifiedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
-      .where(eq(customers.id, tokenData.customerId));
-    
-    return { success: true, customerId: tokenData.customerId };
+      .where(eq(automationSettings.customerId, settings.customerId))
+      .returning();
+
+    return updated;
   }
 
-  async getVerificationTokenByCustomer(customerId: string): Promise<{ token: string; expiresAt: Date } | undefined> {
-    const [tokenData] = await db.select().from(emailVerificationTokens)
-      .where(and(
-        eq(emailVerificationTokens.customerId, customerId),
-        gte(emailVerificationTokens.expiresAt, new Date())
-      ))
-      .orderBy(desc(emailVerificationTokens.createdAt))
-      .limit(1);
-    
-    if (tokenData && !tokenData.usedAt) {
-      return { token: tokenData.token, expiresAt: tokenData.expiresAt };
-    }
-    return undefined;
-  }
+  const [newSettings] = await db
+    .insert(automationSettings)
+    .values({
+      ...settings,
 
-  // Password reset - DatabaseStorage implementation
-  async createPasswordResetToken(customerId: string): Promise<string> {
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
-    
-    await db.insert(passwordResetTokens).values({
-      customerId,
-      token,
-      expiresAt
-    });
-    
-    return token;
-  }
+      searchSources: Array.isArray(settings.searchSources)
+        ? settings.searchSources
+        : ["casafari", "idealista", "olx"],
 
-  async verifyPasswordResetToken(token: string): Promise<{ success: boolean; customerId?: string; error?: string }> {
-    const [tokenData] = await db.select().from(passwordResetTokens)
-      .where(eq(passwordResetTokens.token, token));
-    
-    if (!tokenData) {
-      return { success: false, error: 'Token inválido' };
-    }
-    
-    if (tokenData.usedAt) {
-      return { success: false, error: 'Este token já foi utilizado' };
-    }
-    
-    if (new Date() > tokenData.expiresAt) {
-      return { success: false, error: 'Token expirado' };
-    }
-    
-    return { success: true, customerId: tokenData.customerId };
-  }
+      searchLocations: Array.isArray(settings.searchLocations)
+        ? settings.searchLocations
+        : ["Lisboa", "Porto"],
 
-  async getPasswordResetTokenByCustomer(customerId: string): Promise<{ token: string; expiresAt: Date } | undefined> {
-    const [tokenData] = await db.select().from(passwordResetTokens)
-      .where(and(
-        eq(passwordResetTokens.customerId, customerId),
-        gte(passwordResetTokens.expiresAt, new Date())
-      ))
-      .orderBy(desc(passwordResetTokens.createdAt))
-      .limit(1);
-    
-    if (tokenData && !tokenData.usedAt) {
-      return { token: tokenData.token, expiresAt: tokenData.expiresAt };
-    }
-    return undefined;
-  }
+      searchPropertyTypes: Array.isArray(settings.searchPropertyTypes)
+        ? settings.searchPropertyTypes
+        : ["Apartamento", "Moradia"],
+    })
+    .returning();
 
-  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
-    const [tokenData] = await db.select().from(passwordResetTokens)
-      .where(eq(passwordResetTokens.token, token));
-    
-    if (!tokenData) {
-      return { success: false, error: 'Token inválido' };
-    }
-    
-    if (tokenData.usedAt) {
-      return { success: false, error: 'Este token já foi utilizado' };
-    }
-    
-    if (new Date() > tokenData.expiresAt) {
-      return { success: false, error: 'Token expirado' };
-    }
-    
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    await db.update(passwordResetTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(passwordResetTokens.token, token));
-    
-    await db.update(customers)
-      .set({ 
-        password: hashedPassword,
-        updatedAt: new Date()
-      })
-      .where(eq(customers.id, tokenData.customerId));
-    
-    return { success: true };
-  }
+  return newSettings;
+}
 
-  // Chat message operations
-  async getChatMessages(customerId: string, limit: number = 50): Promise<ChatMessage[]> {
-    const messages = await db.select()
-      .from(chatMessages)
-      .where(eq(chatMessages.customerId, customerId))
-      .orderBy(chatMessages.createdAt)
-      .limit(limit);
-    return messages;
-  }
-
-  async saveChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
-    const [newMessage] = await db.insert(chatMessages).values({
-      customerId: message.customerId,
-      role: message.role,
-      content: message.content,
-    }).returning();
-    return newMessage;
-  }
 
   async clearChatHistory(customerId: string): Promise<boolean> {
     await db.delete(chatMessages)

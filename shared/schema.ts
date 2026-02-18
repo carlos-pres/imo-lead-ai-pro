@@ -159,9 +159,9 @@ export const automationSettings = pgTable("automation_settings", {
   followupTemplateId: varchar("followup_template_id"),
   // Enhanced search configuration
   searchEnabled: boolean("search_enabled").default(false),
-  searchSources: jsonb("search_sources").$type<string[]>().default(["casafari", "idealista", "olx"]),
-  searchLocations: jsonb("search_locations").$type<string[]>().default(["Lisboa", "Porto"]),
-  searchPropertyTypes: jsonb("search_property_types").$type<string[]>().default(["Apartamento", "Moradia"]),
+  searchSources: jsonb("search_sources").$type<string[] | null>().default(["casafari", "idealista", "olx"]),
+  searchLocations: jsonb("search_locations").$type<string[] | null>().default(["Lisboa", "Porto"]),
+  searchPropertyTypes: jsonb("search_property_types").$type<string[] | null>().default(["Apartamento", "Moradia"]),
   searchTransactionType: text("search_transaction_type").default("sale"), // sale, rent
   searchPriceMin: integer("search_price_min").default(100000),
   searchPriceMax: integer("search_price_max").default(500000),
