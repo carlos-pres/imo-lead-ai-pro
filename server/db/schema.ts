@@ -1,54 +1,78 @@
-// server/db/schema.ts
+import { pgTable, varchar, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
-export type CustomerStatus = "active" | "inactive" | "suspended";
-export type PlanType = "trial" | "basic" | "pro";
+// =========================
+// CUSTOMERS
+// =========================
 
-export type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  company: string | null;
+export const customers = pgTable("customers", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
 
-  password: string | null;
-  taxId: string | null;
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  company: text("company"),
 
-  stripeCustomerId: string | null;
+  password: text("password"),
+  taxId: text("tax_id"),
 
-  status: CustomerStatus;
-  plan: PlanType;
-  trialEndsAt: Date | null;
+  stripeCustomerId: text("stripe_customer_id"),
 
-  googleAccessToken?: string | null;
-  googleRefreshToken?: string | null;
-  googleTokenExpiry?: Date | null;
+  status: varchar("status", { length: 20 })
+    .notNull()
+    .default("active"),
 
-  createdAt: Date;
-  updatedAt: Date;
-};
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiry: timestamp("google_token_expiry"),
 
-export type InsertCustomer = Omit<
-  Customer,
-  "id" | "createdAt" | "updatedAt" | "stripeCustomerId"
->;
+  createdAt: timestamp("created_at")
+    .notNull()
+    .defaultNow(),
 
-export type AutomationSettings = {
-  id: string;
-  customerId: string;
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow(),
+});
 
-  enabled: boolean | null;
+// =========================
+// SUBSCRIPTIONS
+// =========================
 
-  autoMessageNewLead: boolean | null;
-  autoFollowup3Days: boolean | null;
-  autoFollowup7Days: boolean | null;
+export const subscriptions = pgTable("subscriptions", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
 
-  lastSearchAt: Date | null;
+  customerId: varchar("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
 
-  createdAt: Date;
-  updatedAt: Date;
-};
+  plan: varchar("plan", { length: 20 }).notNull(),
+  // basic | pro | enterprise
 
-export type InsertAutomationSettings = Omit<
-  AutomationSettings,
-  "id" | "createdAt" | "updatedAt"
->;
+  status: varchar("status", { length: 20 }).notNull(),
+  // trial | active | canceled
+
+  trialEndsAt: timestamp("trial_ends_at"),
+
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+
+  leadsUsed: integer("leads_used")
+    .notNull()
+    .default(0),
+
+  leadsLimit: integer("leads_limit")
+    .notNull(),
+
+  createdAt: timestamp("created_at")
+    .notNull()
+    .defaultNow(),
+
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow(),
+});
