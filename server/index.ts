@@ -262,14 +262,14 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   const port = parseInt(process.env.PORT || "5000", 10);
 
-  server.listen(
-    {
-      port,
-      host: "127.0.0.1",
-    },
-    () => {
-      log(`serving on port ${port}`);
-      startScheduler();
-    }
-  );
+server.listen(
+  {
+    port,
+    host: "0.0.0.0",
+  },
+  () => {
+    log(`serving on port ${port}`);
+    startScheduler();
+  }
+);
 })();
