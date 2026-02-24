@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import { searchWithApify, type ApifyProperty } from "./apify";
 import { analyzeLeadWithAI } from "./openai";
-import type { Lead } from "@shared/schema";
+import type { Lead } from "../../shared/schema";
 
 export interface ScheduledSearchConfig {
   enabled: boolean;

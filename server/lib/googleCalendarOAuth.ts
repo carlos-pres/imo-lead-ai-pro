@@ -1,7 +1,7 @@
 // Google Calendar Per-User OAuth Integration
 import { google } from 'googleapis';
 import crypto from 'crypto';
-import { storage } from '../storage';
+import { storage } from '../storage.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;

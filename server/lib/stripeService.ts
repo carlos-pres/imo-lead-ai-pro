@@ -1,4 +1,4 @@
-import { getUncachableStripeClient } from './stripeClient';
+import { getUncachableStripeClient } from './stripeClient.js';
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
 

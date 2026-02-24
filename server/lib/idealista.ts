@@ -1,4 +1,4 @@
-import { CasafariProperty } from "./casafari";
+import { CasafariProperty } from "./casafari.js";
 
 const IDEALISTA_API_KEY = process.env.IDEALISTA_API_KEY;
 const IDEALISTA_API_SECRET = process.env.IDEALISTA_API_SECRET;

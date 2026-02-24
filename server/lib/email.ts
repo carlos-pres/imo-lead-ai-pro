@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer';
-import logger from './logger';
-import { sendOutlookEmail, isOutlookConfigured } from './outlook';
+import nodemailer from "nodemailer";
+import logger from "./logger.js";
+import { sendOutlookEmail, isOutlookConfigured } from "./outlook.js";
 
 interface EmailConfig {
   host: string;

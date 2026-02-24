@@ -1,6 +1,35 @@
 import OpenAI from "openai";
-import pRetry from "p-retry";
+async function retry<T>(
+  fn: () => Promise<T>,
+  options: {
+    retries: number;
+    minTimeout?: number;
+    maxTimeout?: number;
+    shouldRetry?: (error: any) => boolean;
+  }
+): Promise<T> {
+  let attempt = 0;
+  let delay = options.minTimeout ?? 1000;
 
+  while (true) {
+    try {
+      return await fn();
+    } catch (error) {
+      attempt++;
+
+      const canRetry =
+        attempt <= options.retries &&
+        (!options.shouldRetry || options.shouldRetry(error));
+
+      if (!canRetry) {
+        throw error;
+      }
+
+      await new Promise((res) => setTimeout(res, delay));
+      delay = Math.min(delay * 2, options.maxTimeout ?? 10000);
+    }
+  }
+}
 // Using Replit's AI Integrations service with OpenRouter for DeepSeek access
 // This does not require your own API key - charges are billed to your Replit credits
 const hasOpenRouterConfig = !!(process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL && process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY);
@@ -104,55 +133,56 @@ Responde APENAS com um objeto JSON neste formato exato:
 }`;
 
   try {
-    const result = await pRetry(
-      async () => {
-        const completion = await client.chat.completions.create({
-          model: model,
-          messages: [
-            {
-              role: "system",
-              content: `És um analista especializado no mercado imobiliário português com conhecimento profundo de:
+  const result = await retry(
+  async () => {
+    const completion = await client.chat.completions.create({
+      model: model,
+      messages: [
+        {
+          role: "system",
+          content: `És um analista especializado no mercado imobiliário português com conhecimento profundo de:
 - Zonas premium (Lisboa, Porto, Cascais, Algarve) e respetivos preços/m2
 - Tendências de mercado (investimento estrangeiro, AL, Golden Visa)
 - Qualificação de leads por potencial de conversão
 Responde SEMPRE com JSON válido, sem texto adicional.`,
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          temperature: 0.3,
-          max_tokens: 500,
-        });
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    });
 
-        const content = completion.choices[0]?.message?.content;
-        if (!content) {
-          throw new Error("No response from AI");
-        }
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from AI");
+    }
 
-        // Parse JSON from response (handle markdown code blocks)
-        let jsonContent = content.trim();
-        if (jsonContent.startsWith("```")) {
-          jsonContent = jsonContent.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-        }
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent
+        .replace(/```json?\n?/g, "")
+        .replace(/```/g, "")
+        .trim();
+    }
 
-        const parsed = JSON.parse(jsonContent) as LeadAnalysisResult;
+    const parsed = JSON.parse(jsonContent) as LeadAnalysisResult;
 
-        if (!parsed.status || !["quente", "morno", "frio"].includes(parsed.status)) {
-          throw new Error("Invalid status from AI");
-        }
+    if (!parsed.status || !["quente", "morno", "frio"].includes(parsed.status)) {
+      throw new Error("Invalid status from AI");
+    }
 
-        return parsed;
-      },
-      {
-        retries: 3,
-        minTimeout: 1000,
-        maxTimeout: 10000,
-        factor: 2,
-        shouldRetry: (error: any) => isRateLimitError(error),
-      }
-    );
+    return parsed;
+  },
+  {
+    retries: 3,
+    minTimeout: 1000,
+    maxTimeout: 10000,
+    shouldRetry: (error: any) => isRateLimitError(error),
+  }
+);
 
     return result;
   } catch (error) {
@@ -231,7 +261,7 @@ ESTRUTURA DO RELATÓRIO:
 Mantém o relatório conciso (máximo 500 palavras).`;
 
   try {
-    const result = await pRetry(
+    const result = await retry(
       async () => {
         const completion = await client.chat.completions.create({
           model: model,
@@ -484,7 +514,7 @@ CONHECIMENTO DO MERCADO PORTUGUES:
     // Add current user message
     messages.push({ role: "user", content: message });
 
-    const result = await pRetry(
+    const result = await retry(
       async () => {
         const completion = await client.chat.completions.create({
           model: model,

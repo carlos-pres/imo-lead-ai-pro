@@ -1,24 +1,30 @@
 import { createServer } from "http";
-import express, { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 import session from "express-session";
 import path from "path";
-import { fileURLToPath } from "url";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 import "dotenv/config";
+import express, {
+  Request,
+  Response,
+  NextFunction,
+  ErrorRequestHandler
+} from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { runMigrations } from 'stripe-replit-sync';
-import { getStripeSync } from './lib/stripeClient';
-import { WebhookHandlers } from './lib/webhookHandlers';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import { apiRateLimiter } from './middleware/rateLimit';
-import { sanitizeInputs } from './middleware/sanitize';
-import { logSecurityEvent, logError } from './lib/logger';
-import { startScheduler } from './lib/scheduledSearches';
+import { runMigrations } from "stripe-replit-sync";
+import { getStripeSync } from "./lib/stripeClient";
+import { WebhookHandlers } from "./lib/webhookHandlers";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { apiRateLimiter } from "./middleware/rateLimit";
+import { sanitizeInputs } from "./middleware/sanitize";
+import { logSecurityEvent, logError } from "./lib/logger";
+import { startScheduler } from "./lib/scheduledSearches";
+
+// Em CommonJS, __dirname já existe automaticamente
+// Não precisa de fileURLToPath nem import.meta
 
 const app = express();
+const server = createServer(app);
 
 // Trust proxy for rate limiting behind Replit's proxy
 app.set('trust proxy', 1);
@@ -242,8 +248,6 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 (async () => {
   await registerRoutes(app);
 
-  const server = createServer(app);
-
   app.use(errorHandler);
 
   process.on("uncaughtException", (error) => {
@@ -254,22 +258,16 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     logError("UNHANDLED REJECTION", reason);
   });
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+  if (process.env.NODE_ENV === "development") {
+    await setupVite();
   } else {
     serveStatic(app);
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
 
-server.listen(
-  {
-    port,
-    host: "0.0.0.0",
-  },
-  () => {
+  server.listen(port, () => {
     log(`serving on port ${port}`);
     startScheduler();
-  }
-);
+  });
 })();

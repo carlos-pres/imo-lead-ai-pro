@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { storage } from "../storage";
+import { storage } from "../storage.js";
 import crypto from "crypto";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;

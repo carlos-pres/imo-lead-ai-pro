@@ -1,9 +1,9 @@
-import type { Customer } from "@shared/schema";
-import { PLAN_CONFIG } from "./core/plans";
+import type { Customer } from "../shared/schema.js";
+import { PLAN_CONFIG } from "./core/plans.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
 import 'dotenv/config';
-import { db } from "./db";
+import { db } from "./db.js";
 import {
   customers,
   leads,
@@ -12,7 +12,7 @@ import {
   interactions,
   usageRecords,
   calendarEvents
-} from "@shared/schema";
+} from "../shared/schema";
 import { eq } from "drizzle-orm";
 
 export interface DatabaseStorage {
