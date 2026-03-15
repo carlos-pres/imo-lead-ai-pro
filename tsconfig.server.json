@@ -1,16 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "ES2019",
+    "module": "CommonJS",
     "outDir": "dist",
     "rootDir": ".",
-    "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "strict": false,
     "skipLibCheck": true,
-    "types": ["node"]
+    "noImplicitAny": false
   },
-  "include": ["server/**/*", "shared/**/*"],
-  "exclude": ["node_modules", "client", "dist"]
+  "include": ["server"]
 }

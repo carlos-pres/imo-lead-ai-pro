@@ -1,59 +1,104 @@
-import type { Request, Response, Express } from "express";
-import crypto from "crypto";
+import { Router } from "express";
+import * as storage from "./storage";
+import {
+  hashPassword,
+  comparePassword,
+  generateToken,
+  verifyToken,
+} from "./auth";
 
-// Helper: cria token de admin
-const createAdminToken = (): string => {
-  const secret = process.env.ADMIN_PASSWORD;
-  if (!secret) throw new Error("ADMIN_PASSWORD must be configured");
+const router = Router();
 
-  const timestamp = Date.now().toString();
-  const signature = crypto
-    .createHmac("sha256", secret)
-    .update(`admin:${timestamp}`)
-    .digest("hex");
+/* ================= REGISTER ================= */
 
-  return Buffer.from(`admin:${timestamp}:${signature}`).toString("base64");
-};
+router.post("/register", async (req, res) => {
+  const { name, email, password } = req.body;
 
-// Registo de rotas
-export async function registerRoutes(app: Express): Promise<void> {
-  app.post("/api/admin/auth", async (req: Request, res: Response) => {
-    try {
-      const { password } = req.body as { password?: string };
-      const adminPassword = process.env.ADMIN_PASSWORD;
+  const existing = await storage.getCustomerByEmail(email);
 
-      if (!adminPassword) {
-        return res
-          .status(500)
-          .json({ error: "Admin password not configured" });
-      }
+  if (existing)
+    return res.status(400).json({ error: "Email já existe" });
 
-      if (!password) {
-        return res
-          .status(400)
-          .json({ error: "Password is required" });
-      }
+  const hashed = await hashPassword(password);
 
-      const inputBuffer = Buffer.from(password.trim());
-      const adminBuffer = Buffer.from(adminPassword.trim());
-
-      const isValid =
-        inputBuffer.length === adminBuffer.length &&
-        crypto.timingSafeEqual(inputBuffer, adminBuffer);
-
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid password" });
-      }
-
-      const token = createAdminToken();
-
-      return res.json({ token });
-
-    } catch (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Internal server error" });
-    }
+  const user = await storage.createCustomer({
+    name,
+    email,
+    password: hashed,
   });
+
+  const token = generateToken(user.id);
+
+  res.json({ token });
+});
+
+/* ================= LOGIN ================= */
+
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await storage.getCustomerByEmail(email);
+
+  if (!user)
+    return res.status(400).json({ error: "Credenciais inválidas" });
+
+  const valid = await comparePassword(password, user.password);
+
+  if (!valid)
+    return res.status(400).json({ error: "Credenciais inválidas" });
+
+  const token = generateToken(user.id);
+
+  res.json({ token });
+});
+
+/* ================= AUTH ================= */
+
+function authMiddleware(req: any, res: any, next: any) {
+  const header = req.headers.authorization;
+
+  if (!header)
+    return res.status(401).json({ error: "Não autorizado" });
+
+  const token = header.split(" ")[1];
+
+  const decoded = verifyToken(token);
+
+  req.userId = decoded.userId;
+
+  next();
 }
+
+/* ================= CREATE LEAD ================= */
+
+router.post("/leads", authMiddleware, async (req: any, res) => {
+  const user = await storage.getCustomer(req.userId);
+
+  if (!user)
+    return res.status(401).json({ error: "Usuário inválido" });
+
+  const total = await storage.countLeads(user.id);
+
+  if (user.plan === "basic" && total >= 50) {
+    return res.status(403).json({
+      error: "Plano Basic atingiu limite de 50 leads",
+    });
+  }
+
+  const lead = await storage.createLead({
+    customerId: user.id,
+    name: req.body.name,
+    property: req.body.property,
+  });
+
+  res.json(lead);
+});
+
+/* ================= LIST LEADS ================= */
+
+router.get("/leads", authMiddleware, async (req: any, res) => {
+  const data = await storage.getLeads(req.userId);
+  res.json(data);
+});
+
+export default router;

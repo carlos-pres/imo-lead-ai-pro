@@ -50,23 +50,32 @@ export const subscriptions = pgTable("subscriptions", {
     .notNull()
     .references(() => customers.id, { onDelete: "cascade" }),
 
-  plan: varchar("plan", { length: 20 }).notNull(),
-  // basic | pro | enterprise
+  plan: varchar("plan", { length: 20 })
+    .notNull()
+    .default("basic"), // basic | pro | custom
 
-  status: varchar("status", { length: 20 }).notNull(),
-  // trial | active | canceled
+  status: varchar("status", { length: 20 })
+    .notNull()
+    .default("trial"), // trial | active | canceled
 
-  trialEndsAt: timestamp("trial_ends_at"),
-
-  currentPeriodStart: timestamp("current_period_start").notNull(),
-  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  leadsLimit: integer("leads_limit")
+    .notNull()
+    .default(50),
 
   leadsUsed: integer("leads_used")
     .notNull()
     .default(0),
 
-  leadsLimit: integer("leads_limit")
+  trialEndsAt: timestamp("trial_ends_at"),
+
+  currentPeriodStart: timestamp("current_period_start")
+    .notNull()
+    .defaultNow(),
+
+  currentPeriodEnd: timestamp("current_period_end")
     .notNull(),
+
+  stripeSubscriptionId: text("stripe_subscription_id"),
 
   createdAt: timestamp("created_at")
     .notNull()

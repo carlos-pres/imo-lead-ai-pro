@@ -22,10 +22,9 @@ export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "dist/public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Build do cliente não encontrado em ${distPath}. Execute "vite build" primeiro.`
-    );
-  }
+  console.warn("Frontend build não encontrado. Rodando apenas API.");
+  return;
+}
 
   app.use(express.static(distPath));
 
