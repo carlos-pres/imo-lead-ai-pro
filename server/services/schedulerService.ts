@@ -1,5 +1,5 @@
 import { discoverLeads } from "./leadDiscoveryService.js"
-import { runMarketRadar } from "./marketRadarService.js"
+import { analyzeMarketOpportunities } from "../ai/marketStrategistAgent.js"
 
 const ONE_DAY = 24 * 60 * 60 * 1000
 
@@ -7,16 +7,56 @@ async function runDiscoveryCycle() {
 
   console.log("[Scheduler] Starting discovery cycle")
 
-  const cities = [
-    "Lisboa",
-    "Cascais",
-    "Sintra",
-    "Oeiras"
-  ]
+  // Target cities for lead discovery in Portugal
+// Phase 1: Portugal market coverage
+// Phase 2 (coming soon): Expansion to all Europe
+// Phase 3 (future): Global expansion including Dubai and other high-value markets
+
+const cities = [
+  "Lisboa",
+  "Amadora",
+  "Odivelas",
+  "Loures",
+  "Cascais",
+  "Sintra",
+  "Oeiras",
+  "Almada",
+  "Setúbal",
+
+  "Porto",
+  "Vila Nova de Gaia",
+  "Matosinhos",
+  "Maia",
+  "Gondomar",
+  "Valongo",
+
+  "Braga",
+  "Guimarães",
+  "Barcelos",
+
+  "Aveiro",
+  "Coimbra",
+  "Leiria",
+
+  "Faro",
+  "Loulé",
+  "Albufeira",
+  "Portimão",
+  "Lagos",
+
+  "Viseu",
+  "Castelo Branco",
+  "Évora",
+  "Beja",
+
+  "Funchal",
+  "Ponta Delgada"
+];
+  
 
   /* ANALISAR MERCADO PRIMEIRO */
 
-  await runMarketRadar()
+ await analyzeMarketOpportunities() 
 
   /* DESCOBRIR LEADS */
 
