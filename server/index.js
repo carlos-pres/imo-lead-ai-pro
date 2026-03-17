@@ -9,10 +9,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// 🔐 OpenAI seguro (não quebra se faltar chave)
+let client = null;
 
+if (process.env.OPENAI_API_KEY) {
+  client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+} else {
+  console.warn("⚠️ OPENAI_API_KEY não definida");
+}
+
+// 🔥 Porta dinâmica (Railway obrigatório)
 const PORT = process.env.PORT || 5000;
 
 /**
@@ -20,18 +28,20 @@ const PORT = process.env.PORT || 5000;
  */
 async function analyzeLeadWithAI(lead) {
   try {
+    if (!client) return "IA indisponível";
+
     const prompt = `
-    Analisa este imóvel como um especialista imobiliário:
+Analisa este imóvel como um especialista imobiliário:
 
-    Tipo: ${lead.title}
-    Localização: ${lead.location}
-    Preço: ${lead.price}€
+Tipo: ${lead.title}
+Localização: ${lead.location}
+Preço: ${lead.price}€
 
-    Responde com:
-    - Pontuação de 0 a 100
-    - Se é um bom investimento
-    - Justificação curta
-    `;
+Responde com:
+- Pontuação de 0 a 100
+- Se é um bom investimento
+- Justificação curta
+`;
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
@@ -46,7 +56,7 @@ async function analyzeLeadWithAI(lead) {
 }
 
 /**
- * 🔹 Rota base
+ * 🔹 Rota base (health check)
  */
 app.get("/", (req, res) => {
   res.json({
@@ -105,6 +115,10 @@ app.get("/api/leads", async (req, res) => {
  */
 app.post("/api/ai", async (req, res) => {
   try {
+    if (!client) {
+      return res.status(500).json({ error: "IA não configurada" });
+    }
+
     const { prompt } = req.body;
 
     if (!prompt) {
@@ -126,8 +140,8 @@ app.post("/api/ai", async (req, res) => {
 });
 
 /**
- * 🚀 Start servidor
+ * 🚀 Start servidor (Railway OK)
  */
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 ImoLead AI Pro rodando na porta ${PORT}`);
 });
