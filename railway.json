@@ -15,6 +15,7 @@
       "us-west2": {
         "numReplicas": 1
       }
+      
     },
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
