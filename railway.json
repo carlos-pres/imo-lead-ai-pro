@@ -2,22 +2,9 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "RAILPACK",
-    "buildCommand": "npm install --include=optional && npm run build",
-    "buildEnvironment": "V3"
+    "buildCommand": "npm install"
   },
   "deploy": {
-    "runtime": "V2",
-    "numReplicas": 1,
-    "sleepApplication": false,
-    "useLegacyStacker": false,
-    "ipv6EgressEnabled": false,
-    "multiRegionConfig": {
-      "us-west2": {
-        "numReplicas": 1
-      }
-      
-    },
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "startCommand": "node server/index.js"
   }
 }
