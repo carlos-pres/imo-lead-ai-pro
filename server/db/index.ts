@@ -1,9 +1,21 @@
-import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "./schema.js";
+export const db = {
+  insert(_table: any) {
+    return {
+      values(data: any) {
+        return Promise.resolve(data);
+      },
+    };
+  },
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+  select() {
+    return {
+      from(_table: any) {
+        return Promise.resolve([]);
+      },
+    };
+  },
 
-export const db = drizzle(pool, { schema });
+  execute(_query: any) {
+    return Promise.resolve({ rows: [] as any[] });
+  },
+};

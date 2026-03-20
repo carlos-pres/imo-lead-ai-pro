@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getPlanPresentation, type PlanType } from "../core/plans.js";
 async function retry<T>(
   fn: () => Promise<T>,
   options: {
@@ -374,21 +375,14 @@ export async function* chatWithAIStream(message: string, context?: ChatContext, 
 
 function buildSystemPrompt(context?: ChatContext): string {
   const customerName = context?.customerName || "";
-  const customerPlan = context?.customerPlan || "basic";
+  const customerPlan = ((context?.customerPlan || "basic") as PlanType);
   const isBasic = customerPlan === "basic";
   const isPro = customerPlan === "pro";
-  
-  const planFeatures = {
-    basic: { name: "ImoLead Basic", leads: "100+ leads/mes", reports: "1x por semana", canScheduleVisits: false, hasAdvancedAI: false },
-    pro: { name: "ImoLead Pro", leads: "Leads ilimitados", reports: "3x por semana", canScheduleVisits: true, hasAdvancedAI: true },
-    custom: { name: "ImoLead Custom", leads: "Leads ilimitados", reports: "Diario", canScheduleVisits: true, hasAdvancedAI: true }
-  };
-  
-  const currentPlanInfo = planFeatures[customerPlan as keyof typeof planFeatures] || planFeatures.basic;
+  const currentPlanInfo = getPlanPresentation(customerPlan);
   
   return `Es o ImoLead AI, assistente virtual especializado em imobiliario portugues.
 PLANO: ${currentPlanInfo.name}
-${isBasic ? "RESTRICOES BASIC: NAO marcar visitas nem agendar. Limite 100 leads/mes." : isPro ? "PRO ATIVO: Marcacao visitas, relatorios 3x/semana, automacao." : "CUSTOM: Todas funcionalidades."}
+${isBasic ? "RESTRICOES STARTER: foco em Portugal, sem marcacao automatica de visitas e com relatorio de mercado local mensal." : isPro ? "PRO ATIVO: operacao Portugal + Iberia, relatorios semanais de mercado, automacao e visitas." : "ENTERPRISE: cobertura europeia, relatorios executivos de mercado e todas as funcionalidades ativas."}
 
 CONTEXTO: ${context?.totalLeads || 0} leads (${context?.hotLeads || 0} quentes, ${context?.warmLeads || 0} mornos, ${context?.coldLeads || 0} frios)
 ${context?.leadsDetails ? `TOP: ${context.leadsDetails}` : ""}
@@ -405,62 +399,33 @@ export async function chatWithAI(message: string, context?: ChatContext, convers
   }
 
   const customerName = context?.customerName || "";
-  const customerPlan = context?.customerPlan || "basic";
+  const customerPlan = ((context?.customerPlan || "basic") as PlanType);
   const isBasic = customerPlan === "basic";
   const isPro = customerPlan === "pro";
-  const isCustom = customerPlan === "custom";
-  
-  // Plan-specific features
-  const planFeatures = {
-    basic: {
-      name: "ImoLead Basic",
-      leads: "100+ leads/mes",
-      reports: "1x por semana",
-      canScheduleVisits: false,
-      hasAdvancedAI: false,
-      features: ["Pesquisa automatica", "Gestao de agenda", "Relatorio semanal", "Suporte semanal"]
-    },
-    pro: {
-      name: "ImoLead Pro", 
-      leads: "Leads ilimitados",
-      reports: "3x por semana",
-      canScheduleVisits: true,
-      hasAdvancedAI: true,
-      features: ["Tudo do Basic", "IA avancada", "Marcacao de visitas", "Automacao WhatsApp/Email", "Suporte prioritario"]
-    },
-    custom: {
-      name: "ImoLead Custom",
-      leads: "Leads ilimitados",
-      reports: "Diario",
-      canScheduleVisits: true,
-      hasAdvancedAI: true,
-      features: ["Tudo do Pro", "Gestor dedicado", "Videos profissionais", "Suporte 24/7", "Automacao redes sociais"]
-    }
-  };
-  
-  const currentPlanInfo = planFeatures[customerPlan as keyof typeof planFeatures] || planFeatures.basic;
+  const currentPlanInfo = getPlanPresentation(customerPlan);
   
   const systemPrompt = `Es o ImoLead AI, um assistente virtual amigavel especializado em imobiliario portugues.
 
 PLANO DO UTILIZADOR: ${currentPlanInfo.name}
 ${isBasic ? `
-RESTRICOES DO PLANO BASIC (IMPORTANTE - RESPEITA SEMPRE):
-- NAO podes marcar visitas nem agendar compromissos (so disponivel no Pro/Custom)
-- NAO podes gerar relatorios avancados (so disponivel no Pro/Custom)
-- Limite de 100 leads por mes
-- Relatorios apenas 1x por semana
-- Se o utilizador pedir para marcar visita, diz: "A marcacao de visitas esta disponivel apenas nos planos Pro e Custom. Posso ajudar-te a criar uma mensagem para contactar o lead diretamente!"
+RESTRICOES DO PLANO STARTER (IMPORTANTE - RESPEITA SEMPRE):
+- NAO podes marcar visitas nem agendar compromissos (so disponivel no Pro/Enterprise)
+- O foco de cobertura e Portugal
+- O plano inclui relatorio de mercado local mensal
+- Se o utilizador pedir para marcar visita, diz: "A marcacao de visitas esta disponivel apenas nos planos Pro e Enterprise. Posso ajudar-te a criar uma mensagem para contactar o lead diretamente!"
 ` : isPro ? `
 FUNCIONALIDADES PRO (ATIVAS):
 - Podes marcar visitas e agendar compromissos
-- Relatorios 3x por semana
+- Relatorios de mercado semanais
 - IA avancada ativa
 - Automacao de mensagens disponivel
+- Cobertura Portugal e Iberia
 ` : `
-FUNCIONALIDADES CUSTOM (TODAS ATIVAS):
+FUNCIONALIDADES ENTERPRISE (TODAS ATIVAS):
 - Todas as funcionalidades disponiveis
-- Gestor de conta dedicado
-- Suporte 24/7
+- Relatorios executivos multi-mercado
+- Cobertura europeia
+- Suporte prioritario e onboarding
 `}
 
 PERSONALIDADE:
@@ -481,8 +446,8 @@ ACOES DISPONIVEIS NO PLANO ${currentPlanInfo.name.toUpperCase()}:
 1. "Pesquisar agora" - busca leads em Casafari, Idealista, OLX
 2. "Gerar mensagem para [nome]" - cria WhatsApp/Email personalizado
 3. "Analisar leads" - prioriza baseado em potencial
-${!isBasic ? `4. "Gerar relatorio" - resumo executivo detalhado
-5. "Marcar visita com [nome]" - agenda visita ao imovel` : `4. "Gerar relatorio basico" - resumo semanal simples`}
+${!isBasic ? `4. "Gerar relatorio de mercado" - resumo executivo detalhado
+5. "Marcar visita com [nome]" - agenda visita ao imovel` : `4. "Gerar relatorio local" - resumo mensal simples`}
 
 ESTILO DE COMUNICACAO:
 - Portugues de Portugal (nunca brasileiro)

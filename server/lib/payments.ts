@@ -1,5 +1,8 @@
+import { getPaymentPlanOptions } from "../core/plans.js";
+
 export interface PaymentPlan {
   id: string;
+  planId: string;
   name: string;
   price: number;
   currency: string;
@@ -40,86 +43,7 @@ export interface MBWayPaymentResponse {
   message: string;
 }
 
-const PLANS: PaymentPlan[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: 39.00,
-    currency: "EUR",
-    interval: "month",
-    features: [
-      "Até 50 leads por mês",
-      "Integração Casafari API",
-      "Pesquisa em Idealista + OLX",
-      "Classificação com IA integrada",
-      "WhatsApp Business integrado",
-      "Mensagens automáticas com IA",
-      "Relatórios semanais",
-      "Pagamento via MBWay",
-      "Suporte por email"
-    ]
-  },
-  {
-    id: "basic-yearly",
-    name: "Basic Anual",
-    price: 390.00,
-    currency: "EUR",
-    interval: "year",
-    features: [
-      "Até 50 leads por mês",
-      "Integração Casafari API",
-      "Pesquisa em Idealista + OLX",
-      "Classificação com IA integrada",
-      "WhatsApp Business integrado",
-      "Mensagens automáticas com IA",
-      "Relatórios semanais",
-      "Pagamento via MBWay",
-      "Suporte por email",
-      "2 meses grátis (poupança de 78€)"
-    ]
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: 99.99,
-    currency: "EUR",
-    interval: "month",
-    features: [
-      "Leads ilimitados",
-      "Integração Casafari API completa",
-      "Todos os sites (Idealista, OLX, Casafari)",
-      "IA avançada com análise preditiva",
-      "WhatsApp Business integrado",
-      "Disparo automático de mensagens IA",
-      "Templates personalizáveis ilimitados",
-      "Relatórios diários + PDF",
-      "Integração Google Calendar",
-      "Pagamento via MBWay",
-      "Suporte prioritário 24/7"
-    ]
-  },
-  {
-    id: "pro-yearly",
-    name: "Pro Anual",
-    price: 999.00,
-    currency: "EUR",
-    interval: "year",
-    features: [
-      "Leads ilimitados",
-      "Integração Casafari API completa",
-      "Todos os sites (Idealista, OLX, Casafari)",
-      "IA avançada com análise preditiva",
-      "WhatsApp Business integrado",
-      "Disparo automático de mensagens IA",
-      "Templates personalizáveis ilimitados",
-      "Relatórios diários + PDF",
-      "Integração Google Calendar",
-      "Pagamento via MBWay",
-      "Suporte prioritário 24/7",
-      "2 meses grátis (poupança de 200€)"
-    ]
-  }
-];
+const PLANS: PaymentPlan[] = getPaymentPlanOptions();
 
 export class PaymentService {
   private mbwayKey: string | null;
@@ -135,18 +59,18 @@ export class PaymentService {
   }
 
   getPlan(planId: string): PaymentPlan | undefined {
-    return PLANS.find(p => p.id === planId);
+    return PLANS.find((plan) => plan.id === planId);
   }
 
   async createMBWayPayment(request: MBWayPaymentRequest): Promise<MBWayPaymentResponse> {
     const requestId = `mbway_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     return {
       requestId,
       orderId: request.orderId,
       amount: request.amount.toFixed(2),
       status: "000",
-      message: "Pagamento iniciado. Por favor confirme no seu telemóvel dentro de 4 minutos."
+      message: "Pagamento iniciado. Por favor confirme no seu telemovel dentro de 4 minutos.",
     };
   }
 
@@ -157,7 +81,7 @@ export class PaymentService {
         success: false,
         paymentId: "",
         status: "failed",
-        message: "Plano não encontrado"
+        message: "Plano nao encontrado",
       };
     }
 
@@ -172,7 +96,7 @@ export class PaymentService {
         amount: plan.price,
         mobileNumber: phoneNumber,
         email: request.customerEmail,
-        description: `ImoLead AI Pro - Plano ${plan.name}`
+        description: `ImoLead AI Pro - Plano ${plan.name}`,
       });
 
       return {
@@ -180,7 +104,7 @@ export class PaymentService {
         paymentId,
         status: "pending",
         message: mbwayResult.message,
-        expiresAt: new Date(Date.now() + 4 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 4 * 60 * 1000),
       };
     }
 
@@ -192,8 +116,8 @@ export class PaymentService {
         success: true,
         paymentId,
         status: "pending",
-        message: `Referência Multibanco gerada:\nEntidade: ${entity}\nReferência: ${reference}\nValor: ${plan.price}€\nVálida por 72 horas.`,
-        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000)
+        message: `Referencia Multibanco gerada:\nEntidade: ${entity}\nReferencia: ${reference}\nValor: ${plan.price} EUR\nValida por 72 horas.`,
+        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
       };
     }
 
@@ -201,8 +125,8 @@ export class PaymentService {
       success: true,
       paymentId,
       status: "pending",
-      message: "Redirecionando para página de pagamento...",
-      redirectUrl: `/checkout/${paymentId}`
+      message: "Redirecionando para pagina de pagamento...",
+      redirectUrl: `/checkout/${paymentId}`,
     };
   }
 
@@ -211,7 +135,7 @@ export class PaymentService {
       success: true,
       paymentId,
       status: "completed",
-      message: "Pagamento confirmado com sucesso!"
+      message: "Pagamento confirmado com sucesso!",
     };
   }
 

@@ -146,29 +146,24 @@ export async function sendTrialExpiredEmail(
     year: 'numeric'
   });
 
-  const subject = "O seu período de teste ImoLead AI Pro expirou";
-  const body = `Olá ${customerName},
+  const subject = "O seu periodo de teste ImoLead AI Pro expirou";
+  const body = `Ola ${customerName},
 
-O seu período de teste gratuito do ImoLead AI Pro terminou em ${formattedDate}.
+O seu periodo de teste gratuito do ImoLead AI Pro terminou em ${formattedDate}.
 
-Para continuar a usar todas as funcionalidades da plataforma, incluindo:
-- Prospeção automática de leads
-- Classificação com IA
-- Mensagens automáticas via WhatsApp e Email
-- Relatórios diários
-- CRM integrado
+Para continuar a usar a plataforma com AI, pipeline e relatorios de mercado, pode ativar:
+- ImoLead Starter - 47 EUR/mes ou 451.20 EUR/ano
+  Inclui relatorio de mercado local mensal
+- ImoLead Pro - 97 EUR/mes ou 931.20 EUR/ano
+  Inclui relatorios de mercado semanais para Portugal e Iberia
+- ImoLead Enterprise - 297 EUR/mes ou 2851.20 EUR/ano
+  Inclui relatorios executivos multi-mercado e operacao europeia
 
-Por favor, subscreva um dos nossos planos:
+Todos os planos anuais incluem 20% de desconto fixo.
 
-🏠 ImoLead Basic - €39/mês
-   Ideal para consultores individuais
+Aceda a sua conta em: https://imo-lead-ai-pro.replit.app/loja
 
-🏢 ImoLead Pro - €99.99/mês
-   Para equipas e agências imobiliárias
-
-Aceda à sua conta em: https://imo-lead-ai-pro.replit.app/loja
-
-Se tiver alguma questão, responda a este email.
+Se tiver alguma questao, responda a este email.
 
 Cumprimentos,
 Equipa ImoLead AI Pro`;
@@ -194,34 +189,40 @@ Equipa ImoLead AI Pro`;
   <div class="container">
     <div class="header">
       <h1>ImoLead AI Pro</h1>
-      <p>O seu período de teste terminou</p>
+      <p>O seu periodo de teste terminou</p>
     </div>
     <div class="content">
-      <p>Olá <strong>${customerName}</strong>,</p>
-      <p>O seu período de teste gratuito do ImoLead AI Pro terminou em <strong>${formattedDate}</strong>.</p>
-      <p>Para continuar a usar todas as funcionalidades da plataforma, subscreva um dos nossos planos:</p>
+      <p>Ola <strong>${customerName}</strong>,</p>
+      <p>O seu periodo de teste gratuito do ImoLead AI Pro terminou em <strong>${formattedDate}</strong>.</p>
+      <p>Para continuar a usar a plataforma com AI, pipeline e relatorios de mercado, subscreva um dos nossos planos:</p>
       
       <div class="plan">
-        <div class="plan-title">🏠 ImoLead Basic</div>
-        <div class="plan-price">€39/mês</div>
-        <p>Ideal para consultores individuais</p>
+        <div class="plan-title">ImoLead Starter</div>
+        <div class="plan-price">47 EUR/mes</div>
+        <p>451.20 EUR/ano com 20% de desconto fixo e relatorio de mercado local mensal</p>
       </div>
       
       <div class="plan">
-        <div class="plan-title">🏢 ImoLead Pro</div>
-        <div class="plan-price">€99.99/mês</div>
-        <p>Para equipas e agências imobiliárias</p>
+        <div class="plan-title">ImoLead Pro</div>
+        <div class="plan-price">97 EUR/mes</div>
+        <p>931.20 EUR/ano com 20% de desconto fixo e relatorios semanais de mercado</p>
+      </div>
+
+      <div class="plan">
+        <div class="plan-title">ImoLead Enterprise</div>
+        <div class="plan-price">297 EUR/mes</div>
+        <p>2851.20 EUR/ano com 20% de desconto fixo e relatorios executivos multi-mercado</p>
       </div>
       
       <center>
         <a href="https://imo-lead-ai-pro.replit.app/loja" class="btn">Ver Planos</a>
       </center>
       
-      <p style="margin-top: 30px;">Se tiver alguma questão, responda a este email.</p>
+      <p style="margin-top: 30px;">Se tiver alguma questao, responda a este email.</p>
       <p>Cumprimentos,<br><strong>Equipa ImoLead AI Pro</strong></p>
     </div>
     <div class="footer">
-      <p>© 2025 ImoLead AI Pro. Todos os direitos reservados.</p>
+      <p>� 2025 ImoLead AI Pro. Todos os direitos reservados.</p>
     </div>
   </div>
 </body>
@@ -282,3 +283,4 @@ export async function sendWhatsApp(
     };
   }
 }
+

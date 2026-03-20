@@ -1,25 +1,22 @@
-import { db } from "./db/index.js"
+import { createLead as createStoredLead } from "../storage";
 
-export async function createLead(data: any) {
+type LeadInput = {
+  name: string;
+  price: number;
+  area?: number;
+  location: string;
+};
 
-  const result = await db.execute(
-    `INSERT INTO leads (name, price, area, location)
-     VALUES ($1,$2,$3,$4)
-     RETURNING *`,
-    [
-      data.name,
-      data.price,
-      data.area,
-      data.location
-    ]
-  )
-
-  return result[0]
-}
-
-export async function getLeads() {
-
-  return db.execute(
-    `SELECT * FROM leads`
-  )
+export async function createLead(data: LeadInput) {
+  try {
+    return await createStoredLead({
+      name: data.name,
+      price: data.price,
+      area: data.area ?? null,
+      location: data.location,
+    });
+  } catch (error) {
+    console.error("Erro ao criar lead:", error);
+    throw new Error("Falha ao criar lead");
+  }
 }

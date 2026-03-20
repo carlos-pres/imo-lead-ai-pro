@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { storage } from "../storage.js";
-import type { Lead } from "@shared/schema";
+import { storage } from "../storage";
+type Lead = any;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
