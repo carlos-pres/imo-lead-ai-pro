@@ -26,6 +26,7 @@ const hasAiProvider =
     process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL &&
       process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY
   );
+const hasAuthConfig = Boolean(process.env.JWT_SECRET || process.env.SESSION_SECRET);
 const hasDatabaseConfig =
   Boolean(process.env.DATABASE_URL) ||
   Boolean(
@@ -105,6 +106,7 @@ app.get("/health", (_req: Request, res: Response) => {
     ok: true,
     service: "imolead-ai-pro",
     aiMode: hasAiProvider ? "hybrid" : "heuristic",
+    authConfigured: hasAuthConfig,
     databaseConfigured: hasDatabaseConfig,
     defaultPlanId,
     defaultPlanName: getPlanConfig(defaultPlanId).publicName,

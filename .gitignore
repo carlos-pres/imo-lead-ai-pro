@@ -5,6 +5,7 @@ client/dist
 .env
 .env.local
 .env.*
+!.env.example
 coverage
 client/client
 docs/*.pdf
