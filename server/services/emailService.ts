@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getOpenAIHeavyModel } from "../lib/aiModelConfig.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -53,7 +54,7 @@ ${channel === "email" ? '{"subject": "assunto aqui", "content": "mensagem aqui"}
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getOpenAIHeavyModel(),
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
       temperature: 0.7,
@@ -222,7 +223,7 @@ Equipa ImoLead AI Pro`;
       <p>Cumprimentos,<br><strong>Equipa ImoLead AI Pro</strong></p>
     </div>
     <div class="footer">
-      <p>© 2025 ImoLead AI Pro. Todos os direitos reservados.</p>
+      <p>Â© 2025 ImoLead AI Pro. Todos os direitos reservados.</p>
     </div>
   </div>
 </body>

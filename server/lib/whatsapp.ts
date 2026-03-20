@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getOpenAIHeavyModel } from "./aiModelConfig.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -38,15 +39,15 @@ export interface GenerateMessageParams {
 const DEFAULT_TEMPLATES: WhatsAppTemplate[] = [
   {
     id: "tpl-001",
-    name: "Primeiro Contacto - Imóvel Específico",
+    name: "Primeiro Contacto - ImÃ³vel EspecÃ­fico",
     category: "first_contact",
-    content: `Olá {{leadName}}! 👋
+    content: `OlÃ¡ {{leadName}}! ðŸ‘‹
 
-Vi o seu anúncio do imóvel em {{propertyLocation}} e fiquei interessado/a.
+Vi o seu anÃºncio do imÃ³vel em {{propertyLocation}} e fiquei interessado/a.
 
 {{propertyDescription}}
 
-Seria possível agendar uma visita? Estou disponível esta semana.
+Seria possÃ­vel agendar uma visita? Estou disponÃ­vel esta semana.
 
 Cumprimentos,
 {{agentName}}
@@ -60,9 +61,9 @@ ImoLead AI Pro`,
     category: "follow_up",
     content: `Bom dia {{leadName}}! 
 
-Enviei-lhe uma mensagem há alguns dias sobre o imóvel em {{propertyLocation}}.
+Enviei-lhe uma mensagem hÃ¡ alguns dias sobre o imÃ³vel em {{propertyLocation}}.
 
-Gostaria de saber se ainda está disponível e se podemos agendar uma visita.
+Gostaria de saber se ainda estÃ¡ disponÃ­vel e se podemos agendar uma visita.
 
 Aguardo o seu contacto.
 
@@ -75,16 +76,16 @@ Cumprimentos,
     id: "tpl-003",
     name: "Agendamento de Visita",
     category: "scheduling",
-    content: `Olá {{leadName}}!
+    content: `OlÃ¡ {{leadName}}!
 
-Confirmo a visita ao imóvel em {{propertyLocation}} para {{visitDate}} às {{visitTime}}.
+Confirmo a visita ao imÃ³vel em {{propertyLocation}} para {{visitDate}} Ã s {{visitTime}}.
 
-Endereço: {{propertyAddress}}
-Preço: {{propertyPrice}}
+EndereÃ§o: {{propertyAddress}}
+PreÃ§o: {{propertyPrice}}
 
-Estarei à sua espera. Se precisar de remarcar, avise-me com antecedência.
+Estarei Ã  sua espera. Se precisar de remarcar, avise-me com antecedÃªncia.
 
-Até breve!
+AtÃ© breve!
 {{agentName}}`,
     variables: ["leadName", "propertyLocation", "visitDate", "visitTime", "propertyAddress", "propertyPrice", "agentName"],
     isActive: true
@@ -95,13 +96,13 @@ Até breve!
     category: "offer",
     content: `Prezado/a {{leadName}},
 
-Agradeço a visita ao imóvel em {{propertyLocation}}.
+AgradeÃ§o a visita ao imÃ³vel em {{propertyLocation}}.
 
 Gostaria de apresentar uma proposta formal:
-• Valor: {{offerAmount}}
-• Condições: {{offerConditions}}
+â€¢ Valor: {{offerAmount}}
+â€¢ CondiÃ§Ãµes: {{offerConditions}}
 
-Esta proposta é válida por {{validityDays}} dias.
+Esta proposta Ã© vÃ¡lida por {{validityDays}} dias.
 
 Fico a aguardar a sua resposta.
 
@@ -112,20 +113,20 @@ Com os melhores cumprimentos,
   },
   {
     id: "tpl-005",
-    name: "Fecho de Negócio",
+    name: "Fecho de NegÃ³cio",
     category: "closing",
     content: `Caro/a {{leadName}},
 
-Excelente notícia! A proposta foi aceite. 🎉
+Excelente notÃ­cia! A proposta foi aceite. ðŸŽ‰
 
-Próximos passos:
+PrÃ³ximos passos:
 1. Contrato Promessa de Compra e Venda
-2. Escritura no notário
+2. Escritura no notÃ¡rio
 3. Entrega das chaves
 
-Vou enviar toda a documentação necessária por email.
+Vou enviar toda a documentaÃ§Ã£o necessÃ¡ria por email.
 
-Parabéns pela aquisição!
+ParabÃ©ns pela aquisiÃ§Ã£o!
 
 {{agentName}}
 ImoLead AI Pro`,
@@ -153,44 +154,44 @@ export class WhatsAppService {
 
   async generateAIMessage(params: GenerateMessageParams): Promise<string> {
     const messageTypeDescriptions: Record<string, string> = {
-      first_contact: "primeiro contacto para demonstrar interesse no imóvel",
-      follow_up: "follow-up após não ter recebido resposta",
-      scheduling: "agendamento de visita ao imóvel",
-      offer: "apresentação de proposta de compra",
-      closing: "fecho de negócio e próximos passos"
+      first_contact: "primeiro contacto para demonstrar interesse no imÃ³vel",
+      follow_up: "follow-up apÃ³s nÃ£o ter recebido resposta",
+      scheduling: "agendamento de visita ao imÃ³vel",
+      offer: "apresentaÃ§Ã£o de proposta de compra",
+      closing: "fecho de negÃ³cio e prÃ³ximos passos"
     };
 
     const urgencyLevel: Record<string, string> = {
-      quente: "muito interessado e pronto para avançar",
-      morno: "interessado mas ainda a avaliar opções",
+      quente: "muito interessado e pronto para avanÃ§ar",
+      morno: "interessado mas ainda a avaliar opÃ§Ãµes",
       frio: "contacto inicial para despertar interesse"
     };
 
-    const prompt = `Gera uma mensagem WhatsApp profissional em português de Portugal para um agente imobiliário.
+    const prompt = `Gera uma mensagem WhatsApp profissional em portuguÃªs de Portugal para um agente imobiliÃ¡rio.
 
 Contexto:
 - Nome do lead: ${params.leadName}
-- Imóvel: ${params.propertyDescription}
-- Localização: ${params.propertyLocation}
-- Preço: ${params.propertyPrice}
-- Nível de interesse do lead: ${urgencyLevel[params.leadStatus]}
+- ImÃ³vel: ${params.propertyDescription}
+- LocalizaÃ§Ã£o: ${params.propertyLocation}
+- PreÃ§o: ${params.propertyPrice}
+- NÃ­vel de interesse do lead: ${urgencyLevel[params.leadStatus]}
 - Tipo de mensagem: ${messageTypeDescriptions[params.messageType]}
 - Nome do agente: ${params.agentName || "Agente ImoLead"}
 
 Requisitos:
-- Mensagem curta e direta (máximo 200 palavras)
-- Tom profissional mas amigável
-- Usar português de Portugal (não brasileiro)
+- Mensagem curta e direta (mÃ¡ximo 200 palavras)
+- Tom profissional mas amigÃ¡vel
+- Usar portuguÃªs de Portugal (nÃ£o brasileiro)
 - Incluir call-to-action claro
-- Não usar emojis excessivos (máximo 1-2)
+- NÃ£o usar emojis excessivos (mÃ¡ximo 1-2)
 
-Responde APENAS com a mensagem, sem explicações adicionais.`;
+Responde APENAS com a mensagem, sem explicaÃ§Ãµes adicionais.`;
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: getOpenAIHeavyModel(),
         messages: [
-          { role: "system", content: "És um assistente especializado em comunicação imobiliária em Portugal. Geras mensagens WhatsApp profissionais e eficazes." },
+          { role: "system", content: "Ã‰s um assistente especializado em comunicaÃ§Ã£o imobiliÃ¡ria em Portugal. Geras mensagens WhatsApp profissionais e eficazes." },
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
@@ -206,9 +207,9 @@ Responde APENAS com a mensagem, sem explicações adicionais.`;
 
   private getDefaultMessage(params: GenerateMessageParams): string {
     const templates: Record<string, string> = {
-      first_contact: `Olá ${params.leadName}!
+      first_contact: `OlÃ¡ ${params.leadName}!
 
-Vi o seu anúncio do ${params.propertyDescription} em ${params.propertyLocation} (${params.propertyPrice}) e gostaria de saber mais informações.
+Vi o seu anÃºncio do ${params.propertyDescription} em ${params.propertyLocation} (${params.propertyPrice}) e gostaria de saber mais informaÃ§Ãµes.
 
 Podemos agendar uma visita?
 
@@ -217,23 +218,23 @@ ${params.agentName || "Agente ImoLead"}`,
       
       follow_up: `Bom dia ${params.leadName}!
 
-Gostaria de dar seguimento ao nosso contacto sobre o imóvel em ${params.propertyLocation}.
+Gostaria de dar seguimento ao nosso contacto sobre o imÃ³vel em ${params.propertyLocation}.
 
-Ainda está disponível? Continuo interessado/a.
+Ainda estÃ¡ disponÃ­vel? Continuo interessado/a.
 
 ${params.agentName || "Agente ImoLead"}`,
       
-      scheduling: `Olá ${params.leadName}!
+      scheduling: `OlÃ¡ ${params.leadName}!
 
-Gostaria de agendar uma visita ao imóvel em ${params.propertyLocation}.
+Gostaria de agendar uma visita ao imÃ³vel em ${params.propertyLocation}.
 
-Está disponível esta semana?
+EstÃ¡ disponÃ­vel esta semana?
 
 ${params.agentName || "Agente ImoLead"}`,
       
       offer: `Prezado/a ${params.leadName},
 
-Após a visita ao imóvel em ${params.propertyLocation}, gostaria de apresentar uma proposta.
+ApÃ³s a visita ao imÃ³vel em ${params.propertyLocation}, gostaria de apresentar uma proposta.
 
 Podemos conversar sobre os termos?
 
@@ -241,9 +242,9 @@ ${params.agentName || "Agente ImoLead"}`,
       
       closing: `Caro/a ${params.leadName},
 
-Parabéns! O negócio está fechado.
+ParabÃ©ns! O negÃ³cio estÃ¡ fechado.
 
-Vou enviar toda a documentação por email.
+Vou enviar toda a documentaÃ§Ã£o por email.
 
 ${params.agentName || "Agente ImoLead"}`
     };

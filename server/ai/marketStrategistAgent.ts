@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { storage } from "../storage";
+import { getOpenAIDefaultModel } from "../lib/aiModelConfig.js";
 type Lead = any;
 
 const openai = new OpenAI({
@@ -103,7 +104,7 @@ export async function analyzeMarketOpportunities(): Promise<MarketOpportunity[]>
     }
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: getOpenAIDefaultModel(),
       temperature: 0.2,
       messages: [
         {

@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getOpenAIHeavyModel } from "../lib/aiModelConfig.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -228,7 +229,7 @@ Responde em JSON:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getOpenAIHeavyModel(),
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
       temperature: 0.3,

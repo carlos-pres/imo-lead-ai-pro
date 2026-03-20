@@ -21,6 +21,9 @@
 - `DEFAULT_PLAN_ID=pro`
 - `APP_BASE_URL=https://<app>.up.railway.app`
 - `NODE_ENV=production`
+- `OPENAI_DEFAULT_MODEL=gpt-4o-mini`
+- `OPENAI_HEAVY_MODEL=gpt-4o`
+- `OPENROUTER_DEFAULT_MODEL=deepseek/deepseek-chat-v3.1`
 
 ## Checklist antes do deploy
 

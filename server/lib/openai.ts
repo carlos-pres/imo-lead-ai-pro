@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { getPlanPresentation, type PlanType } from "../core/plans.js";
+import { getPreferredChatModel } from "./aiModelConfig.js";
 async function retry<T>(
   fn: () => Promise<T>,
   options: {
@@ -73,7 +74,7 @@ export async function analyzeLeadWithAI(leadData: {
 }): Promise<LeadAnalysisResult> {
   // Prefer OpenRouter/DeepSeek, fallback to OpenAI, then default classification
   const client = openrouter || openai;
-  const model = openrouter ? "deepseek/deepseek-chat-v3.1" : "gpt-4o-mini";
+  const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
   if (!client) {
     console.warn("No AI provider configured, returning default classification");
@@ -227,7 +228,7 @@ interface ReportData {
 
 export async function generateReportWithAI(data: ReportData): Promise<string> {
   const client = openrouter || openai;
-  const model = openrouter ? "deepseek/deepseek-chat-v3.1" : "gpt-4o-mini";
+  const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
   if (!client) {
     return generateDefaultReport(data);
@@ -330,7 +331,7 @@ interface ConversationMessage {
 // Streaming version for faster perceived response
 export async function* chatWithAIStream(message: string, context?: ChatContext, conversationHistory?: ConversationMessage[]): AsyncGenerator<string> {
   const client = openrouter || openai;
-  const model = openrouter ? "deepseek/deepseek-chat-v3.1" : "gpt-4o-mini";
+  const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
   if (!client) {
     yield "O assistente IA está temporariamente indisponível.";
@@ -392,7 +393,7 @@ ESTILO: Portugues de Portugal, respostas curtas (<150 palavras), sugestoes proat
 
 export async function chatWithAI(message: string, context?: ChatContext, conversationHistory?: ConversationMessage[]): Promise<string> {
   const client = openrouter || openai;
-  const model = openrouter ? "deepseek/deepseek-chat-v3.1" : "gpt-4o-mini";
+  const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
   if (!client) {
     return "O assistente IA está temporariamente indisponível. Por favor, configure a API key nas definições para ativar todas as funcionalidades de IA.";
