@@ -804,6 +804,12 @@
   max-width: 66ch;
 }
 
+.header-subcopy {
+  margin: 8px 0 0;
+  color: #7a8798;
+  font-size: 0.92rem;
+}
+
 .header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -823,6 +829,11 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+.sidebar-button {
+  width: 100%;
+  margin-top: 16px;
 }
 
 .page-stack {
@@ -1212,9 +1223,85 @@
   cursor: pointer;
 }
 
+.select-plan-button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
 .select-plan-button.active {
   background: rgba(19, 34, 55, 0.92);
   color: #fffaf2;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  gap: 24px;
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.auth-hero,
+.auth-panel {
+  padding: 28px;
+}
+
+.auth-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 100%;
+}
+
+.auth-panel {
+  align-self: start;
+}
+
+.auth-form {
+  gap: 16px;
+}
+
+.auth-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-demo-card {
+  padding: 16px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  border-radius: 20px;
+  background: rgba(252, 249, 244, 0.84);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-demo-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(214, 132, 74, 0.42);
+  box-shadow: 0 16px 30px rgba(214, 132, 74, 0.12);
+}
+
+.auth-demo-card span {
+  display: block;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7f6f5c;
+}
+
+.auth-demo-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.auth-demo-card p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+  line-height: 1.5;
 }
 
 .pricing-section {
@@ -1261,7 +1348,8 @@
 }
 
 @media (max-width: 1220px) {
-  .app-shell {
+  .app-shell,
+  .auth-shell {
     grid-template-columns: 1fr;
   }
 
@@ -1276,6 +1364,7 @@
   .report-grid,
   .pricing-grid,
   .compact-grid,
+  .auth-demo-grid,
   .pipeline-layout,
   .report-hero,
   .signal-grid,
@@ -1300,7 +1389,8 @@
 }
 
 @media (max-width: 640px) {
-  .app-shell {
+  .app-shell,
+  .auth-shell {
     width: min(100% - 20px, 1440px);
     padding-top: 18px;
   }
@@ -1308,7 +1398,9 @@
   .shell-panel,
   .sidebar-panel,
   .brand-block,
-  .shell-header {
+  .shell-header,
+  .auth-hero,
+  .auth-panel {
     padding: 18px;
     border-radius: 22px;
   }

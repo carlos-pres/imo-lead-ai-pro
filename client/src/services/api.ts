@@ -1,8 +1,10 @@
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const SESSION_TOKEN_KEY = "imolead-session-token";
 
 export type PlanType = "basic" | "pro" | "custom";
 export type LeadStatus = "quente" | "morno" | "frio";
 export type RoutingBucket = "flagship" | "growth" | "nurture";
+export type WorkspaceRole = "admin" | "manager" | "consultant";
 export type PipelineStage =
   | "novo"
   | "qualificacao"
@@ -60,6 +62,23 @@ export type PlanCatalogEntry = {
   agentLabel: string;
   agentCapabilities: string[];
   features: string[];
+};
+
+export type WorkspaceUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage: string;
+  planId: PlanType;
+  planName: string;
+};
+
+export type AuthSession = {
+  token: string;
+  user: WorkspaceUser;
 };
 
 export type Lead = {
@@ -156,8 +175,52 @@ async function readJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+function getHeaders(headers?: HeadersInit) {
+  const token = getSessionToken();
+
+  if (!token) {
+    return headers;
+  }
+
+  return {
+    ...(headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+async function apiFetch(path: string, init?: RequestInit) {
+  return fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: getHeaders(init?.headers),
+  });
+}
+
+export function getSessionToken() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem(SESSION_TOKEN_KEY) || "";
+}
+
+export function setSessionToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SESSION_TOKEN_KEY, token);
+}
+
+export function clearSessionToken() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
 export async function getHealth() {
-  const response = await fetch(`${API_URL}/health`);
+  const response = await apiFetch("/health");
   return readJson<{
     ok: boolean;
     service: string;
@@ -169,27 +232,60 @@ export async function getHealth() {
 }
 
 export async function getLeads() {
-  const response = await fetch(`${API_URL}/api/leads`);
+  const response = await apiFetch("/api/leads");
   return readJson<Lead[]>(response);
 }
 
 export async function getStats() {
-  const response = await fetch(`${API_URL}/api/stats`);
+  const response = await apiFetch("/api/stats");
   return readJson<LeadStats>(response);
 }
 
 export async function getTeams() {
-  const response = await fetch(`${API_URL}/api/teams`);
+  const response = await apiFetch("/api/teams");
   return readJson<TeamOverview>(response);
 }
 
 export async function getPlans() {
-  const response = await fetch(`${API_URL}/api/plans`);
+  const response = await apiFetch("/api/plans");
   return readJson<PlanCatalogEntry[]>(response);
 }
 
+export async function login(email: string, password: string) {
+  const response = await apiFetch("/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const session = await readJson<AuthSession>(response);
+  setSessionToken(session.token);
+  return session;
+}
+
+export async function getCurrentSession() {
+  const token = getSessionToken();
+
+  if (!token) {
+    return null;
+  }
+
+  const response = await apiFetch("/api/auth/me");
+  const payload = await readJson<{ user: WorkspaceUser }>(response);
+  return {
+    token,
+    user: payload.user,
+  } satisfies AuthSession;
+}
+
+export function logout() {
+  clearSessionToken();
+}
+
 export async function createLead(data: CreateLeadInput) {
-  const response = await fetch(`${API_URL}/api/leads`, {
+  const response = await apiFetch("/api/leads", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -205,7 +301,7 @@ export async function createLead(data: CreateLeadInput) {
 }
 
 export async function updateLeadWorkflow(id: string, data: UpdateLeadWorkflowInput) {
-  const response = await fetch(`${API_URL}/api/leads/${id}/workflow`, {
+  const response = await apiFetch(`/api/leads/${id}/workflow`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",

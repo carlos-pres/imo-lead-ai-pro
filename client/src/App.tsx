@@ -3,13 +3,18 @@ import type { FormEvent } from "react";
 import heroImg from "./assets/hero.png";
 import "./App.css";
 import {
+  clearSessionToken,
   createLead,
+  getCurrentSession,
   getHealth,
   getLeads,
   getPlans,
   getStats,
   getTeams,
+  login,
+  logout,
   updateLeadWorkflow,
+  type AuthSession,
   type CreateLeadInput,
   type Lead,
   type LeadStats,
@@ -19,11 +24,16 @@ import {
   type RoutingBucket,
   type TeamOverview,
   type UpdateLeadWorkflowInput,
+  type WorkspaceRole,
 } from "./services/api";
 
 type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
+type LoginForm = {
+  email: string;
+  password: string;
+};
 
 type MarketInsight = {
   market: string;
@@ -108,6 +118,27 @@ const COUNTRY_OPTIONS: Array<{
   { code: "FR", label: "Franca", language: "fr-FR" },
   { code: "IT", label: "Italia", language: "it-IT" },
 ];
+
+const DEMO_ACCESS = [
+  {
+    role: "Admin",
+    email: "carla@imolead.ai",
+    password: "Demo123!",
+    description: "Visao total da rede, pricing e desks enterprise.",
+  },
+  {
+    role: "Manager",
+    email: "lucas@imolead.ai",
+    password: "Demo123!",
+    description: "Desk Europa com foco em Iberia e expansao.",
+  },
+  {
+    role: "Consultor",
+    email: "ana@imolead.ai",
+    password: "Demo123!",
+    description: "Operacao comercial limitada a equipa e carteira propria.",
+  },
+] as const;
 
 function isViewId(value: string): value is ViewId {
   return NAV_ITEMS.some((item) => item.id === value);
@@ -196,6 +227,22 @@ function formatLeadLimit(limit: number) {
   }
 
   return `Ate ${limit} leads/mes`;
+}
+
+function getRoleLabel(role: WorkspaceRole | undefined) {
+  if (role === "admin") {
+    return "Administrador";
+  }
+
+  if (role === "manager") {
+    return "Manager";
+  }
+
+  if (role === "consultant") {
+    return "Consultor";
+  }
+
+  return "Workspace";
 }
 
 function deriveStats(leads: Lead[]): LeadStats {
@@ -315,6 +362,13 @@ function App() {
   const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
   const [billingMode, setBillingMode] = useState<BillingMode>("month");
   const [activePlanId, setActivePlanId] = useState<PlanType>("pro");
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [authBooting, setAuthBooting] = useState(true);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [loginForm, setLoginForm] = useState<LoginForm>({
+    email: DEMO_ACCESS[0].email,
+    password: DEMO_ACCESS[0].password,
+  });
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
@@ -366,11 +420,47 @@ function App() {
       return;
     }
 
+    if (session) {
+      return;
+    }
+
     window.localStorage.setItem("imolead-active-plan", activePlanId);
-  }, [activePlanId]);
+  }, [activePlanId, session]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    setActivePlanId(session.user.planId);
+    setForm((current) => ({
+      ...current,
+      preferredLanguage: session.user.preferredLanguage || current.preferredLanguage,
+    }));
+  }, [session]);
 
   async function bootstrap() {
-    await Promise.all([loadHealth(), loadWorkspace()]);
+    await Promise.all([loadHealth(), loadPlansCatalog()]);
+
+    try {
+      const currentSession = await getCurrentSession();
+
+      if (currentSession) {
+        startTransition(() => {
+          setSession(currentSession);
+          setActivePlanId(currentSession.user.planId);
+        });
+        await loadWorkspace();
+      }
+    } catch (sessionError) {
+      clearSessionToken();
+      setError(
+        sessionError instanceof Error ? sessionError.message : "Nao foi possivel recuperar a sessao"
+      );
+    } finally {
+      setAuthBooting(false);
+      setLoading(false);
+    }
   }
 
   async function loadHealth() {
@@ -384,9 +474,20 @@ function App() {
       setAiMode(health.aiMode);
       setDatabaseConfigured(health.databaseConfigured);
       setApiState(health.ok ? "API online" : "API com alerta");
-      setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : health.defaultPlanId);
+      if (!session) {
+        setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : health.defaultPlanId);
+      }
     } catch {
       setApiState("API offline");
+    }
+  }
+
+  async function loadPlansCatalog() {
+    try {
+      const planData = await getPlans();
+      setPlans(planData);
+    } catch (planError) {
+      setError(planError instanceof Error ? planError.message : "Falha ao carregar planos");
     }
   }
 
@@ -395,25 +496,67 @@ function App() {
       setLoading(true);
       setError("");
 
-      const [leadData, statsData, teamData, planData] = await Promise.all([
+      const [leadData, statsData, teamData] = await Promise.all([
         getLeads(),
         getStats(),
         getTeams(),
-        getPlans(),
       ]);
 
       startTransition(() => {
         setLeads(leadData);
         setStats(statsData);
         setTeamOverview(teamData);
-        setPlans(planData);
         setWorkflowDrafts(buildWorkflowDrafts(leadData));
       });
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Falha ao carregar workspace");
+      const message =
+        loadError instanceof Error ? loadError.message : "Falha ao carregar workspace";
+
+      if (/Sessao/i.test(message)) {
+        clearSessionToken();
+        setSession(null);
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthSubmitting(true);
+    setError("");
+
+    try {
+      const nextSession = await login(loginForm.email, loginForm.password);
+
+      startTransition(() => {
+        setSession(nextSession);
+        setActivePlanId(nextSession.user.planId);
+      });
+
+      await loadWorkspace();
+      navigateTo("dashboard");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Falha ao iniciar sessao");
+    } finally {
+      setAuthSubmitting(false);
+      setAuthBooting(false);
+    }
+  }
+
+  function handleLogout() {
+    logout();
+    startTransition(() => {
+      setSession(null);
+      setLeads([]);
+      setStats(null);
+      setTeamOverview(null);
+      setWorkflowDrafts({});
+      setLoading(false);
+      setActiveView("dashboard");
+    });
   }
 
   function navigateTo(view: ViewId) {
@@ -432,7 +575,7 @@ function App() {
     try {
       const created = await createLead({
         ...form,
-        planId: activePlanId,
+        planId: session?.user.planId || activePlanId,
       });
       const nextLeads = [created, ...leads];
 
@@ -529,6 +672,8 @@ function App() {
   const marketInsights = buildMarketInsights(leads);
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
+  const canReassignOwners = session?.user.role !== "consultant";
+  const canSwitchPlan = !session;
 
   const visibleLeads = leads.filter((lead) => {
     const term = deferredSearch.trim().toLowerCase();
@@ -1097,6 +1242,7 @@ function App() {
                             <label>
                               Owner
                               <select
+                                disabled={!canReassignOwners}
                                 value={draft.assignedOwner || lead.assignedOwner}
                                 onChange={(event) =>
                                   handleWorkflowChange(lead.id, {
@@ -1457,9 +1603,16 @@ function App() {
                     <button
                       className={plan.id === activePlanId ? "select-plan-button active" : "select-plan-button"}
                       type="button"
+                      disabled={!canSwitchPlan}
                       onClick={() => setActivePlanId(plan.id)}
                     >
-                      {plan.id === activePlanId ? "Plano ativo no workspace" : "Usar neste workspace"}
+                      {session
+                        ? plan.id === activePlanId
+                          ? "Plano do utilizador"
+                          : "Bloqueado pelo perfil"
+                        : plan.id === activePlanId
+                          ? "Plano ativo no workspace"
+                          : "Usar neste workspace"}
                     </button>
                   </div>
 
@@ -1508,6 +1661,107 @@ function App() {
     );
   }
 
+  function renderLoginView() {
+    return (
+      <main className="auth-shell">
+        <section className="auth-hero shell-panel">
+          <p className="eyebrow">ImoLead AI Pro Enterprise</p>
+          <h1>Entrar no cockpit comercial</h1>
+          <p className="hero-text">
+            Login por perfil para demonstrar desks, permissoes e comportamento do agente AI
+            conforme o plano e a loja.
+          </p>
+
+          <div className="hero-actions">
+            <div className="status-chip">{apiState}</div>
+            <div className="status-chip muted">
+              AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
+            </div>
+            <div className="status-chip muted">
+              {databaseConfigured ? "DB configurada" : "Fallback local ativo"}
+            </div>
+          </div>
+
+          <div className="auth-demo-grid">
+            {DEMO_ACCESS.map((entry) => (
+              <button
+                className="auth-demo-card"
+                key={entry.email}
+                type="button"
+                onClick={() =>
+                  setLoginForm({
+                    email: entry.email,
+                    password: entry.password,
+                  })
+                }
+              >
+                <span>{entry.role}</span>
+                <strong>{entry.email}</strong>
+                <p>{entry.description}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className="plan-preview-list">
+            {plans.map((plan) => (
+              <article
+                className={plan.id === activePlanId ? "plan-preview active" : "plan-preview"}
+                key={plan.id}
+              >
+                <span>{plan.publicName}</span>
+                <strong>{plan.agentLabel}</strong>
+                <p>{plan.recommendedFor}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="auth-panel shell-panel">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Autenticacao</p>
+              <h3>Workspace com controlo por perfil</h3>
+            </div>
+          </div>
+
+          <form className="lead-form auth-form" onSubmit={handleLogin}>
+            <label>
+              Email
+              <input
+                value={loginForm.email}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder="carla@imolead.ai"
+                required
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                value={loginForm.password}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, password: event.target.value }))
+                }
+                placeholder="Demo123!"
+                required
+              />
+            </label>
+
+            {error ? <p className="feedback error">{error}</p> : null}
+            {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
+
+            <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
+              {authSubmitting ? "A entrar..." : "Entrar no workspace"}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   function renderActiveView() {
     if (activeView === "pipeline") {
       return renderPipelineView();
@@ -1526,6 +1780,10 @@ function App() {
     }
 
     return renderDashboardView();
+  }
+
+  if (!session) {
+    return renderLoginView();
   }
 
   return (
@@ -1553,6 +1811,20 @@ function App() {
         </nav>
 
         <section className="sidebar-panel">
+          <span>Workspace</span>
+          <strong>{session.user.name}</strong>
+          <div className="sidebar-meta">
+            <p>{getRoleLabel(session.user.role)}</p>
+            <p>{session.user.officeName}</p>
+            <p>{session.user.teamName}</p>
+            <p>{session.user.email}</p>
+          </div>
+          <button className="ghost-button sidebar-button" type="button" onClick={handleLogout}>
+            Terminar sessao
+          </button>
+        </section>
+
+        <section className="sidebar-panel">
           <span>Status da plataforma</span>
           <strong>{apiState}</strong>
           <div className="sidebar-meta">
@@ -1565,9 +1837,9 @@ function App() {
 
         <section className="sidebar-panel">
           <span>Plano comercial</span>
-          <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
+          <strong>{session.user.planName}</strong>
           <div className="sidebar-meta">
-            <p>{activePlan?.agentLabel || "AI Copilot"}</p>
+            <p>{activePlan?.agentLabel || session.user.planName}</p>
             <p>{activePlan?.reportsLabel || "Relatorios semanais"}</p>
             <p>{activePlan?.annualDiscountPercent || 20}% desconto anual fixo</p>
             <p>{activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}</p>
@@ -1581,6 +1853,9 @@ function App() {
             <p className="eyebrow">{viewMeta.eyebrow}</p>
             <h2>{viewMeta.label}</h2>
             <p className="header-copy">{viewMeta.description}</p>
+            <p className="header-subcopy">
+              {getRoleLabel(session.user.role)} em {session.user.officeName} · {session.user.teamName}
+            </p>
           </div>
 
           <div className="header-actions">

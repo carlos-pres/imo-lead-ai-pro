@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { randomUUID } from "crypto";
 import { Pool, PoolConfig } from "pg";
+import bcrypt from "bcrypt";
 import { runLeadAgent } from "./ai/agentService.js";
 import { buildHeuristicLeadIntelligence, type RoutingBucket } from "./ai/enterpriseLeadAgent.js";
 import {
@@ -10,12 +11,41 @@ import {
   resolvePlanId,
   type PlanType,
 } from "./core/plans.js";
+import { comparePassword } from "./auth.js";
 
 export type Customer = {
   id: string;
   name: string;
   email: string;
   googleAccessToken?: string;
+};
+
+export type WorkspaceRole = "admin" | "manager" | "consultant";
+
+export type WorkspaceUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage: string;
+  planId: PlanType;
+  planName: string;
+};
+
+type WorkspaceUserRecord = WorkspaceUser & {
+  passwordHash: string;
+};
+
+export type WorkspaceScope = {
+  userId: string;
+  userName: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage: string;
+  planId: PlanType;
 };
 
 export type LeadStatus = "quente" | "morno" | "frio";
@@ -151,6 +181,24 @@ type LeadBase = {
 const LEAD_INTELLIGENCE_VERSION = 4;
 const fallbackCustomers: Customer[] = [];
 
+function createPasswordHash(password: string) {
+  return bcrypt.hashSync(password, 10);
+}
+
+function sanitizeWorkspaceUser(user: WorkspaceUserRecord): WorkspaceUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    officeName: user.officeName,
+    teamName: user.teamName,
+    preferredLanguage: user.preferredLanguage,
+    planId: user.planId,
+    planName: user.planName,
+  };
+}
+
 const fallbackOffices: Office[] = [
   {
     id: "office-lisboa",
@@ -257,6 +305,45 @@ const fallbackTeamMembers: TeamMember[] = [
     officeName: "Lisboa HQ",
     languages: ["pt-PT", "en-GB"],
     marketFocus: ["Portugal", "Nurture"],
+  },
+];
+
+const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
+  {
+    id: "workspace-user-admin",
+    name: "Carla Santos",
+    email: "carla@imolead.ai",
+    role: "admin",
+    officeName: "Lisboa HQ",
+    teamName: "Prime Desk Lisboa",
+    preferredLanguage: "pt-PT",
+    planId: "custom",
+    planName: getPlanConfig("custom").publicName,
+    passwordHash: createPasswordHash("Demo123!"),
+  },
+  {
+    id: "workspace-user-manager",
+    name: "Lucas Martin",
+    email: "lucas@imolead.ai",
+    role: "manager",
+    officeName: "Europe Expansion Desk",
+    teamName: "Growth Europe",
+    preferredLanguage: "es-ES",
+    planId: "pro",
+    planName: getPlanConfig("pro").publicName,
+    passwordHash: createPasswordHash("Demo123!"),
+  },
+  {
+    id: "workspace-user-consultant",
+    name: "Ana Pires",
+    email: "ana@imolead.ai",
+    role: "consultant",
+    officeName: "Lisboa HQ",
+    teamName: "Inside Sales Nurture",
+    preferredLanguage: "pt-PT",
+    planId: "basic",
+    planName: getPlanConfig("basic").publicName,
+    passwordHash: createPasswordHash("Demo123!"),
   },
 ];
 
@@ -374,6 +461,90 @@ function assertPlanCoverage(planId: PlanType, countryCode: string) {
   }
 
   throw new Error(getPlanUpgradeMessage(planId, countryCode));
+}
+
+function hasLeadAccess(lead: Lead, scope?: WorkspaceScope) {
+  if (!scope || scope.role === "admin") {
+    return true;
+  }
+
+  if (scope.role === "manager") {
+    return lead.officeName === scope.officeName;
+  }
+
+  return (
+    lead.officeName === scope.officeName &&
+    (lead.assignedTeam === scope.teamName || lead.assignedOwner === scope.userName)
+  );
+}
+
+function canManageLead(lead: Lead, scope?: WorkspaceScope) {
+  if (!scope) {
+    return true;
+  }
+
+  if (scope.role === "admin") {
+    return true;
+  }
+
+  if (scope.role === "manager") {
+    return lead.officeName === scope.officeName;
+  }
+
+  return lead.assignedOwner === scope.userName || lead.assignedTeam === scope.teamName;
+}
+
+function filterLeadsForScope(leads: Lead[], scope?: WorkspaceScope) {
+  return leads.filter((lead) => hasLeadAccess(lead, scope));
+}
+
+function filterTeamOverviewForScope(overview: TeamOverview, scope?: WorkspaceScope) {
+  if (!scope || scope.role === "admin") {
+    return overview;
+  }
+
+  const offices = overview.offices.filter((office) => office.name === scope.officeName);
+  const members = overview.members.filter((member) =>
+    scope.role === "manager"
+      ? member.officeName === scope.officeName
+      : member.officeName === scope.officeName && member.teamName === scope.teamName
+  );
+
+  return {
+    offices,
+    members,
+    markets: [...new Set(offices.flatMap((office) => office.coverageMarkets))],
+    languages: [...new Set(members.flatMap((member) => member.languages))],
+  } satisfies TeamOverview;
+}
+
+function buildLeadStatsSnapshot(leads: Lead[]) {
+  const teams = new Set(leads.map((lead) => lead.assignedTeam));
+  const offices = new Set(leads.map((lead) => lead.officeName));
+  const markets = new Set(leads.map((lead) => lead.market));
+  const today = new Date().toISOString().slice(0, 10);
+
+  return {
+    total: leads.length,
+    quente: leads.filter((lead) => lead.status === "quente").length,
+    morno: leads.filter((lead) => lead.status === "morno").length,
+    frio: leads.filter((lead) => lead.status === "frio").length,
+    average_ai_score:
+      leads.length > 0
+        ? Math.round(leads.reduce((sum, lead) => sum + lead.aiScore, 0) / leads.length)
+        : 0,
+    flagship_queue: leads.filter((lead) => lead.routingBucket === "flagship").length,
+    growth_queue: leads.filter((lead) => lead.routingBucket === "growth").length,
+    nurture_queue: leads.filter((lead) => lead.routingBucket === "nurture").length,
+    urgent_actions: leads.filter((lead) => lead.slaHours <= 8).length,
+    active_teams: teams.size,
+    active_offices: offices.size,
+    overdue_followups: leads.filter((lead) =>
+      lead.followUpAt ? new Date(lead.followUpAt).getTime() <= Date.now() : false
+    ).length,
+    contacted_today: leads.filter((lead) => lead.lastContactAt?.slice(0, 10) === today).length,
+    european_markets: markets.size,
+  } satisfies LeadStats;
 }
 
 function getOfficeForLead(location: string, countryCode: string) {
@@ -543,7 +714,15 @@ function buildNextStep(stage: PipelineStage, routingBucket: RoutingBucket, statu
   return "enriquecer dados e preparar nova tentativa";
 }
 
-function createSeedLead(seed: CreateLeadInput & { createdAt: string }) {
+function createSeedLead(
+  seed: CreateLeadInput & {
+    createdAt: string;
+    assignedTeam?: string;
+    assignedOwner?: string;
+    officeName?: string;
+    pipelineStage?: PipelineStage;
+  }
+) {
   const planId = resolvePlanId(seed.planId);
   const plan = getPlanConfig(planId);
   const property = seed.property || `Imovel em ${seed.location}`;
@@ -561,15 +740,18 @@ function createSeedLead(seed: CreateLeadInput & { createdAt: string }) {
   const preferredLanguage = getPreferredLanguage(countryCode, seed.preferredLanguage);
   const market = getMarketName(countryCode, seed.location);
   const office = getOfficeForLead(seed.location, countryCode);
-  const assignedTeam = assignTeam(seed.location, intelligence.routingBucket, countryCode);
+  const officeName = seed.officeName || office.name;
+  const assignedTeam =
+    seed.assignedTeam || assignTeam(seed.location, intelligence.routingBucket, countryCode);
   const assignedOwner = pickOwner(
     assignedTeam,
-    office.name,
+    officeName,
     preferredLanguage,
     seed.name
   );
   const status = seed.status || intelligence.status;
-  const pipelineStage = getInitialPipelineStage(status, intelligence.routingBucket);
+  const pipelineStage =
+    seed.pipelineStage || getInitialPipelineStage(status, intelligence.routingBucket);
 
   return {
     id: seed.id || randomUUID(),
@@ -586,8 +768,8 @@ function createSeedLead(seed: CreateLeadInput & { createdAt: string }) {
     routingBucket: intelligence.routingBucket,
     slaHours: intelligence.slaHours,
     assignedTeam,
-    assignedOwner,
-    officeName: office.name,
+    assignedOwner: seed.assignedOwner || assignedOwner,
+    officeName,
     pipelineStage,
     nextStep: buildNextStep(pipelineStage, intelligence.routingBucket, status),
     followUpAt: addHours(seed.createdAt, intelligence.slaHours),
@@ -668,6 +850,24 @@ const fallbackLeads: Lead[] = [
     countryCode: "ES",
     preferredLanguage: "es-ES",
     createdAt: new Date("2026-03-19T11:45:00.000Z").toISOString(),
+  }),
+  createSeedLead({
+    id: "lead-5",
+    name: "Sofia Nunes",
+    property: "Apartamento T1 para venda gradual",
+    location: "Lisboa",
+    price: 185000,
+    area: 51,
+    source: "Manual",
+    contact: "sofia@example.com",
+    notes: "Carteira de nurture para inside sales com contexto inicial ja recolhido.",
+    status: "frio",
+    planId: "basic",
+    officeName: "Lisboa HQ",
+    assignedTeam: "Inside Sales Nurture",
+    assignedOwner: "Ana Pires",
+    pipelineStage: "nurture",
+    createdAt: new Date("2026-03-19T16:10:00.000Z").toISOString(),
   }),
 ];
 
@@ -892,6 +1092,42 @@ async function seedLeads(activePool: Pool) {
   }
 }
 
+async function seedWorkspaceUsers(activePool: Pool) {
+  for (const user of fallbackWorkspaceUsers) {
+    await activePool.query(
+      `
+        INSERT INTO workspace_users (
+          id, name, email, password_hash, role, office_name, team_name,
+          preferred_language, plan_id, plan_name
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (email) DO UPDATE
+        SET
+          name = EXCLUDED.name,
+          password_hash = EXCLUDED.password_hash,
+          role = EXCLUDED.role,
+          office_name = EXCLUDED.office_name,
+          team_name = EXCLUDED.team_name,
+          preferred_language = EXCLUDED.preferred_language,
+          plan_id = EXCLUDED.plan_id,
+          plan_name = EXCLUDED.plan_name
+      `,
+      [
+        user.id,
+        user.name,
+        user.email,
+        user.passwordHash,
+        user.role,
+        user.officeName,
+        user.teamName,
+        user.preferredLanguage,
+        user.planId,
+        user.planName,
+      ]
+    );
+  }
+}
+
 async function syncLeadIntelligence(activePool: Pool) {
   const result = await activePool.query(
     `
@@ -1002,6 +1238,22 @@ async function initializeDatabase() {
     `);
 
     await activePool.query(`
+      CREATE TABLE IF NOT EXISTS workspace_users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL,
+        office_name TEXT NOT NULL,
+        team_name TEXT NOT NULL,
+        preferred_language TEXT NOT NULL DEFAULT 'pt-PT',
+        plan_id TEXT NOT NULL DEFAULT 'pro',
+        plan_name TEXT NOT NULL DEFAULT 'ImoLead Pro',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await activePool.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -1077,6 +1329,7 @@ async function initializeDatabase() {
       ON leads (follow_up_at ASC)
     `);
 
+    await seedWorkspaceUsers(activePool);
     await seedLeads(activePool);
     await syncLeadIntelligence(activePool);
     return true;
@@ -1195,16 +1448,123 @@ export async function updateCustomer(id: string, data: Partial<Customer>) {
   );
 }
 
-export async function getTeamOverview() {
+function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
+  const planId = resolvePlanId(row.plan_id);
+
   return {
+    id: String(row.id),
+    name: String(row.name),
+    email: String(row.email),
+    role: String(row.role) as WorkspaceRole,
+    officeName: String(row.office_name),
+    teamName: String(row.team_name),
+    preferredLanguage: String(row.preferred_language || "pt-PT"),
+    planId,
+    planName: String(row.plan_name || getPlanConfig(planId).publicName),
+    passwordHash: String(row.password_hash),
+  };
+}
+
+export async function getWorkspaceUserById(id: string) {
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          SELECT id, name, email, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name
+          FROM workspace_users
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [id]
+      );
+
+      const row = result.rows[0];
+      return row ? sanitizeWorkspaceUser(mapWorkspaceUserRow(row)) : null;
+    },
+    async () => {
+      const user = fallbackWorkspaceUsers.find((entry) => entry.id === id);
+      return user ? sanitizeWorkspaceUser(user) : null;
+    }
+  );
+}
+
+export async function listWorkspaceUsers(scope?: WorkspaceScope) {
+  const users = await useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          SELECT id, name, email, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name
+          FROM workspace_users
+          ORDER BY name ASC
+        `
+      );
+
+      return result.rows.map((row) => sanitizeWorkspaceUser(mapWorkspaceUserRow(row)));
+    },
+    async () => fallbackWorkspaceUsers.map((user) => sanitizeWorkspaceUser(user))
+  );
+
+  if (!scope || scope.role === "admin") {
+    return users;
+  }
+
+  return users.filter((user) =>
+    scope.role === "manager"
+      ? user.officeName === scope.officeName
+      : user.id === scope.userId || user.teamName === scope.teamName
+  );
+}
+
+export async function authenticateWorkspaceUser(email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const record = await useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          SELECT id, name, email, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name
+          FROM workspace_users
+          WHERE LOWER(email) = $1
+          LIMIT 1
+        `,
+        [normalizedEmail]
+      );
+
+      const row = result.rows[0];
+      return row ? mapWorkspaceUserRow(row) : null;
+    },
+    async () =>
+      fallbackWorkspaceUsers.find((user) => user.email.toLowerCase() === normalizedEmail) || null
+  );
+
+  if (!record) {
+    return null;
+  }
+
+  const passwordMatches = await comparePassword(password, record.passwordHash);
+
+  if (!passwordMatches) {
+    return null;
+  }
+
+  return sanitizeWorkspaceUser(record);
+}
+
+export async function getTeamOverview(scope?: WorkspaceScope) {
+  const overview = {
     offices: fallbackOffices,
     members: fallbackTeamMembers,
     markets: [...new Set(fallbackOffices.flatMap((office) => office.coverageMarkets))],
     languages: [...new Set(fallbackTeamMembers.flatMap((member) => member.languages))],
   } satisfies TeamOverview;
+
+  return filterTeamOverviewForScope(overview, scope);
 }
 
-export async function getAllLeads() {
+export async function getAllLeads(scope?: WorkspaceScope) {
   return useDatabase(
     async (activePool) => {
       const result = await activePool.query(
@@ -1221,10 +1581,10 @@ export async function getAllLeads() {
         `
       );
 
-      return result.rows.map(mapLeadRow);
+      return filterLeadsForScope(result.rows.map(mapLeadRow), scope);
     },
     async () =>
-      [...fallbackLeads].sort((left, right) => {
+      filterLeadsForScope([...fallbackLeads], scope).sort((left, right) => {
         const leftDate = left.followUpAt || left.createdAt;
         const rightDate = right.followUpAt || right.createdAt;
         return leftDate.localeCompare(rightDate);
@@ -1232,8 +1592,8 @@ export async function getAllLeads() {
   );
 }
 
-export async function createLead(data: CreateLeadInput) {
-  const planId = resolvePlanId(data.planId);
+export async function createLead(data: CreateLeadInput, scope?: WorkspaceScope) {
+  const planId = resolvePlanId(scope?.planId || data.planId);
   const plan = getPlanConfig(planId);
   const baseLead = {
     id: data.id || randomUUID(),
@@ -1258,6 +1618,25 @@ export async function createLead(data: CreateLeadInput) {
   const computedStatus = data.status
     ? normalizeLeadStatus(data.status, data.price)
     : analysis.status;
+  const detectedOffice = getOfficeForLead(baseLead.location, countryCode);
+  const computedTeam = assignTeam(baseLead.location, analysis.routingBucket, countryCode);
+  const officeName =
+    scope && scope.role !== "admin" ? scope.officeName : detectedOffice.name;
+  const assignedTeam =
+    scope?.role === "consultant"
+      ? scope.teamName
+      : scope?.role === "manager" && detectedOffice.name !== scope.officeName
+        ? scope.teamName
+        : computedTeam;
+  const assignedOwner =
+    scope?.role === "consultant"
+      ? scope.userName
+      : pickOwner(
+          assignedTeam,
+          officeName,
+          getPreferredLanguage(countryCode, baseLead.preferredLanguage),
+          baseLead.name
+        );
   const lead: Lead = {
     ...baseLead,
     status: computedStatus,
@@ -1266,14 +1645,9 @@ export async function createLead(data: CreateLeadInput) {
     recommendedAction: analysis.recommendedAction,
     routingBucket: analysis.routingBucket,
     slaHours: analysis.slaHours,
-    assignedTeam: assignTeam(baseLead.location, analysis.routingBucket, countryCode),
-    assignedOwner: pickOwner(
-      assignTeam(baseLead.location, analysis.routingBucket, countryCode),
-      getOfficeForLead(baseLead.location, countryCode).name,
-      getPreferredLanguage(countryCode, baseLead.preferredLanguage),
-      baseLead.name
-    ),
-    officeName: getOfficeForLead(baseLead.location, countryCode).name,
+    assignedTeam,
+    assignedOwner,
+    officeName,
     pipelineStage: getInitialPipelineStage(computedStatus, analysis.routingBucket),
     nextStep: buildNextStep(
       getInitialPipelineStage(computedStatus, analysis.routingBucket),
@@ -1380,7 +1754,11 @@ export async function createLead(data: CreateLeadInput) {
   );
 }
 
-export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowInput) {
+export async function updateLeadWorkflow(
+  id: string,
+  input: UpdateLeadWorkflowInput,
+  scope?: WorkspaceScope
+) {
   return useDatabase(
     async (activePool) => {
       const currentResult = await activePool.query(
@@ -1406,9 +1784,16 @@ export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowIn
       }
 
       const currentLead = mapLeadRow(currentRow);
+
+      if (!canManageLead(currentLead, scope)) {
+        throw new Error("Sem permissao para gerir este lead.");
+      }
+
       const nextStage = input.pipelineStage || currentLead.pipelineStage;
       const nextOwner =
-        normalizeOptionalString(input.assignedOwner) || currentLead.assignedOwner;
+        scope?.role === "consultant"
+          ? currentLead.assignedOwner
+          : normalizeOptionalString(input.assignedOwner) || currentLead.assignedOwner;
       const nextStep =
         normalizeOptionalString(input.nextStep) ||
         buildNextStep(nextStage, currentLead.routingBucket, currentLead.status);
@@ -1451,9 +1836,15 @@ export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowIn
         return null;
       }
 
+      if (!canManageLead(target, scope)) {
+        throw new Error("Sem permissao para gerir este lead.");
+      }
+
       target.pipelineStage = input.pipelineStage || target.pipelineStage;
       target.assignedOwner =
-        normalizeOptionalString(input.assignedOwner) || target.assignedOwner;
+        scope?.role === "consultant"
+          ? target.assignedOwner
+          : normalizeOptionalString(input.assignedOwner) || target.assignedOwner;
       target.nextStep =
         normalizeOptionalString(input.nextStep) ||
         buildNextStep(target.pipelineStage, target.routingBucket, target.status);
@@ -1471,84 +1862,9 @@ export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowIn
   );
 }
 
-export async function getLeadStats() {
-  return useDatabase(
-    async (activePool) => {
-      const result = await activePool.query(
-        `
-          SELECT
-            COUNT(*)::int AS total,
-            COUNT(*) FILTER (WHERE status = 'quente')::int AS quente,
-            COUNT(*) FILTER (WHERE status = 'morno')::int AS morno,
-            COUNT(*) FILTER (WHERE status = 'frio')::int AS frio,
-            COALESCE(ROUND(AVG(ai_score))::int, 0) AS average_ai_score,
-            COUNT(*) FILTER (WHERE routing_bucket = 'flagship')::int AS flagship_queue,
-            COUNT(*) FILTER (WHERE routing_bucket = 'growth')::int AS growth_queue,
-            COUNT(*) FILTER (WHERE routing_bucket = 'nurture')::int AS nurture_queue,
-            COUNT(*) FILTER (WHERE sla_hours <= 8)::int AS urgent_actions,
-            COUNT(DISTINCT assigned_team)::int AS active_teams,
-            COUNT(DISTINCT office_name)::int AS active_offices,
-            COUNT(*) FILTER (WHERE follow_up_at IS NOT NULL AND follow_up_at <= NOW())::int AS overdue_followups,
-            COUNT(*) FILTER (WHERE last_contact_at IS NOT NULL AND DATE(last_contact_at) = CURRENT_DATE)::int AS contacted_today,
-            COUNT(DISTINCT market)::int AS european_markets
-          FROM leads
-        `
-      );
-
-      return (
-        result.rows[0] || {
-          total: 0,
-          quente: 0,
-          morno: 0,
-          frio: 0,
-          average_ai_score: 0,
-          flagship_queue: 0,
-          growth_queue: 0,
-          nurture_queue: 0,
-          urgent_actions: 0,
-          active_teams: 0,
-          active_offices: 0,
-          overdue_followups: 0,
-          contacted_today: 0,
-          european_markets: 0,
-        }
-      ) as LeadStats;
-    },
-    async () => {
-      const allLeads = await getAllLeads();
-      const teams = new Set(allLeads.map((lead) => lead.assignedTeam));
-      const offices = new Set(allLeads.map((lead) => lead.officeName));
-      const markets = new Set(allLeads.map((lead) => lead.market));
-
-      return {
-        total: allLeads.length,
-        quente: allLeads.filter((lead) => lead.status === "quente").length,
-        morno: allLeads.filter((lead) => lead.status === "morno").length,
-        frio: allLeads.filter((lead) => lead.status === "frio").length,
-        average_ai_score:
-          allLeads.length > 0
-            ? Math.round(allLeads.reduce((sum, lead) => sum + lead.aiScore, 0) / allLeads.length)
-            : 0,
-        flagship_queue: allLeads.filter((lead) => lead.routingBucket === "flagship").length,
-        growth_queue: allLeads.filter((lead) => lead.routingBucket === "growth").length,
-        nurture_queue: allLeads.filter((lead) => lead.routingBucket === "nurture").length,
-        urgent_actions: allLeads.filter((lead) => lead.slaHours <= 8).length,
-        active_teams: teams.size,
-        active_offices: offices.size,
-        overdue_followups: allLeads.filter((lead) =>
-          lead.followUpAt ? new Date(lead.followUpAt).getTime() <= Date.now() : false
-        ).length,
-        contacted_today: allLeads.filter((lead) => {
-          if (!lead.lastContactAt) {
-            return false;
-          }
-
-          return lead.lastContactAt.slice(0, 10) === new Date().toISOString().slice(0, 10);
-        }).length,
-        european_markets: markets.size,
-      } satisfies LeadStats;
-    }
-  );
+export async function getLeadStats(scope?: WorkspaceScope) {
+  const allLeads = await getAllLeads(scope);
+  return buildLeadStatsSnapshot(allLeads);
 }
 
 export const storage = {
