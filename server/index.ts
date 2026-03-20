@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import { PLAN_CONFIG } from "./core/plans.js";
+import { PLAN_CONFIG, getDefaultPlanId, getPlanConfig } from "./core/plans.js";
 import {
   createLead,
   getAllLeads,
@@ -34,11 +34,14 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_req: Request, res: Response) => {
+  const defaultPlanId = getDefaultPlanId();
   res.json({
     ok: true,
     service: "imolead-ai-pro",
     aiMode: hasAiProvider ? "hybrid" : "heuristic",
     databaseConfigured: hasDatabaseConfig,
+    defaultPlanId,
+    defaultPlanName: getPlanConfig(defaultPlanId).publicName,
   });
 });
 
@@ -74,6 +77,7 @@ app.post(["/lead", "/api/leads"], async (req: Request, res: Response) => {
     notes,
     countryCode,
     preferredLanguage,
+    planId,
   } = req.body || {};
 
   if (!name || !location || price === undefined || price === null) {
@@ -88,21 +92,29 @@ app.post(["/lead", "/api/leads"], async (req: Request, res: Response) => {
     return res.status(400).json({ error: "price deve ser um numero valido" });
   }
 
-  const lead = await createLead({
-    name,
-    property,
-    location,
-    price: numericPrice,
-    area: area !== undefined && area !== null ? Number(area) : null,
-    source,
-    status,
-    contact,
-    notes,
-    countryCode,
-    preferredLanguage,
-  });
+  try {
+    const lead = await createLead({
+      name,
+      property,
+      location,
+      price: numericPrice,
+      area: area !== undefined && area !== null ? Number(area) : null,
+      source,
+      status,
+      contact,
+      notes,
+      countryCode,
+      preferredLanguage,
+      planId,
+    });
 
-  res.status(201).json(lead);
+    res.status(201).json(lead);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Nao foi possivel criar o lead";
+
+    res.status(400).json({ error: message });
+  }
 });
 
 app.patch("/api/leads/:id/workflow", async (req: Request, res: Response) => {

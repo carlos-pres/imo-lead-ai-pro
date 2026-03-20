@@ -3,6 +3,13 @@ import { randomUUID } from "crypto";
 import { Pool, PoolConfig } from "pg";
 import { runLeadAgent } from "./ai/agentService.js";
 import { buildHeuristicLeadIntelligence, type RoutingBucket } from "./ai/enterpriseLeadAgent.js";
+import {
+  getPlanConfig,
+  getPlanUpgradeMessage,
+  isCountryCoveredByPlan,
+  resolvePlanId,
+  type PlanType,
+} from "./core/plans.js";
 
 export type Customer = {
   id: string;
@@ -78,6 +85,9 @@ export type Lead = {
   currencyCode: string;
   contact?: string;
   notes?: string;
+  planId: PlanType;
+  planName: string;
+  agentLabel: string;
   createdAt: string;
 };
 
@@ -94,6 +104,7 @@ export type CreateLeadInput = {
   notes?: string;
   countryCode?: string;
   preferredLanguage?: string;
+  planId?: PlanType;
 };
 
 export type UpdateLeadWorkflowInput = {
@@ -134,6 +145,7 @@ type LeadBase = {
   createdAt: string;
   countryCode?: string;
   preferredLanguage?: string;
+  planId?: PlanType;
 };
 
 const LEAD_INTELLIGENCE_VERSION = 4;
@@ -356,6 +368,14 @@ function getMarketName(countryCode: string, location: string) {
   return "Portugal";
 }
 
+function assertPlanCoverage(planId: PlanType, countryCode: string) {
+  if (isCountryCoveredByPlan(planId, countryCode)) {
+    return;
+  }
+
+  throw new Error(getPlanUpgradeMessage(planId, countryCode));
+}
+
 function getOfficeForLead(location: string, countryCode: string) {
   if (countryCode !== "PT") {
     return fallbackOffices.find((office) => office.name === "Europe Expansion Desk")!;
@@ -524,6 +544,8 @@ function buildNextStep(stage: PipelineStage, routingBucket: RoutingBucket, statu
 }
 
 function createSeedLead(seed: CreateLeadInput & { createdAt: string }) {
+  const planId = resolvePlanId(seed.planId);
+  const plan = getPlanConfig(planId);
   const property = seed.property || `Imovel em ${seed.location}`;
   const intelligence = buildHeuristicLeadIntelligence({
     name: seed.name,
@@ -589,6 +611,9 @@ function createSeedLead(seed: CreateLeadInput & { createdAt: string }) {
     currencyCode: getCurrencyCode(countryCode),
     contact: seed.contact,
     notes: seed.notes,
+    planId,
+    planName: plan.publicName,
+    agentLabel: plan.agentLabel,
     createdAt: seed.createdAt,
   } satisfies Lead;
 }
@@ -727,6 +752,7 @@ function mapLeadRow(row: any): Lead {
         : new Date(row.created_at).toISOString(),
     countryCode: normalizeOptionalString(row.country_code),
     preferredLanguage: normalizeOptionalString(row.preferred_language),
+    planId: resolvePlanId(normalizeOptionalString(row.plan_id)),
   } satisfies LeadBase;
 
   const fallbackLead = createSeedLead({
@@ -742,6 +768,7 @@ function mapLeadRow(row: any): Lead {
     createdAt: baseLead.createdAt,
     countryCode: baseLead.countryCode,
     preferredLanguage: baseLead.preferredLanguage,
+    planId: baseLead.planId,
     status: normalizeLeadStatus(row.status, Number(row.price)),
   });
 
@@ -790,6 +817,9 @@ function mapLeadRow(row: any): Lead {
     currencyCode: String(row.currency_code || fallbackLead.currencyCode),
     contact: baseLead.contact,
     notes: baseLead.notes,
+    planId: resolvePlanId(row.plan_id || fallbackLead.planId),
+    planName: String(row.plan_name || fallbackLead.planName),
+    agentLabel: String(row.agent_label || fallbackLead.agentLabel),
     createdAt: baseLead.createdAt,
   };
 }
@@ -810,13 +840,15 @@ async function seedLeads(activePool: Pool) {
           reasoning, recommended_action, routing_bucket, sla_hours, assigned_team,
           assigned_owner, office_name, pipeline_stage, next_step, follow_up_at,
           last_contact_at, strategy_goal, outreach_channel, outreach_message, market,
-          country_code, preferred_language, currency_code, intelligence_version,
+          country_code, preferred_language, currency_code, plan_id, plan_name,
+          agent_label, intelligence_version,
           contact, notes, created_at
         )
         VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+          $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
+          $32, $33, $34
         )
         ON CONFLICT (id) DO NOTHING
       `,
@@ -848,6 +880,9 @@ async function seedLeads(activePool: Pool) {
         lead.countryCode,
         lead.preferredLanguage,
         lead.currencyCode,
+        lead.planId,
+        lead.planName,
+        lead.agentLabel,
         LEAD_INTELLIGENCE_VERSION,
         lead.contact ?? null,
         lead.notes ?? null,
@@ -862,7 +897,7 @@ async function syncLeadIntelligence(activePool: Pool) {
     `
       SELECT
         id, name, property, location, price, area, source, status, contact, notes,
-        created_at, country_code, preferred_language, intelligence_version
+        created_at, country_code, preferred_language, plan_id, intelligence_version
       FROM leads
       WHERE COALESCE(intelligence_version, 0) < $1
     `,
@@ -887,6 +922,7 @@ async function syncLeadIntelligence(activePool: Pool) {
           : new Date(row.created_at).toISOString(),
       countryCode: normalizeOptionalString(row.country_code),
       preferredLanguage: normalizeOptionalString(row.preferred_language),
+      planId: resolvePlanId(normalizeOptionalString(row.plan_id)),
     });
 
     await activePool.query(
@@ -912,7 +948,10 @@ async function syncLeadIntelligence(activePool: Pool) {
           country_code = $18,
           preferred_language = $19,
           currency_code = $20,
-          intelligence_version = $21
+          plan_id = $21,
+          plan_name = $22,
+          agent_label = $23,
+          intelligence_version = $24
         WHERE id = $1
       `,
       [
@@ -936,6 +975,9 @@ async function syncLeadIntelligence(activePool: Pool) {
         refreshedLead.countryCode,
         refreshedLead.preferredLanguage,
         refreshedLead.currencyCode,
+        refreshedLead.planId,
+        refreshedLead.planName,
+        refreshedLead.agentLabel,
         LEAD_INTELLIGENCE_VERSION,
       ]
     );
@@ -988,6 +1030,9 @@ async function initializeDatabase() {
         country_code TEXT,
         preferred_language TEXT,
         currency_code TEXT,
+        plan_id TEXT,
+        plan_name TEXT,
+        agent_label TEXT,
         intelligence_version INTEGER NOT NULL DEFAULT 0,
         contact TEXT,
         notes TEXT,
@@ -1016,6 +1061,9 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS country_code TEXT,
       ADD COLUMN IF NOT EXISTS preferred_language TEXT,
       ADD COLUMN IF NOT EXISTS currency_code TEXT,
+      ADD COLUMN IF NOT EXISTS plan_id TEXT,
+      ADD COLUMN IF NOT EXISTS plan_name TEXT,
+      ADD COLUMN IF NOT EXISTS agent_label TEXT,
       ADD COLUMN IF NOT EXISTS intelligence_version INTEGER NOT NULL DEFAULT 0
     `);
 
@@ -1167,7 +1215,7 @@ export async function getAllLeads() {
             assigned_team, assigned_owner, office_name, pipeline_stage, next_step,
             follow_up_at, last_contact_at, strategy_goal, outreach_channel,
             outreach_message, market, country_code, preferred_language,
-            currency_code, contact, notes, created_at
+            currency_code, plan_id, plan_name, agent_label, contact, notes, created_at
           FROM leads
           ORDER BY COALESCE(follow_up_at, created_at) ASC, ai_score DESC, created_at DESC
         `
@@ -1185,6 +1233,8 @@ export async function getAllLeads() {
 }
 
 export async function createLead(data: CreateLeadInput) {
+  const planId = resolvePlanId(data.planId);
+  const plan = getPlanConfig(planId);
   const baseLead = {
     id: data.id || randomUUID(),
     name: data.name,
@@ -1198,10 +1248,12 @@ export async function createLead(data: CreateLeadInput) {
     createdAt: new Date().toISOString(),
     countryCode: normalizeOptionalString(data.countryCode),
     preferredLanguage: normalizeOptionalString(data.preferredLanguage),
+    planId,
   };
 
-  const analysis = await runLeadAgent(baseLead);
   const countryCode = inferCountryCode(baseLead.location, baseLead.countryCode);
+  assertPlanCoverage(planId, countryCode);
+  const analysis = await runLeadAgent(baseLead, { planId });
   const market = getMarketName(countryCode, baseLead.location);
   const computedStatus = data.status
     ? normalizeLeadStatus(data.status, data.price)
@@ -1249,6 +1301,9 @@ export async function createLead(data: CreateLeadInput) {
     countryCode,
     preferredLanguage: getPreferredLanguage(countryCode, baseLead.preferredLanguage),
     currencyCode: getCurrencyCode(countryCode),
+    planId,
+    planName: analysis.planName || plan.publicName,
+    agentLabel: analysis.agentLabel || plan.agentLabel,
   };
 
   return useDatabase(
@@ -1261,19 +1316,22 @@ export async function createLead(data: CreateLeadInput) {
             assigned_owner, office_name, pipeline_stage, next_step, follow_up_at,
             last_contact_at, strategy_goal, outreach_channel, outreach_message,
             market, country_code, preferred_language, currency_code,
-            intelligence_version, contact, notes, created_at
+            plan_id, plan_name, agent_label, intelligence_version,
+            contact, notes, created_at
           )
           VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
+            $32, $33, $34
           )
           RETURNING
             id, name, property, location, price, area, source, status, ai_score,
             reasoning, recommended_action, routing_bucket, sla_hours, assigned_team,
             assigned_owner, office_name, pipeline_stage, next_step, follow_up_at,
             last_contact_at, strategy_goal, outreach_channel, outreach_message,
-            market, country_code, preferred_language, currency_code, contact, notes, created_at
+            market, country_code, preferred_language, currency_code,
+            plan_id, plan_name, agent_label, contact, notes, created_at
         `,
         [
           lead.id,
@@ -1303,6 +1361,9 @@ export async function createLead(data: CreateLeadInput) {
           lead.countryCode,
           lead.preferredLanguage,
           lead.currencyCode,
+          lead.planId,
+          lead.planName,
+          lead.agentLabel,
           LEAD_INTELLIGENCE_VERSION,
           lead.contact ?? null,
           lead.notes ?? null,
@@ -1329,7 +1390,8 @@ export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowIn
             reasoning, recommended_action, routing_bucket, sla_hours, assigned_team,
             assigned_owner, office_name, pipeline_stage, next_step, follow_up_at,
             last_contact_at, strategy_goal, outreach_channel, outreach_message,
-            market, country_code, preferred_language, currency_code, contact, notes, created_at
+            market, country_code, preferred_language, currency_code,
+            plan_id, plan_name, agent_label, contact, notes, created_at
           FROM leads
           WHERE id = $1
           LIMIT 1
@@ -1374,7 +1436,8 @@ export async function updateLeadWorkflow(id: string, input: UpdateLeadWorkflowIn
             reasoning, recommended_action, routing_bucket, sla_hours, assigned_team,
             assigned_owner, office_name, pipeline_stage, next_step, follow_up_at,
             last_contact_at, strategy_goal, outreach_channel, outreach_message,
-            market, country_code, preferred_language, currency_code, contact, notes, created_at
+            market, country_code, preferred_language, currency_code,
+            plan_id, plan_name, agent_label, contact, notes, created_at
         `,
         [id, nextStage, nextOwner, nextStep, followUpAt, lastContactAt]
       );

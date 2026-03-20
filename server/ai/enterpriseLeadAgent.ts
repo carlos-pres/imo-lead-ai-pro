@@ -1,4 +1,5 @@
 import { analyzeLeadWithAI } from "../lib/openai.js";
+import type { PlanType } from "../core/plans.js";
 
 export type LeadStatus = "quente" | "morno" | "frio";
 export type RoutingBucket = "flagship" | "growth" | "nurture";
@@ -21,6 +22,11 @@ export type LeadIntelligence = {
   recommendedAction: string;
   routingBucket: RoutingBucket;
   slaHours: number;
+};
+
+export type LeadEvaluationOptions = {
+  allowExternalAI?: boolean;
+  planId?: PlanType;
 };
 
 const premiumAreas = [
@@ -285,8 +291,21 @@ function mergeIntelligence(
   };
 }
 
-export async function evaluateLeadForAgency(lead: EnterpriseLeadInput): Promise<LeadIntelligence> {
+export async function evaluateLeadForAgency(
+  lead: EnterpriseLeadInput,
+  options?: LeadEvaluationOptions
+): Promise<LeadIntelligence> {
   const heuristic = buildHeuristicLeadIntelligence(lead);
+  const allowExternalAI = options?.allowExternalAI ?? true;
+
+  if (!allowExternalAI) {
+    return {
+      ...heuristic,
+      reasoning: `${heuristic.reasoning} Classificacao processada em modo heuristico do plano ${
+        options?.planId || "base"
+      }.`,
+    };
+  }
 
   try {
     const aiResult = await analyzeLeadWithAI({

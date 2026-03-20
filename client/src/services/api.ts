@@ -1,5 +1,6 @@
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
+export type PlanType = "basic" | "pro" | "custom";
 export type LeadStatus = "quente" | "morno" | "frio";
 export type RoutingBucket = "flagship" | "growth" | "nurture";
 export type PipelineStage =
@@ -39,9 +40,10 @@ export type TeamOverview = {
 };
 
 export type PlanCatalogEntry = {
-  id: "basic" | "pro" | "custom";
+  id: PlanType;
   publicName: string;
   recommendedFor: string;
+  includedCountryCodes: string[];
   leadLimit: number;
   advancedAI: boolean;
   autoContact: boolean;
@@ -90,6 +92,9 @@ export type Lead = {
   currencyCode: string;
   contact?: string;
   notes?: string;
+  planId: PlanType;
+  planName: string;
+  agentLabel: string;
   createdAt: string;
 };
 
@@ -121,6 +126,7 @@ export type CreateLeadInput = {
   notes?: string;
   countryCode?: string;
   preferredLanguage?: string;
+  planId?: PlanType;
 };
 
 export type UpdateLeadWorkflowInput = {
@@ -157,6 +163,8 @@ export async function getHealth() {
     service: string;
     aiMode: "hybrid" | "heuristic";
     databaseConfigured: boolean;
+    defaultPlanId: PlanType;
+    defaultPlanName: string;
   }>(response);
 }
 

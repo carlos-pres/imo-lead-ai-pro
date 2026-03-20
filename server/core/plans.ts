@@ -6,6 +6,7 @@ export type PlanConfig = {
   id: PlanType;
   publicName: string;
   recommendedFor: string;
+  includedCountryCodes: string[];
   leadLimit: number;
   advancedAI: boolean;
   autoContact: boolean;
@@ -25,6 +26,7 @@ export type PlanConfig = {
 };
 
 export const ANNUAL_DISCOUNT_PERCENT = 20;
+export const DEFAULT_PLAN_ID: PlanType = "pro";
 
 function yearlyPriceFromMonthly(monthlyPrice: number) {
   return Number((monthlyPrice * 12 * (1 - ANNUAL_DISCOUNT_PERCENT / 100)).toFixed(2));
@@ -35,6 +37,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     id: "basic",
     publicName: "ImoLead Starter",
     recommendedFor: "Consultor individual ou pequena operacao local",
+    includedCountryCodes: ["PT"],
     leadLimit: 120,
     advancedAI: false,
     autoContact: false,
@@ -71,6 +74,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     id: "pro",
     publicName: "ImoLead Pro",
     recommendedFor: "Agencia em crescimento com multi-owner e foco Iberia",
+    includedCountryCodes: ["PT", "ES"],
     leadLimit: 600,
     advancedAI: true,
     autoContact: true,
@@ -109,6 +113,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     id: "custom",
     publicName: "ImoLead Enterprise",
     recommendedFor: "Grande imobiliaria, rede multi-loja ou expansao europeia",
+    includedCountryCodes: ["PT", "ES", "FR", "IT"],
     leadLimit: 999999,
     advancedAI: true,
     autoContact: true,
@@ -148,6 +153,19 @@ export function getPlanConfig(planId: PlanType) {
   return PLAN_CONFIG[planId];
 }
 
+export function isPlanType(value: string | undefined | null): value is PlanType {
+  return value === "basic" || value === "pro" || value === "custom";
+}
+
+export function getDefaultPlanId() {
+  const envPlan = process.env.DEFAULT_PLAN_ID;
+  return isPlanType(envPlan) ? envPlan : DEFAULT_PLAN_ID;
+}
+
+export function resolvePlanId(planId?: string | null) {
+  return isPlanType(planId) ? planId : getDefaultPlanId();
+}
+
 export function getPublicPlanName(planId: PlanType) {
   return PLAN_CONFIG[planId].publicName;
 }
@@ -164,9 +182,34 @@ export function getPlanPresentation(planId: PlanType) {
     hasAdvancedAI: plan.advancedAI,
     agentLabel: plan.agentLabel,
     annualDiscountPercent: plan.annualDiscountPercent,
+    includedCountryCodes: plan.includedCountryCodes,
     includedMarkets: plan.includedMarkets,
     features: plan.features,
   };
+}
+
+export function isCountryCoveredByPlan(planId: PlanType, countryCode: string) {
+  return PLAN_CONFIG[planId].includedCountryCodes.includes(countryCode);
+}
+
+export function getPlanUpgradeMessage(planId: PlanType, countryCode: string) {
+  if (countryCode === "ES" && planId === "basic") {
+    return "Espanha requer o plano ImoLead Pro ou Enterprise.";
+  }
+
+  if ((countryCode === "FR" || countryCode === "IT") && planId !== "custom") {
+    return "Franca e Italia requerem o plano ImoLead Enterprise.";
+  }
+
+  if (countryCode !== "PT" && planId === "basic") {
+    return "Operacoes fora de Portugal requerem o plano ImoLead Pro ou Enterprise.";
+  }
+
+  if (countryCode !== "PT" && countryCode !== "ES" && planId === "pro") {
+    return "Este mercado requer o plano ImoLead Enterprise.";
+  }
+
+  return `Este mercado nao esta incluido no plano ${PLAN_CONFIG[planId].publicName}.`;
 }
 
 export function getPaymentPlanOptions() {

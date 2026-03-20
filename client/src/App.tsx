@@ -15,6 +15,7 @@ import {
   type LeadStats,
   type PipelineStage,
   type PlanCatalogEntry,
+  type PlanType,
   type RoutingBucket,
   type TeamOverview,
   type UpdateLeadWorkflowInput,
@@ -97,8 +98,23 @@ const initialForm: CreateLeadInput = {
   preferredLanguage: "pt-PT",
 };
 
+const COUNTRY_OPTIONS: Array<{
+  code: "PT" | "ES" | "FR" | "IT";
+  label: string;
+  language: string;
+}> = [
+  { code: "PT", label: "Portugal", language: "pt-PT" },
+  { code: "ES", label: "Espanha", language: "es-ES" },
+  { code: "FR", label: "Franca", language: "fr-FR" },
+  { code: "IT", label: "Italia", language: "it-IT" },
+];
+
 function isViewId(value: string): value is ViewId {
   return NAV_ITEMS.some((item) => item.id === value);
+}
+
+function isPlanType(value: string | null | undefined): value is PlanType {
+  return value === "basic" || value === "pro" || value === "custom";
 }
 
 function getViewFromHash(): ViewId {
@@ -298,6 +314,7 @@ function buildSourceMix(leads: Lead[]) {
 function App() {
   const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
   const [billingMode, setBillingMode] = useState<BillingMode>("month");
+  const [activePlanId, setActivePlanId] = useState<PlanType>("pro");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
@@ -344,6 +361,14 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem("imolead-active-plan", activePlanId);
+  }, [activePlanId]);
+
   async function bootstrap() {
     await Promise.all([loadHealth(), loadWorkspace()]);
   }
@@ -351,9 +376,15 @@ function App() {
   async function loadHealth() {
     try {
       const health = await getHealth();
+      const storedPlanId =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("imolead-active-plan")
+          : null;
+
       setAiMode(health.aiMode);
       setDatabaseConfigured(health.databaseConfigured);
       setApiState(health.ok ? "API online" : "API com alerta");
+      setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : health.defaultPlanId);
     } catch {
       setApiState("API offline");
     }
@@ -399,7 +430,10 @@ function App() {
     setError("");
 
     try {
-      const created = await createLead(form);
+      const created = await createLead({
+        ...form,
+        planId: activePlanId,
+      });
       const nextLeads = [created, ...leads];
 
       startTransition(() => {
@@ -482,6 +516,12 @@ function App() {
   }
 
   const dashboardStats = stats || deriveStats(leads);
+  const activePlan =
+    plans.find((plan) => plan.id === activePlanId) ||
+    plans.find((plan) => plan.id === "pro") ||
+    plans[0] ||
+    null;
+  const availableCountries = activePlan?.includedCountryCodes || COUNTRY_OPTIONS.map((item) => item.code);
   const offices = teamOverview?.offices || [];
   const members = teamOverview?.members || [];
   const markets = teamOverview?.markets || [];
@@ -558,9 +598,35 @@ function App() {
 
   const viewMeta = NAV_ITEMS.find((item) => item.id === activeView) || NAV_ITEMS[0];
 
+  useEffect(() => {
+    if (!activePlan || !form.countryCode) {
+      return;
+    }
+
+    if (!activePlan.includedCountryCodes.includes(form.countryCode)) {
+      const fallbackCountry = COUNTRY_OPTIONS.find((item) =>
+        activePlan.includedCountryCodes.includes(item.code)
+      );
+
+      setForm((current) => ({
+        ...current,
+        countryCode: fallbackCountry?.code || "PT",
+        preferredLanguage: fallbackCountry?.language || "pt-PT",
+      }));
+    }
+  }, [activePlan, form.countryCode]);
+
   function renderPipelineForm() {
     return (
       <form className="lead-form" onSubmit={handleSubmit}>
+        <div className="form-helper">
+          <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
+          <span>
+            {activePlan?.agentLabel || "AI Copilot"} · mercados ativos:{" "}
+            {activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}
+          </span>
+        </div>
+
         <label>
           Nome do proprietario
           <input
@@ -616,13 +682,20 @@ function App() {
             <select
               value={form.countryCode}
               onChange={(event) =>
-                setForm((current) => ({ ...current, countryCode: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  countryCode: event.target.value,
+                  preferredLanguage:
+                    COUNTRY_OPTIONS.find((item) => item.code === event.target.value)?.language ||
+                    current.preferredLanguage,
+                }))
               }
             >
-              <option value="PT">Portugal</option>
-              <option value="ES">Espanha</option>
-              <option value="FR">Franca</option>
-              <option value="IT">Italia</option>
+              {COUNTRY_OPTIONS.filter((item) => availableCountries.includes(item.code)).map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -858,7 +931,10 @@ function App() {
 
             <div className="plan-preview-list">
               {plans.map((plan) => (
-                <article className="plan-preview" key={plan.id}>
+                <article
+                  className={plan.id === activePlanId ? "plan-preview active" : "plan-preview"}
+                  key={plan.id}
+                >
                   <span>{plan.publicName}</span>
                   <strong>{plan.agentLabel}</strong>
                   <p>{plan.recommendedFor}</p>
@@ -993,6 +1069,7 @@ function App() {
                             <span>AI {lead.aiScore}</span>
                             <span>{getBucketLabel(lead.routingBucket)}</span>
                             <span>{lead.officeName}</span>
+                            <span>{lead.planName}</span>
                           </div>
 
                           <p className="pipeline-action">{lead.recommendedAction}</p>
@@ -1376,6 +1453,16 @@ function App() {
                     <span>{plan.reportsLabel}</span>
                   </div>
 
+                  <div className="pricing-action-row">
+                    <button
+                      className={plan.id === activePlanId ? "select-plan-button active" : "select-plan-button"}
+                      type="button"
+                      onClick={() => setActivePlanId(plan.id)}
+                    >
+                      {plan.id === activePlanId ? "Plano ativo no workspace" : "Usar neste workspace"}
+                    </button>
+                  </div>
+
                   {billingMode === "year" ? (
                     <p className="pricing-note">
                       Equivale a {equivalentMonthly}/mes com desconto anual fixo de{" "}
@@ -1478,11 +1565,12 @@ function App() {
 
         <section className="sidebar-panel">
           <span>Plano comercial</span>
-          <strong>{plans[1]?.publicName || "ImoLead Pro"}</strong>
+          <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
           <div className="sidebar-meta">
-            <p>{plans[1]?.agentLabel || "AI Copilot"}</p>
-            <p>{plans[1]?.reportsLabel || "Relatorios semanais"}</p>
-            <p>{plans[1]?.annualDiscountPercent || 20}% desconto anual fixo</p>
+            <p>{activePlan?.agentLabel || "AI Copilot"}</p>
+            <p>{activePlan?.reportsLabel || "Relatorios semanais"}</p>
+            <p>{activePlan?.annualDiscountPercent || 20}% desconto anual fixo</p>
+            <p>{activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}</p>
           </div>
         </section>
       </aside>
