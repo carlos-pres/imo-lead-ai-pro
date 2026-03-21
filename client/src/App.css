@@ -362,6 +362,10 @@
   color: #a43d2a;
 }
 
+.feedback.success {
+  color: #216347;
+}
+
 .lead-card {
   padding: 18px;
   border-radius: 22px;
@@ -2354,6 +2358,26 @@
 .auth-helper-actions .secondary-button,
 .auth-helper-actions .ghost-button {
   margin-top: 0;
+}
+
+.trial-card {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.12), transparent 36%),
+    rgba(255, 255, 255, 0.82);
+}
+
+.trial-copy {
+  margin: 0 0 16px;
+  color: #5c6b80;
+  line-height: 1.55;
+}
+
+.trial-form {
+  gap: 14px;
 }
 
 .admin-hero {

@@ -8,6 +8,7 @@ import {
   authenticateWorkspaceUser,
   createCommercialPlan,
   createLead,
+  createTrialRequest,
   deleteCommercialPlan,
   getAllLeads,
   getLeadStats,
@@ -103,6 +104,14 @@ function sendRouteError(res: Response, error: unknown, fallbackMessage: string) 
   }
 
   return res.status(400).json({ error: message || fallbackMessage });
+}
+
+function isValidEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function isValidPhoneNumber(value: string) {
+  return /^[0-9+\s()-]{9,20}$/.test(value.trim());
 }
 
 async function getAdminScope(req: Request) {
@@ -208,6 +217,41 @@ app.get("/api/plans", async (_req: Request, res: Response) => {
     res.json(plans);
   } catch (error) {
     sendRouteError(res, error, "Nao foi possivel carregar os planos.");
+  }
+});
+
+app.post("/api/trial-requests", async (req: Request, res: Response) => {
+  const { name, email, phone, requestedPlanId, source } = req.body || {};
+
+  if (!name || String(name).trim().length < 2) {
+    return res.status(400).json({ error: "Nome invalido para ativar o trial." });
+  }
+
+  if (!email || !isValidEmailAddress(String(email))) {
+    return res.status(400).json({ error: "Email invalido para ativar o trial." });
+  }
+
+  if (!phone || !isValidPhoneNumber(String(phone))) {
+    return res.status(400).json({ error: "Telefone invalido para ativar o trial." });
+  }
+
+  try {
+    const trialRequest = await createTrialRequest({
+      name: String(name),
+      email: String(email),
+      phone: String(phone),
+      requestedPlanId: requestedPlanId ? String(requestedPlanId) as "basic" | "pro" | "custom" : "basic",
+      source: source ? String(source) : "landing",
+    });
+
+    res.status(201).json({
+      ok: true,
+      trialRequestId: trialRequest.id,
+      message:
+        "Trial reservado com sucesso. Email e telefone ficaram validados para impedir reutilizacao do periodo de 15 dias.",
+    });
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel reservar o trial.");
   }
 });
 

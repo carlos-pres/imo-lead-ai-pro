@@ -22,6 +22,19 @@ export type Customer = {
   googleAccessToken?: string;
 };
 
+export type TrialRequest = {
+  id: string;
+  name: string;
+  email: string;
+  normalizedEmail: string;
+  phone: string;
+  normalizedPhone: string;
+  requestedPlanId: PlanType;
+  source: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+};
+
 export type WorkspaceRole = "admin" | "manager" | "consultant";
 
 export type WorkspaceUser = {
@@ -212,10 +225,12 @@ type LeadBase = {
 
 const LEAD_INTELLIGENCE_VERSION = 4;
 const LEGACY_ADMIN_EMAIL = "carla@imolead.ai";
-const PRIMARY_ADMIN_EMAIL = "carlospsantos@gmail.com";
+const PREVIOUS_PRIMARY_ADMIN_EMAIL = "carlospsantos@gmail.com";
+const PRIMARY_ADMIN_EMAIL = "carlospsantos19820@gmail.com";
 const PRIMARY_ADMIN_NAME = "Carlos Santos";
 const PRIMARY_ADMIN_PASSWORD = process.env.ADMIN_BOOTSTRAP_PASSWORD || "Demo123!";
 const fallbackCustomers: Customer[] = [];
+const fallbackTrialRequests: TrialRequest[] = [];
 const fallbackCommercialPlans: CommercialPlan[] = buildCommercialPlanSeedEntries();
 
 function createPasswordHash(password: string) {
@@ -387,6 +402,21 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
 function normalizeOptionalString(value: string | undefined | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeEmailAddress(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function normalizePhoneNumber(value: string) {
+  const cleaned = value.replace(/[^\d+]/g, "");
+
+  if (cleaned.startsWith("+")) {
+    return `+${cleaned.slice(1).replace(/\D/g, "")}`;
+  }
+
+  const digits = cleaned.replace(/\D/g, "");
+  return digits.startsWith("351") ? `+${digits}` : `+351${digits}`;
 }
 
 function normalizeStringList(values: string[] | undefined | null, fallback: string[] = []) {
@@ -1178,6 +1208,9 @@ async function seedWorkspaceUsers(activePool: Pool) {
   await activePool.query("DELETE FROM workspace_users WHERE LOWER(email) = $1", [
     LEGACY_ADMIN_EMAIL.toLowerCase(),
   ]);
+  await activePool.query("DELETE FROM workspace_users WHERE LOWER(email) = $1", [
+    PREVIOUS_PRIMARY_ADMIN_EMAIL.toLowerCase(),
+  ]);
 
   for (const user of fallbackWorkspaceUsers) {
     await activePool.query(
@@ -1187,9 +1220,10 @@ async function seedWorkspaceUsers(activePool: Pool) {
           preferred_language, plan_id, plan_name
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        ON CONFLICT (email) DO UPDATE
+        ON CONFLICT (id) DO UPDATE
         SET
           name = EXCLUDED.name,
+          email = EXCLUDED.email,
           password_hash = EXCLUDED.password_hash,
           role = EXCLUDED.role,
           office_name = EXCLUDED.office_name,
@@ -1402,6 +1436,21 @@ async function initializeDatabase() {
     `);
 
     await activePool.query(`
+      CREATE TABLE IF NOT EXISTS trial_requests (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        normalized_email TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        normalized_phone TEXT NOT NULL,
+        requested_plan_id TEXT NOT NULL DEFAULT 'basic',
+        source TEXT NOT NULL DEFAULT 'landing',
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await activePool.query(`
       CREATE TABLE IF NOT EXISTS workspace_users (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -1513,6 +1562,16 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS plan_name TEXT,
       ADD COLUMN IF NOT EXISTS agent_label TEXT,
       ADD COLUMN IF NOT EXISTS intelligence_version INTEGER NOT NULL DEFAULT 0
+    `);
+
+    await activePool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS trial_requests_normalized_email_idx
+      ON trial_requests (normalized_email)
+    `);
+
+    await activePool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS trial_requests_normalized_phone_idx
+      ON trial_requests (normalized_phone)
     `);
 
     await activePool.query(`
@@ -1656,6 +1715,106 @@ export async function updateCustomer(id: string, data: Partial<Customer>) {
 
       Object.assign(customer, data);
       return customer;
+    }
+  );
+}
+
+export async function createTrialRequest(input: {
+  name: string;
+  email: string;
+  phone: string;
+  requestedPlanId?: PlanType;
+  source?: string;
+}) {
+  const normalizedEmail = normalizeEmailAddress(input.email);
+  const normalizedPhone = normalizePhoneNumber(input.phone);
+  const planId = resolvePlanId(input.requestedPlanId || "basic");
+  const source = normalizeOptionalString(input.source) || "landing";
+
+  const nextRequest: TrialRequest = {
+    id: randomUUID(),
+    name: input.name.trim(),
+    email: input.email.trim(),
+    normalizedEmail,
+    phone: input.phone.trim(),
+    normalizedPhone,
+    requestedPlanId: planId,
+    source,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+
+  const duplicateMessage =
+    "Ja existe um trial associado a este email ou telefone. Usa a conta anterior ou fala connosco para evoluir de plano.";
+
+  return useDatabase(
+    async (activePool) => {
+      const existing = await activePool.query(
+        `
+          SELECT id
+          FROM trial_requests
+          WHERE normalized_email = $1 OR normalized_phone = $2
+          LIMIT 1
+        `,
+        [normalizedEmail, normalizedPhone]
+      );
+
+      if (existing.rows[0]) {
+        throw new Error(duplicateMessage);
+      }
+
+      const result = await activePool.query(
+        `
+          INSERT INTO trial_requests (
+            id, name, email, normalized_email, phone, normalized_phone,
+            requested_plan_id, source, status, created_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING
+            id, name, email, normalized_email, phone, normalized_phone,
+            requested_plan_id, source, status, created_at
+        `,
+        [
+          nextRequest.id,
+          nextRequest.name,
+          nextRequest.email,
+          nextRequest.normalizedEmail,
+          nextRequest.phone,
+          nextRequest.normalizedPhone,
+          nextRequest.requestedPlanId,
+          nextRequest.source,
+          nextRequest.status,
+          nextRequest.createdAt,
+        ]
+      );
+
+      const row = result.rows[0];
+
+      return {
+        id: String(row.id),
+        name: String(row.name),
+        email: String(row.email),
+        normalizedEmail: String(row.normalized_email),
+        phone: String(row.phone),
+        normalizedPhone: String(row.normalized_phone),
+        requestedPlanId: resolvePlanId(String(row.requested_plan_id)),
+        source: String(row.source),
+        status: String(row.status) as TrialRequest["status"],
+        createdAt: new Date(row.created_at).toISOString(),
+      } satisfies TrialRequest;
+    },
+    async () => {
+      const duplicate = fallbackTrialRequests.find(
+        (entry) =>
+          entry.normalizedEmail === normalizedEmail || entry.normalizedPhone === normalizedPhone
+      );
+
+      if (duplicate) {
+        throw new Error(duplicateMessage);
+      }
+
+      fallbackTrialRequests.push(nextRequest);
+      return nextRequest;
     }
   );
 }
@@ -2440,6 +2599,7 @@ export async function getLeadStats(scope?: WorkspaceScope) {
 export const storage = {
   getCustomer,
   updateCustomer,
+  createTrialRequest,
   listCommercialPlans,
   createCommercialPlan,
   updateCommercialPlan,

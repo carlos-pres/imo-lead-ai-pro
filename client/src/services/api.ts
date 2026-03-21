@@ -97,6 +97,14 @@ export type CommercialPlanInput = {
   sortOrder: number;
 };
 
+export type TrialRequestInput = {
+  name: string;
+  email: string;
+  phone: string;
+  requestedPlanId?: PlanType;
+  source?: string;
+};
+
 export type WorkspaceUser = {
   id: string;
   name: string;
@@ -282,6 +290,22 @@ export async function getTeams() {
 export async function getPlans() {
   const response = await apiFetch("/api/plans");
   return readJson<PlanCatalogEntry[]>(response);
+}
+
+export async function createTrialRequest(data: TrialRequestInput) {
+  const response = await apiFetch("/api/trial-requests", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<{
+    ok: boolean;
+    trialRequestId: string;
+    message: string;
+  }>(response);
 }
 
 export async function getAdminPlans() {

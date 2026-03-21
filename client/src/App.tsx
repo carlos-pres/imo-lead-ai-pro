@@ -6,6 +6,7 @@ import {
   clearSessionToken,
   createAdminPlan,
   createLead,
+  createTrialRequest,
   deleteAdminPlan,
   getAdminPlans,
   getCurrentSession,
@@ -42,6 +43,11 @@ type LoginForm = {
 type LandingGuidance = {
   title: string;
   detail: string;
+};
+type TrialForm = {
+  name: string;
+  email: string;
+  phone: string;
 };
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
 
@@ -266,7 +272,7 @@ function toCommercialPlanPayload(draft: AdminPlanDraft): CommercialPlanInput {
 const DEMO_ACCESS = [
   {
     role: "Admin",
-    email: "carlospsantos@gmail.com",
+    email: "carlospsantos19820@gmail.com",
     password: "Demo123!",
     description: "ADM geral com controlo total da rede e do catalogo comercial.",
   },
@@ -609,6 +615,14 @@ function App() {
     detail:
       "Escolhe o plano, usamos o perfil demo certo e levamos-te diretamente ao ponto onde a plataforma te poupa tempo.",
   });
+  const [trialForm, setTrialForm] = useState<TrialForm>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [trialSubmitting, setTrialSubmitting] = useState(false);
+  const [trialFeedback, setTrialFeedback] = useState("");
+  const [trialFeedbackTone, setTrialFeedbackTone] = useState<"success" | "error">("success");
 
   const deferredSearch = useDeferredValue(search);
 
@@ -799,6 +813,41 @@ function App() {
     } finally {
       setAuthSubmitting(false);
       setAuthBooting(false);
+    }
+  }
+
+  async function handleTrialRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setTrialSubmitting(true);
+    setTrialFeedback("");
+
+    try {
+      const response = await createTrialRequest({
+        name: trialForm.name,
+        email: trialForm.email,
+        phone: trialForm.phone,
+        requestedPlanId: "basic",
+        source: "landing",
+      });
+
+      setTrialFeedbackTone("success");
+      setTrialFeedback(response.message);
+      setTrialForm({
+        name: "",
+        email: "",
+        phone: "",
+      });
+      updateLandingGuidance(
+        "Trial reservado com protecao anti-reutilizacao",
+        "O email e o telefone ficaram validados como identificadores unicos do trial. A progressao natural continua a apontar para Pro e Enterprise."
+      );
+    } catch (trialError) {
+      setTrialFeedbackTone("error");
+      setTrialFeedback(
+        trialError instanceof Error ? trialError.message : "Nao foi possivel ativar o trial."
+      );
+    } finally {
+      setTrialSubmitting(false);
     }
   }
 
@@ -2521,7 +2570,7 @@ function App() {
           <div className="signal-grid">
             <article className="signal-card">
               <span>Admin geral</span>
-              <strong>carlospsantos@gmail.com</strong>
+              <strong>carlospsantos19820@gmail.com</strong>
               <p>Conta principal com governance total do workspace.</p>
             </article>
             <article className="signal-card">
@@ -3050,7 +3099,7 @@ function App() {
             <div className="marketing-final-grid">
               <article className="marketing-final-card">
                 <span>Email ADM</span>
-                <strong>carlospsantos@gmail.com</strong>
+                <strong>carlospsantos19820@gmail.com</strong>
                 <p>Conta principal com controlo total do workspace e dos planos.</p>
               </article>
               <article className="marketing-final-card">
@@ -3113,6 +3162,71 @@ function App() {
               Rever planos
             </button>
           </div>
+
+          {activePlanTrialDays > 0 ? (
+            <section className="trial-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Trial protegido</p>
+                  <h3>Ativar 15 dias no Starter</h3>
+                </div>
+              </div>
+
+              <p className="trial-copy">
+                O trial fica limitado a um unico email e um unico telefone, para evitar
+                reutilizacao do periodo inicial.
+              </p>
+
+              <form className="lead-form trial-form" onSubmit={handleTrialRequest}>
+                <label>
+                  Nome
+                  <input
+                    value={trialForm.name}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                    placeholder="Nome do responsavel"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Email profissional
+                  <input
+                    type="email"
+                    value={trialForm.email}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({ ...current, email: event.target.value }))
+                    }
+                    placeholder="equipa@agencia.pt"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Telefone
+                  <input
+                    value={trialForm.phone}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({ ...current, phone: event.target.value }))
+                    }
+                    placeholder="+351 912 345 678"
+                    required
+                  />
+                </label>
+
+                {trialFeedback ? (
+                  <p className={trialFeedbackTone === "success" ? "feedback success" : "feedback error"}>
+                    {trialFeedback}
+                  </p>
+                ) : null}
+
+                <button className="primary-button" type="submit" disabled={trialSubmitting}>
+                  {trialSubmitting ? "A validar trial..." : "Reservar trial de 15 dias"}
+                </button>
+              </form>
+            </section>
+          ) : null}
 
           <form className="lead-form auth-form" onSubmit={handleLogin}>
             <label>
