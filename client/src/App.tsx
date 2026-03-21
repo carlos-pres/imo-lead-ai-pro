@@ -399,6 +399,39 @@ function formatLeadLimit(limit: number) {
   return `Ate ${limit} leads/mes`;
 }
 
+function getTrialDaysForPlan(planId: PlanType) {
+  return planId === "basic" ? 15 : 0;
+}
+
+function getUpgradeTargetsForPlan(planId: PlanType, catalog: PlanCatalogEntry[]) {
+  if (planId === "basic") {
+    return catalog.filter((plan) => plan.basePlanId === "pro" || plan.basePlanId === "custom");
+  }
+
+  if (planId === "pro") {
+    return catalog.filter((plan) => plan.basePlanId === "custom");
+  }
+
+  return [];
+}
+
+function getUpgradeHintForPlan(planId: PlanType, catalog: PlanCatalogEntry[]) {
+  const trialDays = getTrialDaysForPlan(planId);
+  const nextPlans = getUpgradeTargetsForPlan(planId, catalog).map((plan) => plan.publicName);
+
+  if (planId === "basic") {
+    return `${trialDays} dias de trial no Starter. Evolucao sugerida: ${nextPlans.join(" e ")}.`;
+  }
+
+  if (planId === "pro") {
+    return nextPlans.length > 0
+      ? `Plano seguinte recomendado: ${nextPlans.join(", ")}.`
+      : "Plano preparado para equipas em crescimento.";
+  }
+
+  return "Camada final para operacoes de maior escala.";
+}
+
 function getRoleLabel(role: WorkspaceRole | undefined) {
   if (role === "admin") {
     return "Administrador";
@@ -979,6 +1012,7 @@ function App() {
     plans[0] ||
     null;
   const suggestedDemoEntry = getSuggestedDemoEntry(activePlanId);
+  const activePlanTrialDays = getTrialDaysForPlan(activePlanId);
   const availableCountries = activePlan?.includedCountryCodes || COUNTRY_OPTIONS.map((item) => item.code);
   const offices = teamOverview?.offices || [];
   const members = teamOverview?.members || [];
@@ -1151,13 +1185,17 @@ function App() {
     });
   }
 
+  function enrichGuidance(detail: string, planId: PlanType) {
+    return `${detail} ${getUpgradeHintForPlan(planId, plans)}`.trim();
+  }
+
   function openLandingPricing(
     planId: PlanType,
     title: string,
     detail: string
   ) {
     setActivePlanId(planId);
-    updateLandingGuidance(title, detail);
+    updateLandingGuidance(title, enrichGuidance(detail, planId));
     scrollToElement("landing-pricing");
   }
 
@@ -1172,7 +1210,7 @@ function App() {
       email: entry.email,
       password: entry.password,
     });
-    updateLandingGuidance(title, detail);
+    updateLandingGuidance(title, enrichGuidance(detail, planId));
     scrollToElement("landing-login");
   }
 
@@ -1629,6 +1667,7 @@ function App() {
                   <span>{plan.publicName}</span>
                   <strong>{plan.agentLabel}</strong>
                   <p>{plan.recommendedFor}</p>
+                  <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 </article>
               ))}
             </div>
@@ -2074,7 +2113,11 @@ function App() {
                 <span>{plan.publicName}</span>
                 <strong>{plan.reportsLabel}</strong>
                 <p>{plan.recommendedFor}</p>
+                <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 <div className="mini-tags">
+                  {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
+                    <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
+                  ) : null}
                   {plan.marketReports.map((report) => (
                     <span key={report}>{report}</span>
                   ))}
@@ -2140,10 +2183,15 @@ function App() {
                   </div>
 
                   <div className="mini-tags">
+                    {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
+                      <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
+                    ) : null}
                     <span>{formatLeadLimit(plan.leadLimit)}</span>
                     <span>{plan.agentLabel}</span>
                     <span>{plan.reportsLabel}</span>
                   </div>
+
+                  <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
 
                   <div className="pricing-action-row">
                     <button
@@ -2160,9 +2208,13 @@ function App() {
                         ? plan.basePlanId === activePlanId
                           ? "Plano do utilizador"
                           : "Bloqueado pelo perfil"
-                        : plan.basePlanId === activePlanId
-                          ? "Plano ativo no workspace"
-                          : "Usar neste workspace"}
+                        : getTrialDaysForPlan(plan.basePlanId) > 0
+                          ? plan.basePlanId === activePlanId
+                            ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias ativo`
+                            : `Comecar trial de ${getTrialDaysForPlan(plan.basePlanId)} dias`
+                          : plan.basePlanId === activePlanId
+                            ? "Plano ativo no workspace"
+                            : "Usar neste workspace"}
                     </button>
                   </div>
 
@@ -2874,6 +2926,9 @@ function App() {
 
                     <p className="pricing-note">{plan.agentLabel}</p>
                     <p className="hero-text">{plan.reportsLabel}</p>
+                    <p className="upgrade-note">
+                      {getUpgradeHintForPlan(plan.basePlanId, plans)}
+                    </p>
 
                     <ul className="feature-list">
                       {plan.features.slice(0, 4).map((feature) => (
@@ -2897,9 +2952,13 @@ function App() {
                           );
                         }}
                       >
-                        {plan.basePlanId === activePlanId
-                          ? "Demo pronta para este plano"
-                          : "Quero ver este plano em acao"}
+                        {getTrialDaysForPlan(plan.basePlanId) > 0
+                          ? plan.basePlanId === activePlanId
+                            ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias pronto`
+                            : `Comecar trial de ${getTrialDaysForPlan(plan.basePlanId)} dias`
+                          : plan.basePlanId === activePlanId
+                            ? "Demo pronta para este plano"
+                            : "Quero ver este plano em acao"}
                       </button>
                     </div>
                   </article>
@@ -3026,6 +3085,7 @@ function App() {
 
             <div className="mini-tags">
               <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+              {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
               <span>{suggestedDemoEntry.role}</span>
               <span>{suggestedDemoEntry.email}</span>
             </div>
@@ -3116,6 +3176,7 @@ function App() {
                 <span>{plan.publicName}</span>
                 <strong>{plan.agentLabel}</strong>
                 <p>{plan.recommendedFor}</p>
+                <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
               </article>
             ))}
           </div>

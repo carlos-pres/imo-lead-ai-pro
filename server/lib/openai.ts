@@ -410,9 +410,11 @@ export async function chatWithAI(message: string, context?: ChatContext, convers
 PLANO DO UTILIZADOR: ${currentPlanInfo.name}
 ${isBasic ? `
 RESTRICOES DO PLANO STARTER (IMPORTANTE - RESPEITA SEMPRE):
+- O utilizador esta numa fase de trial inicial de ${currentPlanInfo.trialDays || 15} dias no Starter
 - NAO podes marcar visitas nem agendar compromissos (so disponivel no Pro/Enterprise)
 - O foco de cobertura e Portugal
 - O plano inclui relatorio de mercado local mensal
+- Quando fizer sentido, explica com delicadeza que o Pro e o passo seguinte recomendado para automacao e operacao multi-owner
 - Se o utilizador pedir para marcar visita, diz: "A marcacao de visitas esta disponivel apenas nos planos Pro e Enterprise. Posso ajudar-te a criar uma mensagem para contactar o lead diretamente!"
 ` : isPro ? `
 FUNCIONALIDADES PRO (ATIVAS):
@@ -421,6 +423,7 @@ FUNCIONALIDADES PRO (ATIVAS):
 - IA avancada ativa
 - Automacao de mensagens disponivel
 - Cobertura Portugal e Iberia
+- Se o utilizador falar em multi-loja mais pesada, governance ou Europa, sugere Enterprise como evolucao natural
 ` : `
 FUNCIONALIDADES ENTERPRISE (TODAS ATIVAS):
 - Todas as funcionalidades disponiveis

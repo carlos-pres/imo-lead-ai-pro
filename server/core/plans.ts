@@ -6,6 +6,7 @@ export type PlanConfig = {
   id: PlanType;
   publicName: string;
   recommendedFor: string;
+  trialDays: number;
   includedCountryCodes: string[];
   leadLimit: number;
   advancedAI: boolean;
@@ -64,7 +65,8 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
   basic: {
     id: "basic",
     publicName: "ImoLead Starter",
-    recommendedFor: "Consultor individual ou pequena operacao local",
+    recommendedFor: "Consultor individual ou pequena operacao local com trial inicial",
+    trialDays: 15,
     includedCountryCodes: ["PT"],
     leadLimit: 120,
     advancedAI: false,
@@ -90,6 +92,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
       "Sem automacao autonoma multi-equipa",
     ],
     features: [
+      "15 dias de trial para validar a operacao sem friccao",
       "Ate 120 leads por mes",
       "1 utilizador e 1 loja",
       "Pipeline e follow-up base",
@@ -102,6 +105,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     id: "pro",
     publicName: "ImoLead Pro",
     recommendedFor: "Agencia em crescimento com multi-owner e foco Iberia",
+    trialDays: 0,
     includedCountryCodes: ["PT", "ES"],
     leadLimit: 600,
     advancedAI: true,
@@ -128,6 +132,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
       "Operacao multilingue assistida",
     ],
     features: [
+      "Upgrade natural apos o trial Starter",
       "Ate 600 leads por mes",
       "Ate 7 utilizadores",
       "Multi-loja e multi-owner",
@@ -141,6 +146,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     id: "custom",
     publicName: "ImoLead Enterprise",
     recommendedFor: "Grande imobiliaria, rede multi-loja ou expansao europeia",
+    trialDays: 0,
     includedCountryCodes: ["PT", "ES", "FR", "IT"],
     leadLimit: 999999,
     advancedAI: true,
@@ -167,6 +173,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
       "Base pronta para automacao e governance enterprise",
     ],
     features: [
+      "Camada seguinte para operacoes que ultrapassam o Pro",
       "Leads, mensagens e lojas sem limite pratico",
       "Permissoes enterprise e desks internacionais",
       "Operacao multilingue",
@@ -238,6 +245,7 @@ export function getPlanPresentation(planId: PlanType) {
 
   return {
     name: plan.publicName,
+    trialDays: plan.trialDays,
     leads:
       plan.leadLimit >= 999999 ? "Leads ilimitados" : `${plan.leadLimit} leads/mes`,
     reports: plan.reportsLabel,
@@ -247,8 +255,38 @@ export function getPlanPresentation(planId: PlanType) {
     annualDiscountPercent: plan.annualDiscountPercent,
     includedCountryCodes: plan.includedCountryCodes,
     includedMarkets: plan.includedMarkets,
+    upgradeTargets: getPlanUpgradeTargets(plan.id),
+    upgradeSummary: getPlanUpgradeSummary(plan.id),
     features: plan.features,
   };
+}
+
+export function getPlanTrialDays(planId: PlanType) {
+  return PLAN_CONFIG[planId].trialDays;
+}
+
+export function getPlanUpgradeTargets(planId: PlanType) {
+  if (planId === "basic") {
+    return ["pro", "custom"] as PlanType[];
+  }
+
+  if (planId === "pro") {
+    return ["custom"] as PlanType[];
+  }
+
+  return [] as PlanType[];
+}
+
+export function getPlanUpgradeSummary(planId: PlanType) {
+  if (planId === "basic") {
+    return "Inclui 15 dias de trial e indica sempre o Pro como evolucao natural, deixando o Enterprise para equipas multi-loja e expansao europeia.";
+  }
+
+  if (planId === "pro") {
+    return "Pensado para equipas que saem do Starter e com caminho claro para o Enterprise quando precisarem de governance e escala europeia.";
+  }
+
+  return "Camada final para operacoes que ja validaram o fit e precisam de controlo total, governance e expansao.";
 }
 
 export function isCountryCoveredByPlan(planId: PlanType, countryCode: string) {
@@ -285,6 +323,7 @@ export function getPaymentPlanOptions() {
       currency: "EUR",
       interval: "month" as const,
       features: [
+        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
         ...plan.features,
         `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,
       ],
@@ -297,6 +336,7 @@ export function getPaymentPlanOptions() {
       currency: "EUR",
       interval: "year" as const,
       features: [
+        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
         ...plan.features,
         `Desconto anual fixo de ${plan.annualDiscountPercent}%`,
         `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,
