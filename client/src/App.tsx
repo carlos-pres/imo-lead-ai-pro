@@ -4,7 +4,10 @@ import heroImg from "./assets/hero.png";
 import "./App.css";
 import {
   clearSessionToken,
+  createAdminPlan,
   createLead,
+  deleteAdminPlan,
+  getAdminPlans,
   getCurrentSession,
   getHealth,
   getLeads,
@@ -13,8 +16,10 @@ import {
   getTeams,
   login,
   logout,
+  updateAdminPlan,
   updateLeadWorkflow,
   type AuthSession,
+  type CommercialPlanInput,
   type CreateLeadInput,
   type Lead,
   type LeadStats,
@@ -27,12 +32,41 @@ import {
   type WorkspaceRole,
 } from "./services/api";
 
-type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing";
+type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing" | "admin";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
 type LoginForm = {
   email: string;
   password: string;
+};
+type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
+
+type AdminPlanDraft = {
+  id?: string;
+  basePlanId: PlanType;
+  slug: string;
+  publicName: string;
+  recommendedFor: string;
+  includedCountryCodes: string;
+  leadLimit: string;
+  advancedAI: boolean;
+  autoContact: boolean;
+  multiLocation: boolean;
+  multiLanguage: boolean;
+  maxMessagesPerMonth: string;
+  monthlyPrice: string;
+  yearlyPrice: string;
+  annualDiscountPercent: string;
+  reportsLabel: string;
+  marketReports: string;
+  includedMarkets: string;
+  supportLabel: string;
+  agentLabel: string;
+  agentCapabilities: string;
+  features: string;
+  isActive: boolean;
+  isPublic: boolean;
+  sortOrder: string;
 };
 
 type MarketInsight = {
@@ -84,6 +118,12 @@ const NAV_ITEMS: NavItem[] = [
     eyebrow: "Escala",
     description: "Pricing, agente por plano e proposta comercial unificada.",
   },
+  {
+    id: "admin",
+    label: "ADM",
+    eyebrow: "Governance",
+    description: "Controlo total do catalogo comercial e do pricing.",
+  },
 ];
 
 const STAGE_ORDER: PipelineStage[] = [
@@ -119,12 +159,112 @@ const COUNTRY_OPTIONS: Array<{
   { code: "IT", label: "Italia", language: "it-IT" },
 ];
 
+function joinLines(values: string[]) {
+  return values.join("\n");
+}
+
+function splitLines(value: string) {
+  return value
+    .split(/\r?\n|,/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function createEmptyAdminPlanDraft(): AdminPlanDraft {
+  return {
+    basePlanId: "pro",
+    slug: "",
+    publicName: "",
+    recommendedFor: "",
+    includedCountryCodes: "PT\nES",
+    leadLimit: "600",
+    advancedAI: true,
+    autoContact: true,
+    multiLocation: true,
+    multiLanguage: true,
+    maxMessagesPerMonth: "1200",
+    monthlyPrice: "97",
+    yearlyPrice: "931.2",
+    annualDiscountPercent: "20",
+    reportsLabel: "",
+    marketReports: "",
+    includedMarkets: "Portugal\nEspanha",
+    supportLabel: "",
+    agentLabel: "",
+    agentCapabilities: "",
+    features: "",
+    isActive: true,
+    isPublic: true,
+    sortOrder: "10",
+  };
+}
+
+function buildAdminPlanDraft(plan: PlanCatalogEntry): AdminPlanDraft {
+  return {
+    id: plan.id,
+    basePlanId: plan.basePlanId,
+    slug: plan.slug,
+    publicName: plan.publicName,
+    recommendedFor: plan.recommendedFor,
+    includedCountryCodes: joinLines(plan.includedCountryCodes),
+    leadLimit: String(plan.leadLimit),
+    advancedAI: plan.advancedAI,
+    autoContact: plan.autoContact,
+    multiLocation: plan.multiLocation,
+    multiLanguage: plan.multiLanguage,
+    maxMessagesPerMonth: String(plan.maxMessagesPerMonth),
+    monthlyPrice: String(plan.monthlyPrice),
+    yearlyPrice: String(plan.yearlyPrice),
+    annualDiscountPercent: String(plan.annualDiscountPercent),
+    reportsLabel: plan.reportsLabel,
+    marketReports: joinLines(plan.marketReports),
+    includedMarkets: joinLines(plan.includedMarkets),
+    supportLabel: plan.supportLabel,
+    agentLabel: plan.agentLabel,
+    agentCapabilities: joinLines(plan.agentCapabilities),
+    features: joinLines(plan.features),
+    isActive: plan.isActive,
+    isPublic: plan.isPublic,
+    sortOrder: String(plan.sortOrder),
+  };
+}
+
+function toCommercialPlanPayload(draft: AdminPlanDraft): CommercialPlanInput {
+  return {
+    id: draft.id,
+    basePlanId: draft.basePlanId,
+    slug: draft.slug,
+    publicName: draft.publicName.trim(),
+    recommendedFor: draft.recommendedFor.trim(),
+    includedCountryCodes: splitLines(draft.includedCountryCodes),
+    leadLimit: Number(draft.leadLimit || 0),
+    advancedAI: draft.advancedAI,
+    autoContact: draft.autoContact,
+    multiLocation: draft.multiLocation,
+    multiLanguage: draft.multiLanguage,
+    maxMessagesPerMonth: Number(draft.maxMessagesPerMonth || 0),
+    monthlyPrice: Number(draft.monthlyPrice || 0),
+    yearlyPrice: Number(draft.yearlyPrice || 0),
+    annualDiscountPercent: Number(draft.annualDiscountPercent || 0),
+    reportsLabel: draft.reportsLabel.trim(),
+    marketReports: splitLines(draft.marketReports),
+    includedMarkets: splitLines(draft.includedMarkets),
+    supportLabel: draft.supportLabel.trim(),
+    agentLabel: draft.agentLabel.trim(),
+    agentCapabilities: splitLines(draft.agentCapabilities),
+    features: splitLines(draft.features),
+    isActive: draft.isActive,
+    isPublic: draft.isPublic,
+    sortOrder: Number(draft.sortOrder || 0),
+  };
+}
+
 const DEMO_ACCESS = [
   {
     role: "Admin",
-    email: "carla@imolead.ai",
+    email: "carlospsantos@gmail.com",
     password: "Demo123!",
-    description: "Visao total da rede, pricing e desks enterprise.",
+    description: "ADM geral com controlo total da rede e do catalogo comercial.",
   },
   {
     role: "Manager",
@@ -373,10 +513,15 @@ function App() {
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
   const [plans, setPlans] = useState<PlanCatalogEntry[]>([]);
+  const [adminPlans, setAdminPlans] = useState<PlanCatalogEntry[]>([]);
+  const [adminDrafts, setAdminDrafts] = useState<AdminPlanDraftMap>({});
+  const [newPlanDraft, setNewPlanDraft] = useState<AdminPlanDraft>(() => createEmptyAdminPlanDraft());
   const [workflowDrafts, setWorkflowDrafts] = useState<WorkflowDraftMap>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [savingLeadId, setSavingLeadId] = useState("");
+  const [savingAdminPlanId, setSavingAdminPlanId] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
   const [error, setError] = useState("");
   const [apiState, setApiState] = useState("A verificar ligacao");
   const [aiMode, setAiMode] = useState<"hybrid" | "heuristic">("heuristic");
@@ -439,6 +584,17 @@ function App() {
     }));
   }, [session]);
 
+  useEffect(() => {
+    if (session?.user.role === "admin") {
+      void loadAdminCatalog();
+      return;
+    }
+
+    setAdminPlans([]);
+    setAdminDrafts({});
+    setNewPlanDraft(createEmptyAdminPlanDraft());
+  }, [session]);
+
   async function bootstrap() {
     await Promise.all([loadHealth(), loadPlansCatalog()]);
 
@@ -488,6 +644,27 @@ function App() {
       setPlans(planData);
     } catch (planError) {
       setError(planError instanceof Error ? planError.message : "Falha ao carregar planos");
+    }
+  }
+
+  async function loadAdminCatalog() {
+    try {
+      const adminPlanData = await getAdminPlans();
+      startTransition(() => {
+        setAdminPlans(adminPlanData);
+        setAdminDrafts(
+          adminPlanData.reduce<AdminPlanDraftMap>((drafts, plan) => {
+            drafts[plan.id] = buildAdminPlanDraft(plan);
+            return drafts;
+          }, {})
+        );
+      });
+    } catch (adminError) {
+      setError(
+        adminError instanceof Error
+          ? adminError.message
+          : "Falha ao carregar o painel de administracao"
+      );
     }
   }
 
@@ -658,10 +835,101 @@ function App() {
     }
   }
 
+  function handleAdminDraftChange(
+    planId: string,
+    patch: Partial<AdminPlanDraft>
+  ) {
+    setAdminDrafts((current) => ({
+      ...current,
+      [planId]: {
+        ...current[planId],
+        ...patch,
+      },
+    }));
+  }
+
+  async function handleAdminPlanSave(planId: string) {
+    const draft = adminDrafts[planId];
+
+    if (!draft) {
+      return;
+    }
+
+    setSavingAdminPlanId(planId);
+    setError("");
+
+    try {
+      const updated = await updateAdminPlan(planId, toCommercialPlanPayload(draft));
+      const nextPlans = adminPlans.map((plan) => (plan.id === planId ? updated : plan));
+
+      startTransition(() => {
+        setAdminPlans(nextPlans);
+        setAdminDrafts((current) => ({
+          ...current,
+          [planId]: buildAdminPlanDraft(updated),
+        }));
+        setPlans(nextPlans.filter((plan) => plan.isActive && plan.isPublic));
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao guardar o plano");
+    } finally {
+      setSavingAdminPlanId("");
+    }
+  }
+
+  async function handleAdminPlanCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminBusy(true);
+    setError("");
+
+    try {
+      const created = await createAdminPlan(toCommercialPlanPayload(newPlanDraft));
+      const nextPlans = [...adminPlans, created].sort((left, right) => left.sortOrder - right.sortOrder);
+
+      startTransition(() => {
+        setAdminPlans(nextPlans);
+        setAdminDrafts((current) => ({
+          ...current,
+          [created.id]: buildAdminPlanDraft(created),
+        }));
+        setPlans(nextPlans.filter((plan) => plan.isActive && plan.isPublic));
+        setNewPlanDraft(createEmptyAdminPlanDraft());
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao criar o plano");
+    } finally {
+      setAdminBusy(false);
+    }
+  }
+
+  async function handleAdminPlanDelete(planId: string) {
+    setSavingAdminPlanId(planId);
+    setError("");
+
+    try {
+      await deleteAdminPlan(planId);
+      const nextPlans = adminPlans.filter((plan) => plan.id !== planId);
+
+      startTransition(() => {
+        setAdminPlans(nextPlans);
+        setPlans(nextPlans.filter((plan) => plan.isActive && plan.isPublic));
+        setAdminDrafts((current) => {
+          const nextDrafts = { ...current };
+          delete nextDrafts[planId];
+          return nextDrafts;
+        });
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao remover o plano");
+    } finally {
+      setSavingAdminPlanId("");
+    }
+  }
+
   const dashboardStats = stats || deriveStats(leads);
   const activePlan =
-    plans.find((plan) => plan.id === activePlanId) ||
-    plans.find((plan) => plan.id === "pro") ||
+    plans.find((plan) => plan.basePlanId === activePlanId) ||
+    plans.find((plan) => plan.basePlanId === "pro") ||
     plans[0] ||
     null;
   const availableCountries = activePlan?.includedCountryCodes || COUNTRY_OPTIONS.map((item) => item.code);
@@ -672,8 +940,42 @@ function App() {
   const marketInsights = buildMarketInsights(leads);
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
+  const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
+  const dominantSource = sourceMix[0]?.[0] || "Manual";
+  const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
+  const hotLeadRatio =
+    dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
+  const routingMix = [
+    { label: "Flagship", value: dashboardStats.flagship_queue, tone: "flagship" },
+    { label: "Growth", value: dashboardStats.growth_queue, tone: "growth" },
+    { label: "Nurture", value: dashboardStats.nurture_queue, tone: "nurture" },
+  ];
+  const dominantDeskLabel =
+    routingMix.slice().sort((left, right) => right.value - left.value)[0]?.label || "Growth";
+  const commandSignals = [
+    {
+      label: "Mercado em foco",
+      value: topMarket?.market || "Sem destaque",
+      detail: topMarket
+        ? `${topMarket.totalLeads} leads ativos com score medio ${topMarket.averageAiScore}`
+        : "Carteira a aguardar novo sinal comercial",
+    },
+    {
+      label: "Desk dominante",
+      value: dominantDeskLabel,
+      detail: `${dashboardStats.active_teams} desks operacionais e ${dashboardStats.active_offices} lojas ativas`,
+    },
+    {
+      label: "Cobertura atual",
+      value: coverageLabel,
+      detail: `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
+    },
+  ];
+  const visibleNavItems = canAccessAdmin
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.id !== "admin");
 
   const visibleLeads = leads.filter((lead) => {
     const term = deferredSearch.trim().toLowerCase();
@@ -741,7 +1043,8 @@ function App() {
     })
     .slice(0, 5);
 
-  const viewMeta = NAV_ITEMS.find((item) => item.id === activeView) || NAV_ITEMS[0];
+  const viewMeta =
+    visibleNavItems.find((item) => item.id === activeView) || visibleNavItems[0];
 
   useEffect(() => {
     if (!activePlan || !form.countryCode) {
@@ -767,7 +1070,7 @@ function App() {
         <div className="form-helper">
           <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
           <span>
-            {activePlan?.agentLabel || "AI Copilot"} · mercados ativos:{" "}
+            {(activePlan?.agentLabel || "AI Copilot") + " · mercados ativos: "}
             {activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}
           </span>
         </div>
@@ -924,17 +1227,17 @@ function App() {
   function renderDashboardView() {
     return (
       <div className="page-stack">
-        <section className="hero-panel shell-panel">
-          <div className="hero-copy">
+        <section className="hero-panel shell-panel command-panel">
+          <div className="hero-copy command-copy">
             <p className="eyebrow">ImoLead AI Pro Enterprise</p>
-            <h2>Operacao comercial para Portugal com arquitetura pronta para Europa.</h2>
+            <h2>Um cockpit imobiliario com assinatura propria para operar mercado, equipa e ritmo.</h2>
             <p className="hero-text">
-              O produto agora passa a ler como plataforma: uma shell de operacao, desk por
-              equipas, visao executiva e pricing alinhado com o agente AI e com relatorios
-              de mercado.
+              A plataforma passa a ler como infraestrutura comercial de uma rede imobiliaria:
+              desks, cobertura geografica, radar de mercado e agente AI alinhado com o plano
+              do workspace.
             </p>
 
-            <div className="hero-actions">
+            <div className="hero-actions hero-actions-grid">
               <div className="status-chip">{apiState}</div>
               <div className="status-chip muted">
                 AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
@@ -949,17 +1252,53 @@ function App() {
                 DB {databaseConfigured ? "configurada" : "fallback local"}
               </div>
             </div>
+
+            <div className="command-strips">
+              {commandSignals.map((signal) => (
+                <article className="command-strip" key={signal.label}>
+                  <span>{signal.label}</span>
+                  <strong>{signal.value}</strong>
+                  <p>{signal.detail}</p>
+                </article>
+              ))}
+            </div>
           </div>
 
-          <div className="hero-visual">
+          <div className="hero-visual market-stage">
             <img src={heroImg} alt="Painel enterprise ImoLead AI Pro" />
-            <div className="insight-card">
-              <span>Radar do mercado</span>
-              <strong>
-                {topMarket
-                  ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
-                  : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
-              </strong>
+            <div className="market-stage-grid">
+              <div className="insight-card spotlight-card">
+                <span>Radar do mercado</span>
+                <strong>
+                  {topMarket
+                    ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
+                    : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
+                </strong>
+              </div>
+
+              <article className="floating-card metric-card">
+                <span>Heat index</span>
+                <strong>{hotLeadRatio}%</strong>
+                <p>Da carteira atual esta em estado quente.</p>
+              </article>
+
+              <article className="floating-card metric-card">
+                <span>Fonte dominante</span>
+                <strong>{dominantSource}</strong>
+                <p>Canal com maior volume na operacao atual.</p>
+              </article>
+
+              <article className="floating-card routing-card">
+                <span>Routing mix</span>
+                <div className="routing-mix">
+                  {routingMix.map((item) => (
+                    <div className={`routing-row ${item.tone}`} key={item.label}>
+                      <small>{item.label}</small>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
             </div>
           </div>
         </section>
@@ -1001,9 +1340,7 @@ function App() {
                 <article className="stack-item" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>
-                      {lead.location} · {lead.officeName}
-                    </p>
+                    <p>{lead.location} · {lead.officeName}</p>
                   </div>
                   <div className="stack-meta">
                     <span>AI {lead.aiScore}</span>
@@ -1053,9 +1390,7 @@ function App() {
                   <div className="timeline-dot" />
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>
-                      {lead.nextStep} · {lead.assignedOwner}
-                    </p>
+                    <p>{lead.nextStep} · {lead.assignedOwner}</p>
                   </div>
                   <span>{formatDate(lead.followUpAt)}</span>
                 </article>
@@ -1077,7 +1412,9 @@ function App() {
             <div className="plan-preview-list">
               {plans.map((plan) => (
                 <article
-                  className={plan.id === activePlanId ? "plan-preview active" : "plan-preview"}
+                  className={
+                    plan.basePlanId === activePlanId ? "plan-preview active" : "plan-preview"
+                  }
                   key={plan.id}
                 >
                   <span>{plan.publicName}</span>
@@ -1571,7 +1908,7 @@ function App() {
 
           <div className="pricing-grid">
             {plans.map((plan) => {
-              const isFeatured = plan.id === "pro";
+              const isFeatured = plan.basePlanId === "pro";
               const price =
                 billingMode === "month"
                   ? formatCurrency(plan.monthlyPrice)
@@ -1601,16 +1938,20 @@ function App() {
 
                   <div className="pricing-action-row">
                     <button
-                      className={plan.id === activePlanId ? "select-plan-button active" : "select-plan-button"}
+                      className={
+                        plan.basePlanId === activePlanId
+                          ? "select-plan-button active"
+                          : "select-plan-button"
+                      }
                       type="button"
                       disabled={!canSwitchPlan}
-                      onClick={() => setActivePlanId(plan.id)}
+                      onClick={() => setActivePlanId(plan.basePlanId)}
                     >
                       {session
-                        ? plan.id === activePlanId
+                        ? plan.basePlanId === activePlanId
                           ? "Plano do utilizador"
                           : "Bloqueado pelo perfil"
-                        : plan.id === activePlanId
+                        : plan.basePlanId === activePlanId
                           ? "Plano ativo no workspace"
                           : "Usar neste workspace"}
                     </button>
@@ -1661,18 +2002,365 @@ function App() {
     );
   }
 
+  function renderAdminPlanFields(
+    draft: AdminPlanDraft,
+    onChange: (patch: Partial<AdminPlanDraft>) => void
+  ) {
+    return (
+      <div className="admin-form-grid">
+        <label>
+          Plano base
+          <select
+            value={draft.basePlanId}
+            onChange={(event) =>
+              onChange({
+                basePlanId: event.target.value as PlanType,
+              })
+            }
+          >
+            <option value="basic">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="custom">Enterprise</option>
+          </select>
+        </label>
+
+        <label>
+          Slug comercial
+          <input
+            value={draft.slug}
+            onChange={(event) => onChange({ slug: event.target.value })}
+            placeholder="starter-plus"
+          />
+        </label>
+
+        <label>
+          Nome publico
+          <input
+            value={draft.publicName}
+            onChange={(event) => onChange({ publicName: event.target.value })}
+            placeholder="ImoLead Prime"
+          />
+        </label>
+
+        <label>
+          Recommended for
+          <input
+            value={draft.recommendedFor}
+            onChange={(event) => onChange({ recommendedFor: event.target.value })}
+            placeholder="Rede multi-loja com operacao iberica"
+          />
+        </label>
+
+        <label>
+          Preco mensal
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={draft.monthlyPrice}
+            onChange={(event) => onChange({ monthlyPrice: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Preco anual
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={draft.yearlyPrice}
+            onChange={(event) => onChange({ yearlyPrice: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Desconto anual %
+          <input
+            type="number"
+            min="0"
+            value={draft.annualDiscountPercent}
+            onChange={(event) => onChange({ annualDiscountPercent: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Lead limit
+          <input
+            type="number"
+            min="0"
+            value={draft.leadLimit}
+            onChange={(event) => onChange({ leadLimit: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Max messages/mes
+          <input
+            type="number"
+            min="0"
+            value={draft.maxMessagesPerMonth}
+            onChange={(event) => onChange({ maxMessagesPerMonth: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Ordem
+          <input
+            type="number"
+            min="0"
+            value={draft.sortOrder}
+            onChange={(event) => onChange({ sortOrder: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Reports label
+          <input
+            value={draft.reportsLabel}
+            onChange={(event) => onChange({ reportsLabel: event.target.value })}
+            placeholder="Relatorio executivo semanal"
+          />
+        </label>
+
+        <label>
+          Agent label
+          <input
+            value={draft.agentLabel}
+            onChange={(event) => onChange({ agentLabel: event.target.value })}
+            placeholder="AI Orchestrator"
+          />
+        </label>
+
+        <label className="admin-span">
+          Support label
+          <input
+            value={draft.supportLabel}
+            onChange={(event) => onChange({ supportLabel: event.target.value })}
+            placeholder="Suporte prioritario e onboarding"
+          />
+        </label>
+
+        <label className="admin-span">
+          Paises incluidos
+          <textarea
+            rows={3}
+            value={draft.includedCountryCodes}
+            onChange={(event) => onChange({ includedCountryCodes: event.target.value })}
+            placeholder={"PT\nES\nFR"}
+          />
+        </label>
+
+        <label className="admin-span">
+          Mercados incluidos
+          <textarea
+            rows={3}
+            value={draft.includedMarkets}
+            onChange={(event) => onChange({ includedMarkets: event.target.value })}
+            placeholder={"Portugal\nIberia\nEuropa"}
+          />
+        </label>
+
+        <label className="admin-span">
+          Market reports
+          <textarea
+            rows={4}
+            value={draft.marketReports}
+            onChange={(event) => onChange({ marketReports: event.target.value })}
+            placeholder={"Relatorio semanal por cidade\nRadar executivo europeu"}
+          />
+        </label>
+
+        <label className="admin-span">
+          Agent capabilities
+          <textarea
+            rows={4}
+            value={draft.agentCapabilities}
+            onChange={(event) => onChange({ agentCapabilities: event.target.value })}
+            placeholder={"Routing por loja\nAutomacao assistida\nGovernance"}
+          />
+        </label>
+
+        <label className="admin-span">
+          Features
+          <textarea
+            rows={5}
+            value={draft.features}
+            onChange={(event) => onChange({ features: event.target.value })}
+            placeholder={"Ate 600 leads por mes\nMulti-owner\nRelatorios semanais"}
+          />
+        </label>
+
+        <div className="admin-boolean-grid admin-span">
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.advancedAI}
+              onChange={(event) => onChange({ advancedAI: event.target.checked })}
+            />
+            <span>Advanced AI</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.autoContact}
+              onChange={(event) => onChange({ autoContact: event.target.checked })}
+            />
+            <span>Auto contact</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.multiLocation}
+              onChange={(event) => onChange({ multiLocation: event.target.checked })}
+            />
+            <span>Multi-location</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.multiLanguage}
+              onChange={(event) => onChange({ multiLanguage: event.target.checked })}
+            />
+            <span>Multi-language</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.isActive}
+              onChange={(event) => onChange({ isActive: event.target.checked })}
+            />
+            <span>Ativo</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.isPublic}
+              onChange={(event) => onChange({ isPublic: event.target.checked })}
+            />
+            <span>Publico</span>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  function renderAdminView() {
+    return (
+      <div className="page-stack">
+        <section className="shell-panel admin-hero">
+          <div>
+            <p className="eyebrow">Painel ADM</p>
+            <h3>Controlo total do catalogo comercial</h3>
+            <p className="hero-text">
+              O teu email fica como administrador principal e esta vista permite criar,
+              editar, ativar, ocultar e remover planos sem mexer diretamente no codigo.
+            </p>
+          </div>
+
+          <div className="signal-grid">
+            <article className="signal-card">
+              <span>Admin geral</span>
+              <strong>carlospsantos@gmail.com</strong>
+              <p>Conta principal com governance total do workspace.</p>
+            </article>
+            <article className="signal-card">
+              <span>Catalogo ativo</span>
+              <strong>{adminPlans.filter((plan) => plan.isActive && plan.isPublic).length}</strong>
+              <p>Planos visiveis neste momento no pricing publico.</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="admin-layout">
+          <article className="shell-panel admin-create-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Novo plano</p>
+                <h3>Criar oferta comercial</h3>
+              </div>
+            </div>
+
+            <form className="admin-plan-form" onSubmit={handleAdminPlanCreate}>
+              {renderAdminPlanFields(newPlanDraft, (patch) =>
+                setNewPlanDraft((current) => ({
+                  ...current,
+                  ...patch,
+                }))
+              )}
+
+              <button className="primary-button" type="submit" disabled={adminBusy}>
+                {adminBusy ? "A criar..." : "Criar plano"}
+              </button>
+            </form>
+          </article>
+
+          <section className="admin-plan-stack">
+            {adminPlans.map((plan) => {
+              const draft = adminDrafts[plan.id] || buildAdminPlanDraft(plan);
+
+              return (
+                <article className="shell-panel admin-plan-card" key={plan.id}>
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">{plan.basePlanId.toUpperCase()}</p>
+                      <h3>{plan.publicName}</h3>
+                    </div>
+
+                    <div className="mini-tags">
+                      <span>{plan.slug}</span>
+                      <span>{plan.isActive ? "Ativo" : "Inativo"}</span>
+                      <span>{plan.isPublic ? "Publico" : "Privado"}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-plan-form">
+                    {renderAdminPlanFields(draft, (patch) =>
+                      handleAdminDraftChange(plan.id, patch)
+                    )}
+                  </div>
+
+                  <div className="admin-plan-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={savingAdminPlanId === plan.id}
+                      onClick={() => void handleAdminPlanSave(plan.id)}
+                    >
+                      {savingAdminPlanId === plan.id ? "A guardar..." : "Guardar plano"}
+                    </button>
+
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      disabled={savingAdminPlanId === plan.id}
+                      onClick={() => void handleAdminPlanDelete(plan.id)}
+                    >
+                      Remover plano
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        </section>
+      </div>
+    );
+  }
+
   function renderLoginView() {
     return (
       <main className="auth-shell">
-        <section className="auth-hero shell-panel">
-          <p className="eyebrow">ImoLead AI Pro Enterprise</p>
-          <h1>Entrar no cockpit comercial</h1>
-          <p className="hero-text">
-            Login por perfil para demonstrar desks, permissoes e comportamento do agente AI
-            conforme o plano e a loja.
-          </p>
+        <section className="auth-hero shell-panel auth-stage">
+          <div className="auth-stage-head">
+            <p className="eyebrow">ImoLead AI Pro Enterprise</p>
+            <h1>Entrar numa plataforma com cara de operacao real</h1>
+            <p className="hero-text">
+              A entrada agora apresenta a app como centro de comando imobiliario: desks,
+              mercados, auth por perfil e agente AI alinhado com o plano do workspace.
+            </p>
+          </div>
 
-          <div className="hero-actions">
+          <div className="hero-actions hero-actions-grid">
             <div className="status-chip">{apiState}</div>
             <div className="status-chip muted">
               AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
@@ -1680,6 +2368,16 @@ function App() {
             <div className="status-chip muted">
               {databaseConfigured ? "DB configurada" : "Fallback local ativo"}
             </div>
+          </div>
+
+          <div className="auth-stage-grid">
+            {commandSignals.map((signal) => (
+              <article className="auth-stage-card" key={signal.label}>
+                <span>{signal.label}</span>
+                <strong>{signal.value}</strong>
+                <p>{signal.detail}</p>
+              </article>
+            ))}
           </div>
 
           <div className="auth-demo-grid">
@@ -1705,7 +2403,9 @@ function App() {
           <div className="plan-preview-list">
             {plans.map((plan) => (
               <article
-                className={plan.id === activePlanId ? "plan-preview active" : "plan-preview"}
+                className={
+                  plan.basePlanId === activePlanId ? "plan-preview active" : "plan-preview"
+                }
                 key={plan.id}
               >
                 <span>{plan.publicName}</span>
@@ -1722,6 +2422,13 @@ function App() {
               <p className="eyebrow">Autenticacao</p>
               <h3>Workspace com controlo por perfil</h3>
             </div>
+          </div>
+
+          <div className="auth-panel-note">
+            <span>Entrada guiada</span>
+            <p>
+              Usa um dos perfis demo para validar escopo, desks e leitura comercial da rede.
+            </p>
           </div>
 
           <form className="lead-form auth-form" onSubmit={handleLogin}>
@@ -1779,6 +2486,10 @@ function App() {
       return renderPricingView();
     }
 
+    if (activeView === "admin" && canAccessAdmin) {
+      return renderAdminView();
+    }
+
     return renderDashboardView();
   }
 
@@ -1790,13 +2501,40 @@ function App() {
     <main className="app-shell">
       <aside className="shell-sidebar">
         <div className="brand-block">
+          <div className="brand-mark">
+            <span className="brand-mark-ring" />
+            <span className="brand-mark-core">IL</span>
+          </div>
           <p className="brand-kicker">ImoLead AI Pro</p>
-          <h1>Enterprise cockpit</h1>
-          <p>Portugal first. Europe ready.</p>
+          <h1>Market command house</h1>
+          <p>Portugal first. Iberia next. Europe on the same map.</p>
+
+          <div className="brand-story">
+            <strong>Operacao, mercado e agente no mesmo cockpit.</strong>
+            <p>
+              Um produto desenhado para parecer infraestrutura comercial de uma rede
+              imobiliaria, nao apenas um painel de tarefas.
+            </p>
+          </div>
+
+          <div className="brand-mini-grid">
+            <article className="mini-metric">
+              <span>Heat</span>
+              <strong>{hotLeadRatio}%</strong>
+            </article>
+            <article className="mini-metric">
+              <span>Desk</span>
+              <strong>{dominantDeskLabel}</strong>
+            </article>
+            <article className="mini-metric">
+              <span>Fonte</span>
+              <strong>{dominantSource}</strong>
+            </article>
+          </div>
         </div>
 
         <nav className="shell-nav">
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <button
               className={item.id === activeView ? "nav-button active" : "nav-button"}
               key={item.id}
@@ -1856,6 +2594,21 @@ function App() {
             <p className="header-subcopy">
               {getRoleLabel(session.user.role)} em {session.user.officeName} · {session.user.teamName}
             </p>
+
+            <div className="header-signal-row">
+              <div className="header-signal">
+                <span>Plano</span>
+                <strong>{session.user.planName}</strong>
+              </div>
+              <div className="header-signal">
+                <span>Mercados</span>
+                <strong>{coverageLabel}</strong>
+              </div>
+              <div className="header-signal">
+                <span>Fonte lider</span>
+                <strong>{dominantSource}</strong>
+              </div>
+            </div>
           </div>
 
           <div className="header-actions">
@@ -1885,3 +2638,4 @@ function App() {
 }
 
 export default App;
+

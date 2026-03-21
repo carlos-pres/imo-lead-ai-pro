@@ -6,13 +6,17 @@ import { generateToken, verifyToken } from "./auth.js";
 import { PLAN_CONFIG, getDefaultPlanId, getPlanConfig } from "./core/plans.js";
 import {
   authenticateWorkspaceUser,
+  createCommercialPlan,
   createLead,
+  deleteCommercialPlan,
   getAllLeads,
   getLeadStats,
   getTeamOverview,
   getWorkspaceUserById,
+  listCommercialPlans,
   listWorkspaceUsers,
   prepareStorage,
+  updateCommercialPlan,
   updateLeadWorkflow,
   type WorkspaceScope,
 } from "./storage.js";
@@ -99,6 +103,16 @@ function sendRouteError(res: Response, error: unknown, fallbackMessage: string) 
   }
 
   return res.status(400).json({ error: message || fallbackMessage });
+}
+
+async function getAdminScope(req: Request) {
+  const scope = await getRequestScope(req);
+
+  if (scope.role !== "admin") {
+    throw new Error("Sem permissao para gerir o painel de administracao.");
+  }
+
+  return scope;
 }
 
 app.get("/health", (_req: Request, res: Response) => {
@@ -188,8 +202,66 @@ app.get("/api/teams", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/api/plans", (_req: Request, res: Response) => {
-  res.json(Object.values(PLAN_CONFIG));
+app.get("/api/plans", async (_req: Request, res: Response) => {
+  try {
+    const plans = await listCommercialPlans();
+    res.json(plans);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel carregar os planos.");
+  }
+});
+
+app.get("/api/admin/plans", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const plans = await listCommercialPlans(scope, {
+      includeInactive: true,
+      includePrivate: true,
+    });
+    res.json(plans);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel carregar o catalogo admin.");
+  }
+});
+
+app.post("/api/admin/plans", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const createdPlan = await createCommercialPlan(req.body, scope);
+    res.status(201).json(createdPlan);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel criar o plano.");
+  }
+});
+
+app.patch("/api/admin/plans/:id", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const updatedPlan = await updateCommercialPlan(req.params.id, req.body, scope);
+
+    if (!updatedPlan) {
+      return res.status(404).json({ error: "Plano nao encontrado." });
+    }
+
+    res.json(updatedPlan);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel atualizar o plano.");
+  }
+});
+
+app.delete("/api/admin/plans/:id", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const removed = await deleteCommercialPlan(req.params.id, scope);
+
+    if (!removed) {
+      return res.status(404).json({ error: "Plano nao encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel remover o plano.");
+  }
 });
 
 app.post(["/lead", "/api/leads"], async (req: Request, res: Response) => {

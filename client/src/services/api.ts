@@ -42,7 +42,9 @@ export type TeamOverview = {
 };
 
 export type PlanCatalogEntry = {
-  id: PlanType;
+  id: string;
+  basePlanId: PlanType;
+  slug: string;
   publicName: string;
   recommendedFor: string;
   includedCountryCodes: string[];
@@ -62,6 +64,37 @@ export type PlanCatalogEntry = {
   agentLabel: string;
   agentCapabilities: string[];
   features: string[];
+  isActive: boolean;
+  isPublic: boolean;
+  sortOrder: number;
+};
+
+export type CommercialPlanInput = {
+  id?: string;
+  basePlanId: PlanType;
+  slug?: string;
+  publicName: string;
+  recommendedFor: string;
+  includedCountryCodes: string[];
+  leadLimit: number;
+  advancedAI: boolean;
+  autoContact: boolean;
+  multiLocation: boolean;
+  multiLanguage: boolean;
+  maxMessagesPerMonth: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  annualDiscountPercent: number;
+  reportsLabel: string;
+  marketReports: string[];
+  includedMarkets: string[];
+  supportLabel: string;
+  agentLabel: string;
+  agentCapabilities: string[];
+  features: string[];
+  isActive: boolean;
+  isPublic: boolean;
+  sortOrder: number;
 };
 
 export type WorkspaceUser = {
@@ -249,6 +282,45 @@ export async function getTeams() {
 export async function getPlans() {
   const response = await apiFetch("/api/plans");
   return readJson<PlanCatalogEntry[]>(response);
+}
+
+export async function getAdminPlans() {
+  const response = await apiFetch("/api/admin/plans");
+  return readJson<PlanCatalogEntry[]>(response);
+}
+
+export async function createAdminPlan(data: CommercialPlanInput) {
+  const response = await apiFetch("/api/admin/plans", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<PlanCatalogEntry>(response);
+}
+
+export async function updateAdminPlan(id: string, data: CommercialPlanInput) {
+  const response = await apiFetch(`/api/admin/plans/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<PlanCatalogEntry>(response);
+}
+
+export async function deleteAdminPlan(id: string) {
+  const response = await apiFetch(`/api/admin/plans/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    await readJson(response);
+  }
 }
 
 export async function login(email: string, password: string) {

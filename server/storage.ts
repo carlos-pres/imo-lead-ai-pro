@@ -5,10 +5,12 @@ import bcrypt from "bcrypt";
 import { runLeadAgent } from "./ai/agentService.js";
 import { buildHeuristicLeadIntelligence, type RoutingBucket } from "./ai/enterpriseLeadAgent.js";
 import {
+  buildCommercialPlanSeedEntries,
   getPlanConfig,
   getPlanUpgradeMessage,
   isCountryCoveredByPlan,
   resolvePlanId,
+  type CommercialPlan as CoreCommercialPlan,
   type PlanType,
 } from "./core/plans.js";
 import { comparePassword } from "./auth.js";
@@ -145,6 +147,36 @@ export type UpdateLeadWorkflowInput = {
   lastContactAt?: string | null;
 };
 
+export type CommercialPlan = CoreCommercialPlan;
+
+export type UpsertCommercialPlanInput = {
+  id?: string;
+  basePlanId: PlanType;
+  slug?: string;
+  publicName: string;
+  recommendedFor: string;
+  includedCountryCodes: string[];
+  leadLimit: number;
+  advancedAI: boolean;
+  autoContact: boolean;
+  multiLocation: boolean;
+  multiLanguage: boolean;
+  maxMessagesPerMonth: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  annualDiscountPercent: number;
+  reportsLabel: string;
+  marketReports: string[];
+  includedMarkets: string[];
+  supportLabel: string;
+  agentLabel: string;
+  agentCapabilities: string[];
+  features: string[];
+  isActive: boolean;
+  isPublic: boolean;
+  sortOrder: number;
+};
+
 type LeadStats = {
   total: number;
   quente: number;
@@ -179,7 +211,12 @@ type LeadBase = {
 };
 
 const LEAD_INTELLIGENCE_VERSION = 4;
+const LEGACY_ADMIN_EMAIL = "carla@imolead.ai";
+const PRIMARY_ADMIN_EMAIL = "carlospsantos@gmail.com";
+const PRIMARY_ADMIN_NAME = "Carlos Santos";
+const PRIMARY_ADMIN_PASSWORD = process.env.ADMIN_BOOTSTRAP_PASSWORD || "Demo123!";
 const fallbackCustomers: Customer[] = [];
+const fallbackCommercialPlans: CommercialPlan[] = buildCommercialPlanSeedEntries();
 
 function createPasswordHash(password: string) {
   return bcrypt.hashSync(password, 10);
@@ -311,15 +348,15 @@ const fallbackTeamMembers: TeamMember[] = [
 const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
   {
     id: "workspace-user-admin",
-    name: "Carla Santos",
-    email: "carla@imolead.ai",
+    name: PRIMARY_ADMIN_NAME,
+    email: PRIMARY_ADMIN_EMAIL,
     role: "admin",
     officeName: "Lisboa HQ",
     teamName: "Prime Desk Lisboa",
     preferredLanguage: "pt-PT",
     planId: "custom",
     planName: getPlanConfig("custom").publicName,
-    passwordHash: createPasswordHash("Demo123!"),
+    passwordHash: createPasswordHash(PRIMARY_ADMIN_PASSWORD),
   },
   {
     id: "workspace-user-manager",
@@ -350,6 +387,31 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
 function normalizeOptionalString(value: string | undefined | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeStringList(values: string[] | undefined | null, fallback: string[] = []) {
+  const normalized = (values || [])
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
+function toSlug(value: string, fallback: string) {
+  const slug = value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || fallback;
+}
+
+function assertAdminScope(scope?: WorkspaceScope | null) {
+  if (!scope || scope.role !== "admin") {
+    throw new Error("Sem permissao para gerir o painel de administracao.");
+  }
 }
 
 function normalizeOptionalTimestamp(value: string | undefined | null) {
@@ -1113,6 +1175,10 @@ async function seedLeads(activePool: Pool) {
 }
 
 async function seedWorkspaceUsers(activePool: Pool) {
+  await activePool.query("DELETE FROM workspace_users WHERE LOWER(email) = $1", [
+    LEGACY_ADMIN_EMAIL.toLowerCase(),
+  ]);
+
   for (const user of fallbackWorkspaceUsers) {
     await activePool.query(
       `
@@ -1143,6 +1209,84 @@ async function seedWorkspaceUsers(activePool: Pool) {
         user.preferredLanguage,
         user.planId,
         user.planName,
+      ]
+    );
+  }
+}
+
+async function seedCommercialPlans(activePool: Pool) {
+  for (const plan of fallbackCommercialPlans) {
+    await activePool.query(
+      `
+        INSERT INTO commercial_plans (
+          id, base_plan_id, slug, public_name, recommended_for,
+          included_country_codes, lead_limit, advanced_ai, auto_contact,
+          multi_location, multi_language, max_messages_per_month,
+          monthly_price, yearly_price, annual_discount_percent,
+          reports_label, market_reports, included_markets, support_label,
+          agent_label, agent_capabilities, features, is_active, is_public, sort_order
+        )
+        VALUES (
+          $1, $2, $3, $4, $5,
+          $6::jsonb, $7, $8, $9,
+          $10, $11, $12, $13, $14, $15,
+          $16, $17::jsonb, $18::jsonb, $19,
+          $20, $21::jsonb, $22::jsonb, $23, $24, $25
+        )
+        ON CONFLICT (id) DO UPDATE
+        SET
+          base_plan_id = EXCLUDED.base_plan_id,
+          slug = EXCLUDED.slug,
+          public_name = EXCLUDED.public_name,
+          recommended_for = EXCLUDED.recommended_for,
+          included_country_codes = EXCLUDED.included_country_codes,
+          lead_limit = EXCLUDED.lead_limit,
+          advanced_ai = EXCLUDED.advanced_ai,
+          auto_contact = EXCLUDED.auto_contact,
+          multi_location = EXCLUDED.multi_location,
+          multi_language = EXCLUDED.multi_language,
+          max_messages_per_month = EXCLUDED.max_messages_per_month,
+          monthly_price = EXCLUDED.monthly_price,
+          yearly_price = EXCLUDED.yearly_price,
+          annual_discount_percent = EXCLUDED.annual_discount_percent,
+          reports_label = EXCLUDED.reports_label,
+          market_reports = EXCLUDED.market_reports,
+          included_markets = EXCLUDED.included_markets,
+          support_label = EXCLUDED.support_label,
+          agent_label = EXCLUDED.agent_label,
+          agent_capabilities = EXCLUDED.agent_capabilities,
+          features = EXCLUDED.features,
+          is_active = EXCLUDED.is_active,
+          is_public = EXCLUDED.is_public,
+          sort_order = EXCLUDED.sort_order,
+          updated_at = NOW()
+      `,
+      [
+        plan.id,
+        plan.basePlanId,
+        plan.slug,
+        plan.publicName,
+        plan.recommendedFor,
+        JSON.stringify(plan.includedCountryCodes),
+        plan.leadLimit,
+        plan.advancedAI,
+        plan.autoContact,
+        plan.multiLocation,
+        plan.multiLanguage,
+        plan.maxMessagesPerMonth,
+        plan.monthlyPrice,
+        plan.yearlyPrice,
+        plan.annualDiscountPercent,
+        plan.reportsLabel,
+        JSON.stringify(plan.marketReports),
+        JSON.stringify(plan.includedMarkets),
+        plan.supportLabel,
+        plan.agentLabel,
+        JSON.stringify(plan.agentCapabilities),
+        JSON.stringify(plan.features),
+        plan.isActive,
+        plan.isPublic,
+        plan.sortOrder,
       ]
     );
   }
@@ -1313,6 +1457,38 @@ async function initializeDatabase() {
     `);
 
     await activePool.query(`
+      CREATE TABLE IF NOT EXISTS commercial_plans (
+        id TEXT PRIMARY KEY,
+        base_plan_id TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        public_name TEXT NOT NULL,
+        recommended_for TEXT NOT NULL,
+        included_country_codes JSONB NOT NULL DEFAULT '[]'::jsonb,
+        lead_limit INTEGER NOT NULL,
+        advanced_ai BOOLEAN NOT NULL DEFAULT false,
+        auto_contact BOOLEAN NOT NULL DEFAULT false,
+        multi_location BOOLEAN NOT NULL DEFAULT false,
+        multi_language BOOLEAN NOT NULL DEFAULT false,
+        max_messages_per_month INTEGER NOT NULL DEFAULT 0,
+        monthly_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        yearly_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        annual_discount_percent INTEGER NOT NULL DEFAULT 20,
+        reports_label TEXT NOT NULL,
+        market_reports JSONB NOT NULL DEFAULT '[]'::jsonb,
+        included_markets JSONB NOT NULL DEFAULT '[]'::jsonb,
+        support_label TEXT NOT NULL,
+        agent_label TEXT NOT NULL,
+        agent_capabilities JSONB NOT NULL DEFAULT '[]'::jsonb,
+        features JSONB NOT NULL DEFAULT '[]'::jsonb,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        is_public BOOLEAN NOT NULL DEFAULT true,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await activePool.query(`
       ALTER TABLE leads
       ADD COLUMN IF NOT EXISTS ai_score INTEGER,
       ADD COLUMN IF NOT EXISTS reasoning TEXT,
@@ -1349,7 +1525,13 @@ async function initializeDatabase() {
       ON leads (follow_up_at ASC)
     `);
 
+    await activePool.query(`
+      CREATE INDEX IF NOT EXISTS commercial_plans_sort_idx
+      ON commercial_plans (sort_order ASC, created_at ASC)
+    `);
+
     await seedWorkspaceUsers(activePool);
+    await seedCommercialPlans(activePool);
     await seedLeads(activePool);
     await syncLeadIntelligence(activePool);
     return true;
@@ -1495,6 +1677,119 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
   };
 }
 
+function parseJsonArray(value: unknown, fallback: string[] = []) {
+  if (Array.isArray(value)) {
+    return normalizeStringList(value.map((entry) => String(entry)), fallback);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return normalizeStringList(parsed.map((entry) => String(entry)), fallback);
+      }
+    } catch {
+      return normalizeStringList(
+        value
+          .split(/\r?\n|,/)
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+        fallback
+      );
+    }
+  }
+
+  return [...fallback];
+}
+
+function mapCommercialPlanRow(row: any): CommercialPlan {
+  const basePlanId = resolvePlanId(row.base_plan_id);
+  const fallbackPlan = getPlanConfig(basePlanId);
+
+  return {
+    id: String(row.id),
+    basePlanId,
+    slug: String(row.slug || toSlug(String(row.public_name || fallbackPlan.publicName), basePlanId)),
+    publicName: String(row.public_name || fallbackPlan.publicName),
+    recommendedFor: String(row.recommended_for || fallbackPlan.recommendedFor),
+    includedCountryCodes: parseJsonArray(row.included_country_codes, fallbackPlan.includedCountryCodes),
+    leadLimit: Number(row.lead_limit ?? fallbackPlan.leadLimit),
+    advancedAI: Boolean(row.advanced_ai ?? fallbackPlan.advancedAI),
+    autoContact: Boolean(row.auto_contact ?? fallbackPlan.autoContact),
+    multiLocation: Boolean(row.multi_location ?? fallbackPlan.multiLocation),
+    multiLanguage: Boolean(row.multi_language ?? fallbackPlan.multiLanguage),
+    maxMessagesPerMonth: Number(row.max_messages_per_month ?? fallbackPlan.maxMessagesPerMonth),
+    monthlyPrice: Number(row.monthly_price ?? fallbackPlan.monthlyPrice),
+    yearlyPrice: Number(row.yearly_price ?? fallbackPlan.yearlyPrice),
+    annualDiscountPercent: Number(
+      row.annual_discount_percent ?? fallbackPlan.annualDiscountPercent
+    ),
+    reportsLabel: String(row.reports_label || fallbackPlan.reportsLabel),
+    marketReports: parseJsonArray(row.market_reports, fallbackPlan.marketReports),
+    includedMarkets: parseJsonArray(row.included_markets, fallbackPlan.includedMarkets),
+    supportLabel: String(row.support_label || fallbackPlan.supportLabel),
+    agentLabel: String(row.agent_label || fallbackPlan.agentLabel),
+    agentCapabilities: parseJsonArray(
+      row.agent_capabilities,
+      fallbackPlan.agentCapabilities
+    ),
+    features: parseJsonArray(row.features, fallbackPlan.features),
+    isActive: row.is_active === undefined ? true : Boolean(row.is_active),
+    isPublic: row.is_public === undefined ? true : Boolean(row.is_public),
+    sortOrder: Number(row.sort_order ?? 0),
+  };
+}
+
+function buildCommercialPlanRecord(input: UpsertCommercialPlanInput): CommercialPlan {
+  const basePlan = getPlanConfig(input.basePlanId);
+  const annualDiscountPercent =
+    Number.isFinite(input.annualDiscountPercent) && input.annualDiscountPercent >= 0
+      ? input.annualDiscountPercent
+      : basePlan.annualDiscountPercent;
+  const monthlyPrice = Math.max(0, Number(input.monthlyPrice || 0));
+  const fallbackYearly = Number(
+    (monthlyPrice * 12 * (1 - annualDiscountPercent / 100)).toFixed(2)
+  );
+
+  return {
+    id: input.id || randomUUID(),
+    basePlanId: input.basePlanId,
+    slug: toSlug(
+      normalizeOptionalString(input.slug) || input.publicName,
+      input.basePlanId
+    ),
+    publicName: normalizeOptionalString(input.publicName) || basePlan.publicName,
+    recommendedFor:
+      normalizeOptionalString(input.recommendedFor) || basePlan.recommendedFor,
+    includedCountryCodes: normalizeStringList(
+      input.includedCountryCodes,
+      basePlan.includedCountryCodes
+    ),
+    leadLimit: Math.max(0, Number(input.leadLimit || 0)),
+    advancedAI: Boolean(input.advancedAI),
+    autoContact: Boolean(input.autoContact),
+    multiLocation: Boolean(input.multiLocation),
+    multiLanguage: Boolean(input.multiLanguage),
+    maxMessagesPerMonth: Math.max(0, Number(input.maxMessagesPerMonth || 0)),
+    monthlyPrice,
+    yearlyPrice: Math.max(0, Number(input.yearlyPrice || fallbackYearly)),
+    annualDiscountPercent,
+    reportsLabel: normalizeOptionalString(input.reportsLabel) || basePlan.reportsLabel,
+    marketReports: normalizeStringList(input.marketReports, basePlan.marketReports),
+    includedMarkets: normalizeStringList(input.includedMarkets, basePlan.includedMarkets),
+    supportLabel: normalizeOptionalString(input.supportLabel) || basePlan.supportLabel,
+    agentLabel: normalizeOptionalString(input.agentLabel) || basePlan.agentLabel,
+    agentCapabilities: normalizeStringList(
+      input.agentCapabilities,
+      basePlan.agentCapabilities
+    ),
+    features: normalizeStringList(input.features, basePlan.features),
+    isActive: Boolean(input.isActive),
+    isPublic: Boolean(input.isPublic),
+    sortOrder: Math.max(0, Number(input.sortOrder || 0)),
+  };
+}
+
 export async function getWorkspaceUserById(id: string) {
   return useDatabase(
     async (activePool) => {
@@ -1581,6 +1876,251 @@ export async function authenticateWorkspaceUser(email: string, password: string)
   }
 
   return sanitizeWorkspaceUser(record);
+}
+
+export async function listCommercialPlans(
+  scope?: WorkspaceScope | null,
+  options?: {
+    includeInactive?: boolean;
+    includePrivate?: boolean;
+  }
+) {
+  const includeInactive = Boolean(options?.includeInactive);
+  const includePrivate = Boolean(options?.includePrivate);
+  const isAdmin = scope?.role === "admin";
+
+  const plans = await useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          SELECT
+            id, base_plan_id, slug, public_name, recommended_for,
+            included_country_codes, lead_limit, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month,
+            monthly_price, yearly_price, annual_discount_percent,
+            reports_label, market_reports, included_markets, support_label,
+            agent_label, agent_capabilities, features, is_active, is_public, sort_order
+          FROM commercial_plans
+          ORDER BY sort_order ASC, monthly_price ASC, public_name ASC
+        `
+      );
+
+      return result.rows.map(mapCommercialPlanRow);
+    },
+    async () => [...fallbackCommercialPlans].sort((left, right) => left.sortOrder - right.sortOrder)
+  );
+
+  return plans.filter((plan) => {
+    if (isAdmin) {
+      if (!includeInactive && !plan.isActive) {
+        return false;
+      }
+
+      if (!includePrivate && !plan.isPublic) {
+        return false;
+      }
+
+      return true;
+    }
+
+    return plan.isActive && plan.isPublic;
+  });
+}
+
+export async function createCommercialPlan(
+  input: UpsertCommercialPlanInput,
+  scope?: WorkspaceScope | null
+) {
+  assertAdminScope(scope);
+  const plan = buildCommercialPlanRecord(input);
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          INSERT INTO commercial_plans (
+            id, base_plan_id, slug, public_name, recommended_for,
+            included_country_codes, lead_limit, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month,
+            monthly_price, yearly_price, annual_discount_percent,
+            reports_label, market_reports, included_markets, support_label,
+            agent_label, agent_capabilities, features, is_active, is_public, sort_order
+          )
+          VALUES (
+            $1, $2, $3, $4, $5,
+            $6::jsonb, $7, $8, $9,
+            $10, $11, $12, $13, $14, $15,
+            $16, $17::jsonb, $18::jsonb, $19,
+            $20, $21::jsonb, $22::jsonb, $23, $24, $25
+          )
+          RETURNING
+            id, base_plan_id, slug, public_name, recommended_for,
+            included_country_codes, lead_limit, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month,
+            monthly_price, yearly_price, annual_discount_percent,
+            reports_label, market_reports, included_markets, support_label,
+            agent_label, agent_capabilities, features, is_active, is_public, sort_order
+        `,
+        [
+          plan.id,
+          plan.basePlanId,
+          plan.slug,
+          plan.publicName,
+          plan.recommendedFor,
+          JSON.stringify(plan.includedCountryCodes),
+          plan.leadLimit,
+          plan.advancedAI,
+          plan.autoContact,
+          plan.multiLocation,
+          plan.multiLanguage,
+          plan.maxMessagesPerMonth,
+          plan.monthlyPrice,
+          plan.yearlyPrice,
+          plan.annualDiscountPercent,
+          plan.reportsLabel,
+          JSON.stringify(plan.marketReports),
+          JSON.stringify(plan.includedMarkets),
+          plan.supportLabel,
+          plan.agentLabel,
+          JSON.stringify(plan.agentCapabilities),
+          JSON.stringify(plan.features),
+          plan.isActive,
+          plan.isPublic,
+          plan.sortOrder,
+        ]
+      );
+
+      return mapCommercialPlanRow(result.rows[0]);
+    },
+    async () => {
+      fallbackCommercialPlans.push(plan);
+      return plan;
+    }
+  );
+}
+
+export async function updateCommercialPlan(
+  id: string,
+  input: UpsertCommercialPlanInput,
+  scope?: WorkspaceScope | null
+) {
+  assertAdminScope(scope);
+
+  const currentPlans = await listCommercialPlans(scope, {
+    includeInactive: true,
+    includePrivate: true,
+  });
+  const existingPlan = currentPlans.find((plan) => plan.id === id);
+
+  if (!existingPlan) {
+    return null;
+  }
+
+  const nextPlan = buildCommercialPlanRecord({
+    ...existingPlan,
+    ...input,
+    id,
+    basePlanId: input.basePlanId || existingPlan.basePlanId,
+  });
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          UPDATE commercial_plans
+          SET
+            base_plan_id = $2,
+            slug = $3,
+            public_name = $4,
+            recommended_for = $5,
+            included_country_codes = $6::jsonb,
+            lead_limit = $7,
+            advanced_ai = $8,
+            auto_contact = $9,
+            multi_location = $10,
+            multi_language = $11,
+            max_messages_per_month = $12,
+            monthly_price = $13,
+            yearly_price = $14,
+            annual_discount_percent = $15,
+            reports_label = $16,
+            market_reports = $17::jsonb,
+            included_markets = $18::jsonb,
+            support_label = $19,
+            agent_label = $20,
+            agent_capabilities = $21::jsonb,
+            features = $22::jsonb,
+            is_active = $23,
+            is_public = $24,
+            sort_order = $25,
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING
+            id, base_plan_id, slug, public_name, recommended_for,
+            included_country_codes, lead_limit, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month,
+            monthly_price, yearly_price, annual_discount_percent,
+            reports_label, market_reports, included_markets, support_label,
+            agent_label, agent_capabilities, features, is_active, is_public, sort_order
+        `,
+        [
+          id,
+          nextPlan.basePlanId,
+          nextPlan.slug,
+          nextPlan.publicName,
+          nextPlan.recommendedFor,
+          JSON.stringify(nextPlan.includedCountryCodes),
+          nextPlan.leadLimit,
+          nextPlan.advancedAI,
+          nextPlan.autoContact,
+          nextPlan.multiLocation,
+          nextPlan.multiLanguage,
+          nextPlan.maxMessagesPerMonth,
+          nextPlan.monthlyPrice,
+          nextPlan.yearlyPrice,
+          nextPlan.annualDiscountPercent,
+          nextPlan.reportsLabel,
+          JSON.stringify(nextPlan.marketReports),
+          JSON.stringify(nextPlan.includedMarkets),
+          nextPlan.supportLabel,
+          nextPlan.agentLabel,
+          JSON.stringify(nextPlan.agentCapabilities),
+          JSON.stringify(nextPlan.features),
+          nextPlan.isActive,
+          nextPlan.isPublic,
+          nextPlan.sortOrder,
+        ]
+      );
+
+      return mapCommercialPlanRow(result.rows[0]);
+    },
+    async () => {
+      const index = fallbackCommercialPlans.findIndex((plan) => plan.id === id);
+      fallbackCommercialPlans[index] = nextPlan;
+      return nextPlan;
+    }
+  );
+}
+
+export async function deleteCommercialPlan(id: string, scope?: WorkspaceScope | null) {
+  assertAdminScope(scope);
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query("DELETE FROM commercial_plans WHERE id = $1", [id]);
+      return result.rowCount > 0;
+    },
+    async () => {
+      const nextPlans = fallbackCommercialPlans.filter((plan) => plan.id !== id);
+      const removed = nextPlans.length !== fallbackCommercialPlans.length;
+
+      if (removed) {
+        fallbackCommercialPlans.splice(0, fallbackCommercialPlans.length, ...nextPlans);
+      }
+
+      return removed;
+    }
+  );
 }
 
 export async function getTeamOverview(scope?: WorkspaceScope) {
@@ -1900,6 +2440,10 @@ export async function getLeadStats(scope?: WorkspaceScope) {
 export const storage = {
   getCustomer,
   updateCustomer,
+  listCommercialPlans,
+  createCommercialPlan,
+  updateCommercialPlan,
+  deleteCommercialPlan,
   getTeamOverview,
   getAllLeads,
   createLead,

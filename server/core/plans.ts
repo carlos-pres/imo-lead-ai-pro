@@ -25,6 +25,34 @@ export type PlanConfig = {
   features: string[];
 };
 
+export type CommercialPlan = {
+  id: string;
+  basePlanId: PlanType;
+  slug: string;
+  publicName: string;
+  recommendedFor: string;
+  includedCountryCodes: string[];
+  leadLimit: number;
+  advancedAI: boolean;
+  autoContact: boolean;
+  multiLocation: boolean;
+  multiLanguage: boolean;
+  maxMessagesPerMonth: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  annualDiscountPercent: number;
+  reportsLabel: string;
+  marketReports: string[];
+  includedMarkets: string[];
+  supportLabel: string;
+  agentLabel: string;
+  agentCapabilities: string[];
+  features: string[];
+  isActive: boolean;
+  isPublic: boolean;
+  sortOrder: number;
+};
+
 export const ANNUAL_DISCOUNT_PERCENT = 20;
 export const DEFAULT_PLAN_ID: PlanType = "pro";
 
@@ -151,6 +179,41 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
 
 export function getPlanConfig(planId: PlanType) {
   return PLAN_CONFIG[planId];
+}
+
+export function buildCommercialPlanSeedEntries() {
+  return (Object.values(PLAN_CONFIG) as PlanConfig[]).map((plan, index) => ({
+    id: `catalog-${plan.id}`,
+    basePlanId: plan.id,
+    slug:
+      plan.id === "basic"
+        ? "starter"
+        : plan.id === "pro"
+          ? "pro"
+          : "enterprise",
+    publicName: plan.publicName,
+    recommendedFor: plan.recommendedFor,
+    includedCountryCodes: [...plan.includedCountryCodes],
+    leadLimit: plan.leadLimit,
+    advancedAI: plan.advancedAI,
+    autoContact: plan.autoContact,
+    multiLocation: plan.multiLocation,
+    multiLanguage: plan.multiLanguage,
+    maxMessagesPerMonth: plan.maxMessagesPerMonth,
+    monthlyPrice: plan.monthlyPrice,
+    yearlyPrice: plan.yearlyPrice,
+    annualDiscountPercent: plan.annualDiscountPercent,
+    reportsLabel: plan.reportsLabel,
+    marketReports: [...plan.marketReports],
+    includedMarkets: [...plan.includedMarkets],
+    supportLabel: plan.supportLabel,
+    agentLabel: plan.agentLabel,
+    agentCapabilities: [...plan.agentCapabilities],
+    features: [...plan.features],
+    isActive: true,
+    isPublic: true,
+    sortOrder: index + 1,
+  })) satisfies CommercialPlan[];
 }
 
 export function isPlanType(value: string | undefined | null): value is PlanType {

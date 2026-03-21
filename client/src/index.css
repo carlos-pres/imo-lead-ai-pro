@@ -1,12 +1,22 @@
 :root {
+  --bg-ink: #0d1723;
+  --bg-deep: #122235;
+  --panel-cream: rgba(252, 246, 237, 0.82);
+  --panel-soft: rgba(255, 255, 255, 0.78);
+  --line-soft: rgba(22, 39, 59, 0.1);
+  --text-strong: #132237;
+  --text-muted: #55657a;
+  --accent-copper: #c97c44;
+  --accent-gold: #d9b26f;
+  --accent-blue: #7fa6d6;
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #132237;
+  color: var(--text-strong);
   background:
-    radial-gradient(circle at top left, rgba(214, 132, 74, 0.22), transparent 28%),
-    radial-gradient(circle at right, rgba(59, 114, 176, 0.08), transparent 26%),
-    linear-gradient(180deg, #fffaf3 0%, #f4ecdf 100%);
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.22), transparent 26%),
+    radial-gradient(circle at top right, rgba(127, 166, 214, 0.15), transparent 28%),
+    linear-gradient(180deg, #f7efe4 0%, #efe4d3 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -27,8 +37,16 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(214, 132, 74, 0.18), transparent 24%),
-    linear-gradient(180deg, #fffaf3 0%, #f4ecdf 100%);
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.2), transparent 22%),
+    radial-gradient(circle at right 18%, rgba(127, 166, 214, 0.16), transparent 24%),
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.18) 0,
+      rgba(255, 255, 255, 0.18) 1px,
+      transparent 1px,
+      transparent 34px
+    ),
+    linear-gradient(180deg, #f7efe4 0%, #efe4d3 100%);
 }
 
 button,
