@@ -498,6 +498,17 @@ function buildSourceMix(leads: Lead[]) {
   return Array.from(counter.entries()).sort((left, right) => right[1] - left[1]);
 }
 
+function scrollToElement(id: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.getElementById(id)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
 function App() {
   const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
   const [billingMode, setBillingMode] = useState<BillingMode>("month");
@@ -971,6 +982,63 @@ function App() {
       label: "Cobertura atual",
       value: coverageLabel,
       detail: `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
+    },
+  ];
+  const landingFeatureCards = [
+    {
+      eyebrow: "Prospeccao",
+      title: "Captacao e triagem com sinal comercial imediato",
+      description:
+        "O sistema organiza leads, calcula prioridade e separa flagship, growth e nurture sem depender de folhas dispersas.",
+    },
+    {
+      eyebrow: "Automacao",
+      title: "WhatsApp, agenda e follow-up no mesmo fluxo",
+      description:
+        "A operacao sai do modo manual e passa a trabalhar com cadencia, SLA, contexto do lead e proxima melhor acao.",
+    },
+    {
+      eyebrow: "Mercado",
+      title: "Relatorios de mercado pensados para rede imobiliaria",
+      description:
+        "Portugal primeiro, Iberia a seguir e base pronta para equipas multi-loja com leitura por mercado, origem e owner.",
+    },
+    {
+      eyebrow: "Governance",
+      title: "Planos, equipas e agente AI controlados pelo workspace",
+      description:
+        "Cada plano define cobertura geografica, profundidade do agente, mensagens e capacidade comercial do workspace.",
+    },
+  ];
+  const landingWorkflow = [
+    {
+      step: "01",
+      title: "Entrada de leads",
+      detail: `${dashboardStats.total || 0} leads em carteira com captura centralizada por fonte, escritorio e mercado.`,
+    },
+    {
+      step: "02",
+      title: "Classificacao do agente",
+      detail: `Score medio ${dashboardStats.average_ai_score} com roteamento para ${dominantDeskLabel}.`,
+    },
+    {
+      step: "03",
+      title: "Resposta operacional",
+      detail: `${dashboardStats.urgent_actions} acoes urgentes e ${dashboardStats.overdue_followups} follow-ups em atraso visiveis no cockpit.`,
+    },
+  ];
+  const landingTestimonials = [
+    {
+      quote:
+        "O valor aqui nao e so CRM. E a sensacao de finalmente termos uma operacao comercial organizada por prioridade real.",
+      author: "Direcao Comercial",
+      role: "Rede imobiliaria em piloto",
+    },
+    {
+      quote:
+        "A plataforma parece ferramenta de direcao e nao apenas software de registo. Isso muda a forma como a equipa usa o sistema.",
+      author: "Gestao de Expansao",
+      role: "Desk Iberia",
     },
   ];
   const visibleNavItems = canAccessAdmin
@@ -2349,36 +2417,321 @@ function App() {
 
   function renderLoginView() {
     return (
-      <main className="auth-shell">
-        <section className="auth-hero shell-panel auth-stage">
-          <div className="auth-stage-head">
-            <p className="eyebrow">ImoLead AI Pro Enterprise</p>
-            <h1>Entrar numa plataforma com cara de operacao real</h1>
-            <p className="hero-text">
-              A entrada agora apresenta a app como centro de comando imobiliario: desks,
-              mercados, auth por perfil e agente AI alinhado com o plano do workspace.
+      <main className="auth-shell marketing-auth-shell">
+        <div className="marketing-main">
+          <section className="shell-panel marketing-hero">
+            <div className="marketing-nav">
+              <div className="marketing-brand">
+                <div className="marketing-brand-mark">IL</div>
+                <div>
+                  <p>ImoLead AI Pro</p>
+                  <span>Automacao inteligente para imobiliario em Portugal</span>
+                </div>
+              </div>
+
+              <div className="marketing-nav-actions">
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => scrollToElement("landing-pricing")}
+                >
+                  Ver planos
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => scrollToElement("landing-login")}
+                >
+                  Agendar demo
+                </button>
+              </div>
+            </div>
+
+            <div className="marketing-hero-grid">
+              <div className="marketing-copy">
+                <p className="eyebrow">Control tower para redes imobiliarias</p>
+                <h1>Um front comercial forte na entrada. Um cockpit real por dentro.</h1>
+                <p className="hero-text">
+                  O prototipo aponta para a direcao certa: marketing premium, mensagem clara
+                  e uma plataforma que vende produtividade, mercado e automacao antes mesmo
+                  do login.
+                </p>
+
+                <div className="marketing-cta-row">
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => scrollToElement("landing-login")}
+                  >
+                    Ver demonstracao
+                  </button>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => scrollToElement("landing-pricing")}
+                  >
+                    Comparar planos
+                  </button>
+                </div>
+
+                <div className="marketing-chip-row">
+                  <div className="status-chip">{apiState}</div>
+                  <div className="status-chip muted">
+                    AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
+                  </div>
+                  <div className="status-chip muted">
+                    {databaseConfigured ? "DB configurada" : "Fallback local ativo"}
+                  </div>
+                </div>
+
+                <div className="marketing-proof-grid">
+                  {commandSignals.map((signal) => (
+                    <article className="marketing-proof-card" key={signal.label}>
+                      <span>{signal.label}</span>
+                      <strong>{signal.value}</strong>
+                      <p>{signal.detail}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="marketing-visual">
+                <img src={heroImg} alt="Painel enterprise ImoLead AI Pro" />
+
+                <div className="marketing-float-card marketing-float-main">
+                  <span>Desk dominante</span>
+                  <strong>{dominantDeskLabel}</strong>
+                  <p>{dashboardStats.urgent_actions} acoes urgentes sob monitorizacao.</p>
+                </div>
+
+                <div className="marketing-float-card marketing-float-side">
+                  <span>Mercado em foco</span>
+                  <strong>{topMarket?.market || "Portugal"}</strong>
+                  <p>
+                    {topMarket
+                      ? `${topMarket.totalLeads} leads com score medio ${topMarket.averageAiScore}`
+                      : "Operacao pronta para captar o primeiro lote de leads."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="marketing-section">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">O que o mercado espera</p>
+                <h3>Uma landing que vende valor antes do utilizador ver o software</h3>
+              </div>
+            </div>
+
+            <div className="marketing-feature-grid">
+              {landingFeatureCards.map((feature) => (
+                <article className="marketing-feature-card" key={feature.title}>
+                  <span>{feature.eyebrow}</span>
+                  <strong>{feature.title}</strong>
+                  <p>{feature.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="marketing-section marketing-duo-grid">
+            <article className="shell-panel marketing-story-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Workflow</p>
+                  <h3>Da captacao ao follow-up numa experiencia unica</h3>
+                </div>
+              </div>
+
+              <div className="marketing-step-list">
+                {landingWorkflow.map((item) => (
+                  <article className="marketing-step-card" key={item.step}>
+                    <span>{item.step}</span>
+                    <strong>{item.title}</strong>
+                    <p>{item.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article className="shell-panel marketing-story-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Percepcao de valor</p>
+                  <h3>Como deve soar para um diretor comercial</h3>
+                </div>
+              </div>
+
+              <div className="marketing-testimonial-list">
+                {landingTestimonials.map((item) => (
+                  <blockquote className="marketing-testimonial-card" key={item.author}>
+                    <p>{item.quote}</p>
+                    <footer>
+                      <strong>{item.author}</strong>
+                      <span>{item.role}</span>
+                    </footer>
+                  </blockquote>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <section className="marketing-section" id="landing-pricing">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Planos</p>
+                <h3>Oferta comercial clara, europeia e pronta para venda</h3>
+              </div>
+
+              <div className="billing-toggle">
+                <button
+                  className={billingMode === "month" ? "toggle-button active" : "toggle-button"}
+                  type="button"
+                  onClick={() => setBillingMode("month")}
+                >
+                  Mensal
+                </button>
+                <button
+                  className={billingMode === "year" ? "toggle-button active" : "toggle-button"}
+                  type="button"
+                  onClick={() => setBillingMode("year")}
+                >
+                  Anual -20%
+                </button>
+              </div>
+            </div>
+
+            <div className="pricing-grid marketing-pricing-grid">
+              {plans.map((plan) => {
+                const isYear = billingMode === "year";
+                const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
+                const suffix = isYear ? "/ano" : "/mes";
+                const featured = plan.basePlanId === "pro";
+
+                return (
+                  <article
+                    className={featured ? "pricing-card featured" : "pricing-card"}
+                    key={plan.id}
+                  >
+                    <div className="pricing-head">
+                      <span>{plan.recommendedFor}</span>
+                      <strong>
+                        {formatCurrency(price, "EUR", price % 1 !== 0)}
+                        <small>{suffix}</small>
+                      </strong>
+                    </div>
+
+                    <p className="pricing-note">{plan.agentLabel}</p>
+                    <p className="hero-text">{plan.reportsLabel}</p>
+
+                    <ul className="feature-list">
+                      {plan.features.slice(0, 4).map((feature) => (
+                        <li key={feature}>{feature}</li>
+                      ))}
+                    </ul>
+
+                    <div className="pricing-action-row">
+                      <button
+                        className={
+                          plan.basePlanId === activePlanId
+                            ? "select-plan-button active"
+                            : "select-plan-button"
+                        }
+                        type="button"
+                        onClick={() => {
+                          setActivePlanId(plan.basePlanId);
+                          scrollToElement("landing-login");
+                        }}
+                      >
+                        {plan.basePlanId === activePlanId ? "Plano em destaque" : "Escolher plano"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="shell-panel marketing-final-cta" id="landing-contact">
+            <div>
+              <p className="eyebrow">Fecho comercial</p>
+              <h3>Vender isto deve parecer uma demonstracao, nao uma promessa vaga</h3>
+              <p className="hero-text">
+                O passo seguinte e simples: usar esta landing como frente comercial e manter
+                o cockpit para utilizadores autenticados, com a mesma identidade de marca.
+              </p>
+            </div>
+
+            <div className="marketing-final-grid">
+              <article className="marketing-final-card">
+                <span>Email ADM</span>
+                <strong>carlospsantos@gmail.com</strong>
+                <p>Conta principal com controlo total do workspace e dos planos.</p>
+              </article>
+              <article className="marketing-final-card">
+                <span>Mercados</span>
+                <strong>{coverageLabel}</strong>
+                <p>Base pronta para Portugal agora e Europa nas proximas fases.</p>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <aside className="auth-panel shell-panel marketing-auth-panel" id="landing-login">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Autenticacao</p>
+              <h3>Entrar no workspace</h3>
+            </div>
+          </div>
+
+          <div className="auth-panel-note">
+            <span>Entrada guiada</span>
+            <p>
+              Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo
+              por perfil.
             </p>
           </div>
 
-          <div className="hero-actions hero-actions-grid">
-            <div className="status-chip">{apiState}</div>
-            <div className="status-chip muted">
-              AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
-            </div>
-            <div className="status-chip muted">
-              {databaseConfigured ? "DB configurada" : "Fallback local ativo"}
-            </div>
-          </div>
+          <form className="lead-form auth-form" onSubmit={handleLogin}>
+            <label>
+              Email
+              <input
+                value={loginForm.email}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder={DEMO_ACCESS[0].email}
+                required
+              />
+            </label>
 
-          <div className="auth-stage-grid">
-            {commandSignals.map((signal) => (
-              <article className="auth-stage-card" key={signal.label}>
-                <span>{signal.label}</span>
-                <strong>{signal.value}</strong>
-                <p>{signal.detail}</p>
-              </article>
-            ))}
-          </div>
+            <label>
+              Password
+              <input
+                type="password"
+                value={loginForm.password}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, password: event.target.value }))
+                }
+                placeholder="Demo123!"
+                required
+              />
+            </label>
+
+            {error ? <p className="feedback error">{error}</p> : null}
+            {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
+
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={authSubmitting || authBooting}
+            >
+              {authSubmitting ? "A entrar..." : "Entrar no workspace"}
+            </button>
+          </form>
 
           <div className="auth-demo-grid">
             {DEMO_ACCESS.map((entry) => (
@@ -2403,9 +2756,7 @@ function App() {
           <div className="plan-preview-list">
             {plans.map((plan) => (
               <article
-                className={
-                  plan.basePlanId === activePlanId ? "plan-preview active" : "plan-preview"
-                }
+                className={plan.basePlanId === activePlanId ? "plan-preview active" : "plan-preview"}
                 key={plan.id}
               >
                 <span>{plan.publicName}</span>
@@ -2414,57 +2765,7 @@ function App() {
               </article>
             ))}
           </div>
-        </section>
-
-        <section className="auth-panel shell-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Autenticacao</p>
-              <h3>Workspace com controlo por perfil</h3>
-            </div>
-          </div>
-
-          <div className="auth-panel-note">
-            <span>Entrada guiada</span>
-            <p>
-              Usa um dos perfis demo para validar escopo, desks e leitura comercial da rede.
-            </p>
-          </div>
-
-          <form className="lead-form auth-form" onSubmit={handleLogin}>
-            <label>
-              Email
-              <input
-                value={loginForm.email}
-                onChange={(event) =>
-                  setLoginForm((current) => ({ ...current, email: event.target.value }))
-                }
-                placeholder="carla@imolead.ai"
-                required
-              />
-            </label>
-
-            <label>
-              Password
-              <input
-                type="password"
-                value={loginForm.password}
-                onChange={(event) =>
-                  setLoginForm((current) => ({ ...current, password: event.target.value }))
-                }
-                placeholder="Demo123!"
-                required
-              />
-            </label>
-
-            {error ? <p className="feedback error">{error}</p> : null}
-            {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
-
-            <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
-              {authSubmitting ? "A entrar..." : "Entrar no workspace"}
-            </button>
-          </form>
-        </section>
+        </aside>
       </main>
     );
   }
