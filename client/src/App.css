@@ -1494,6 +1494,59 @@
   gap: 18px;
 }
 
+.marketing-metric-ribbon,
+.marketing-results-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.marketing-metric-ribbon {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.marketing-metric-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 14px 30px rgba(21, 33, 48, 0.06);
+}
+
+.marketing-metric-card span,
+.marketing-results-head span,
+.marketing-results-grid span,
+.marketing-faq-card strong {
+  display: block;
+}
+
+.marketing-metric-card span,
+.marketing-results-head span,
+.marketing-results-grid span {
+  color: #7f6f5c;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.marketing-metric-card strong,
+.marketing-results-head strong,
+.marketing-results-grid strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.marketing-metric-card strong {
+  font-size: 2.15rem;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+}
+
+.marketing-metric-card p,
+.marketing-faq-card p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+}
+
 .marketing-feature-grid,
 .marketing-final-grid {
   display: grid;
@@ -1538,8 +1591,79 @@
   border-radius: 26px;
 }
 
+.marketing-results-shell {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.marketing-results-visual,
+.marketing-results-copy {
+  padding: 24px;
+  border-radius: 26px;
+}
+
+.marketing-results-visual {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 250, 244, 0.92), rgba(247, 241, 232, 0.88));
+}
+
+.marketing-results-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding: 20px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(12, 24, 37, 0.98), rgba(20, 36, 54, 0.95));
+  box-shadow: 0 20px 40px rgba(12, 24, 37, 0.22);
+}
+
+.marketing-results-head strong,
+.marketing-results-grid strong {
+  color: #f8f0e6;
+}
+
+.marketing-results-head span,
+.marketing-results-grid span {
+  color: rgba(248, 240, 230, 0.62);
+}
+
+.marketing-results-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.marketing-results-grid article {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.marketing-benefit-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 12px;
+  color: #223248;
+}
+
+.marketing-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 .marketing-step-list,
 .marketing-testimonial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.marketing-faq-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1564,6 +1688,17 @@
 
 .marketing-testimonial-card footer {
   margin-top: 16px;
+}
+
+.marketing-faq-card {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(252, 249, 244, 0.84);
+}
+
+.marketing-faq-card strong {
+  color: #132237;
 }
 
 .marketing-pricing-grid {
@@ -1732,9 +1867,12 @@
   }
 
   .marketing-hero-grid,
+  .marketing-metric-ribbon,
   .marketing-proof-grid,
   .marketing-feature-grid,
   .marketing-duo-grid,
+  .marketing-results-shell,
+  .marketing-results-grid,
   .marketing-pricing-grid,
   .marketing-final-grid {
     grid-template-columns: 1fr;

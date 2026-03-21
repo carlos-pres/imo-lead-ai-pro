@@ -1009,6 +1009,18 @@ function App() {
       description:
         "Cada plano define cobertura geografica, profundidade do agente, mensagens e capacidade comercial do workspace.",
     },
+    {
+      eyebrow: "Pipeline",
+      title: "Distribuicao operacional por owner, loja e fase",
+      description:
+        "A equipa deixa de trabalhar no improviso e passa a responder a partir de boards, SLAs e responsabilidade clara.",
+    },
+    {
+      eyebrow: "Escala",
+      title: "Base pronta para Portugal hoje e Europa a seguir",
+      description:
+        "Mercados, idiomas, desks e planos ficam preparados para crescimento sem partir a estrutura do produto.",
+    },
   ];
   const landingWorkflow = [
     {
@@ -1039,6 +1051,57 @@ function App() {
         "A plataforma parece ferramenta de direcao e nao apenas software de registo. Isso muda a forma como a equipa usa o sistema.",
       author: "Gestao de Expansao",
       role: "Desk Iberia",
+    },
+    {
+      quote:
+        "Quando a frente comercial parece forte e a area interna entrega controlo real, a reuniao muda de tom e a venda fica muito mais facil.",
+      author: "Founder / Operacao",
+      role: "ImoLead AI Pro",
+    },
+  ];
+  const landingMetricBar = [
+    {
+      label: "Leads vivas",
+      value: String(dashboardStats.total || 0),
+      detail: "pipeline monitorizada em tempo real",
+    },
+    {
+      label: "Score medio",
+      value: String(dashboardStats.average_ai_score || 0),
+      detail: "classificacao com contexto comercial",
+    },
+    {
+      label: "Mercados",
+      value: String(dashboardStats.european_markets || 0),
+      detail: "Portugal, Iberia e expansao",
+    },
+    {
+      label: "Follow-ups",
+      value: String(dashboardStats.overdue_followups || 0),
+      detail: "rastreio de backlog e urgencia",
+    },
+  ];
+  const landingBenefitBullets = [
+    "Landing comercial que transmite confianca antes do primeiro clique.",
+    "Cockpit interno com leads, pipeline, equipas, mercado e ADM no mesmo workspace.",
+    "Planos com agente por nivel, relatorios e cobertura geografica coerente.",
+    "Arquitetura pronta para apresentar Portugal hoje e Europa como proxima fase credivel.",
+  ];
+  const landingFaqs = [
+    {
+      question: "Isto e um CRM generico?",
+      answer:
+        "Nao. O posicionamento certo e plataforma operacional para imobiliario, com foco em triagem, routing, mercado e follow-up.",
+    },
+    {
+      question: "Serve so para Portugal?",
+      answer:
+        "Portugal e o mercado de entrada, mas a estrutura ja suporta desks, idiomas e expansao Iberia/Europa.",
+    },
+    {
+      question: "O agente AI muda por plano?",
+      answer:
+        "Sim. O plano condiciona cobertura geografica, profundidade do agente e a capacidade operacional exposta ao cliente.",
     },
   ];
   const visibleNavItems = canAccessAdmin
@@ -2517,6 +2580,16 @@ function App() {
             </div>
           </section>
 
+          <section className="marketing-metric-ribbon">
+            {landingMetricBar.map((item) => (
+              <article className="marketing-metric-card" key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <p>{item.detail}</p>
+              </article>
+            ))}
+          </section>
+
           <section className="marketing-section">
             <div className="section-head">
               <div>
@@ -2574,6 +2647,68 @@ function App() {
                     </footer>
                   </blockquote>
                 ))}
+              </div>
+            </article>
+          </section>
+
+          <section className="marketing-section marketing-results-shell">
+            <article className="shell-panel marketing-results-visual">
+              <div className="marketing-results-board">
+                <div className="marketing-results-head">
+                  <span>Vista executiva</span>
+                  <strong>{topMarket?.market || "Portugal"} em destaque</strong>
+                </div>
+
+                <div className="marketing-results-grid">
+                  <article>
+                    <span>Desk</span>
+                    <strong>{dominantDeskLabel}</strong>
+                  </article>
+                  <article>
+                    <span>Fonte lider</span>
+                    <strong>{dominantSource}</strong>
+                  </article>
+                  <article>
+                    <span>Quentes</span>
+                    <strong>{dashboardStats.quente}</strong>
+                  </article>
+                  <article>
+                    <span>SLA urgente</span>
+                    <strong>{dashboardStats.urgent_actions}</strong>
+                  </article>
+                </div>
+              </div>
+            </article>
+
+            <article className="shell-panel marketing-results-copy">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Porque isto impacta</p>
+                  <h3>Precisamos de parecer categoria nova, nao software repetido</h3>
+                </div>
+              </div>
+
+              <ul className="marketing-benefit-list">
+                {landingBenefitBullets.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+
+              <div className="marketing-inline-actions">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => scrollToElement("landing-login")}
+                >
+                  Pedir demonstracao
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => scrollToElement("landing-pricing")}
+                >
+                  Rever oferta
+                </button>
               </div>
             </article>
           </section>
@@ -2652,6 +2787,47 @@ function App() {
                 );
               })}
             </div>
+          </section>
+
+          <section className="marketing-section marketing-duo-grid">
+            <article className="shell-panel marketing-story-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Prova social</p>
+                  <h3>O discurso que queremos que o mercado repita</h3>
+                </div>
+              </div>
+
+              <div className="marketing-testimonial-list">
+                {landingTestimonials.map((item) => (
+                  <blockquote className="marketing-testimonial-card" key={item.author}>
+                    <p>{item.quote}</p>
+                    <footer>
+                      <strong>{item.author}</strong>
+                      <span>{item.role}</span>
+                    </footer>
+                  </blockquote>
+                ))}
+              </div>
+            </article>
+
+            <article className="shell-panel marketing-story-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">FAQ</p>
+                  <h3>Resposta curta para as duvidas que travam a venda</h3>
+                </div>
+              </div>
+
+              <div className="marketing-faq-list">
+                {landingFaqs.map((item) => (
+                  <article className="marketing-faq-card" key={item.question}>
+                    <strong>{item.question}</strong>
+                    <p>{item.answer}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
           </section>
 
           <section className="shell-panel marketing-final-cta" id="landing-contact">
