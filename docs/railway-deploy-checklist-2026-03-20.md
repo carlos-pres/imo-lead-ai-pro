@@ -1,5 +1,7 @@
 # Railway Deploy Checklist
 
+Guia completo de bootstrap para um servico novo: `docs/railway-bootstrap-2026-03-21.md`
+
 ## Estado atual
 
 - Build da raiz passa com `npm run build`

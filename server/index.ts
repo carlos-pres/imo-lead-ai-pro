@@ -12,6 +12,7 @@ import {
   getTeamOverview,
   getWorkspaceUserById,
   listWorkspaceUsers,
+  prepareStorage,
   updateLeadWorkflow,
   type WorkspaceScope,
 } from "./storage.js";
@@ -284,6 +285,23 @@ if (hasClientBuild) {
 
 const PORT = Number(process.env.PORT) || 5000;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+async function startServer() {
+  const storageState = await prepareStorage();
+
+  if (storageState.mode === "database") {
+    console.log("Storage ready: PostgreSQL connected and migrations applied.");
+  } else if (hasDatabaseConfig) {
+    console.warn("Storage fallback active: database configured but unavailable, using memory.");
+  } else {
+    console.log("Storage ready: in-memory mode.");
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Server bootstrap failed:", error);
+  process.exit(1);
 });

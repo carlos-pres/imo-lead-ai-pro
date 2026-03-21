@@ -874,6 +874,10 @@ const fallbackLeads: Lead[] = [
 let pool: Pool | null = null;
 let databaseReadyPromise: Promise<boolean> | null = null;
 
+function isRailwayInternalHostname(hostname: string) {
+  return hostname === "railway.internal" || hostname.endsWith(".railway.internal");
+}
+
 function getPoolConfig(): PoolConfig | null {
   const connectionString = process.env.DATABASE_URL;
 
@@ -881,13 +885,19 @@ function getPoolConfig(): PoolConfig | null {
     let ssl: PoolConfig["ssl"];
 
     try {
-      const hostname = new URL(connectionString).hostname;
-      const isLocalHost =
-        hostname === "localhost" ||
-        hostname === "127.0.0.1" ||
-        hostname === "railway.internal";
+      const url = new URL(connectionString);
+      const hostname = url.hostname;
+      const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
+      const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+      const isInternalRailwayHost = isRailwayInternalHostname(hostname);
 
-      ssl = isLocalHost ? undefined : { rejectUnauthorized: false };
+      if (sslMode === "disable") {
+        ssl = undefined;
+      } else if (isLocalHost || isInternalRailwayHost) {
+        ssl = undefined;
+      } else {
+        ssl = { rejectUnauthorized: false };
+      }
     } catch {
       ssl = undefined;
     }
@@ -895,6 +905,8 @@ function getPoolConfig(): PoolConfig | null {
     return {
       connectionString,
       ssl,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
     };
   }
 
@@ -910,6 +922,14 @@ function getPoolConfig(): PoolConfig | null {
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
       database: process.env.PGDATABASE,
+      ssl:
+        process.env.PGHOST === "localhost" ||
+        process.env.PGHOST === "127.0.0.1" ||
+        isRailwayInternalHostname(process.env.PGHOST)
+          ? undefined
+          : { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
     };
   }
 
@@ -1345,6 +1365,16 @@ async function ensureDatabase() {
   }
 
   return databaseReadyPromise;
+}
+
+export async function prepareStorage() {
+  const databaseReady = await ensureDatabase();
+  const activePool = getPool();
+
+  return {
+    databaseReady,
+    mode: databaseReady && activePool ? "database" : "memory",
+  } as const;
 }
 
 async function useDatabase<T>(
