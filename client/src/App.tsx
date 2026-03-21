@@ -39,6 +39,10 @@ type LoginForm = {
   email: string;
   password: string;
 };
+type LandingGuidance = {
+  title: string;
+  detail: string;
+};
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
 
 type AdminPlanDraft = {
@@ -279,6 +283,32 @@ const DEMO_ACCESS = [
     description: "Operacao comercial limitada a equipa e carteira propria.",
   },
 ] as const;
+
+type DemoAccessEntry = (typeof DEMO_ACCESS)[number];
+
+function getSuggestedDemoEntry(planId: PlanType): DemoAccessEntry {
+  if (planId === "basic") {
+    return DEMO_ACCESS[2];
+  }
+
+  if (planId === "custom") {
+    return DEMO_ACCESS[0];
+  }
+
+  return DEMO_ACCESS[1];
+}
+
+function getPlanForDemoEntry(entry: DemoAccessEntry): PlanType {
+  if (entry.role === "Consultor") {
+    return "basic";
+  }
+
+  if (entry.role === "Admin") {
+    return "custom";
+  }
+
+  return "pro";
+}
 
 function isViewId(value: string): value is ViewId {
   return NAV_ITEMS.some((item) => item.id === value);
@@ -541,6 +571,11 @@ function App() {
   const [stageFilter, setStageFilter] = useState<PipelineStage | "all">("all");
   const [officeFilter, setOfficeFilter] = useState("all");
   const [form, setForm] = useState<CreateLeadInput>(initialForm);
+  const [landingGuidance, setLandingGuidance] = useState<LandingGuidance>({
+    title: "Entra numa demo ja preparada para a tua realidade",
+    detail:
+      "Escolhe o plano, usamos o perfil demo certo e levamos-te diretamente ao ponto onde a plataforma te poupa tempo.",
+  });
 
   const deferredSearch = useDeferredValue(search);
 
@@ -943,6 +978,7 @@ function App() {
     plans.find((plan) => plan.basePlanId === "pro") ||
     plans[0] ||
     null;
+  const suggestedDemoEntry = getSuggestedDemoEntry(activePlanId);
   const availableCountries = activePlan?.includedCountryCodes || COUNTRY_OPTIONS.map((item) => item.code);
   const offices = teamOverview?.offices || [];
   const members = teamOverview?.members || [];
@@ -1107,6 +1143,48 @@ function App() {
   const visibleNavItems = canAccessAdmin
     ? NAV_ITEMS
     : NAV_ITEMS.filter((item) => item.id !== "admin");
+
+  function updateLandingGuidance(title: string, detail: string) {
+    setLandingGuidance({
+      title,
+      detail,
+    });
+  }
+
+  function openLandingPricing(
+    planId: PlanType,
+    title: string,
+    detail: string
+  ) {
+    setActivePlanId(planId);
+    updateLandingGuidance(title, detail);
+    scrollToElement("landing-pricing");
+  }
+
+  function openLandingLogin(
+    planId: PlanType,
+    title: string,
+    detail: string,
+    entry: DemoAccessEntry = getSuggestedDemoEntry(planId)
+  ) {
+    setActivePlanId(planId);
+    setLoginForm({
+      email: entry.email,
+      password: entry.password,
+    });
+    updateLandingGuidance(title, detail);
+    scrollToElement("landing-login");
+  }
+
+  function selectDemoProfile(entry: DemoAccessEntry) {
+    const suggestedPlan = getPlanForDemoEntry(entry);
+    openLandingLogin(
+      suggestedPlan,
+      `Demo ${entry.role.toLowerCase()} pronta para entrar`,
+      `Este perfil mostra a vista mais util para ${entry.description.toLowerCase()}`,
+      entry
+    );
+  }
 
   const visibleLeads = leads.filter((lead) => {
     const term = deferredSearch.trim().toLowerCase();
@@ -2496,16 +2574,28 @@ function App() {
                 <button
                   className="ghost-button"
                   type="button"
-                  onClick={() => scrollToElement("landing-pricing")}
+                  onClick={() =>
+                    openLandingPricing(
+                      activePlanId,
+                      "Compara os planos sem perder contexto",
+                      "Deixamos o plano atual em destaque para te mostrar logo a oferta mais proxima da tua operacao."
+                    )
+                  }
                 >
                   Ver planos
                 </button>
                 <button
                   className="primary-button"
                   type="button"
-                  onClick={() => scrollToElement("landing-login")}
+                  onClick={() =>
+                    openLandingLogin(
+                      "pro",
+                      "Demo Pro preparada para uma equipa comercial real",
+                      "Abrimos o perfil de manager para mostrares pipeline, equipas, mercado e operacao sem teres de configurar nada."
+                    )
+                  }
                 >
-                  Agendar demo
+                  Abrir demo guiada
                 </button>
               </div>
             </div>
@@ -2524,14 +2614,26 @@ function App() {
                   <button
                     className="primary-button"
                     type="button"
-                    onClick={() => scrollToElement("landing-login")}
+                    onClick={() =>
+                      openLandingLogin(
+                        "pro",
+                        "Demonstracao preparada para impacto imediato",
+                        "Levamos-te diretamente para a experiencia que melhor mostra como a plataforma acelera follow-up, priorizacao e controlo comercial."
+                      )
+                    }
                   >
-                    Ver demonstracao
+                    Entrar numa demo assistida
                   </button>
                   <button
                     className="ghost-button"
                     type="button"
-                    onClick={() => scrollToElement("landing-pricing")}
+                    onClick={() =>
+                      openLandingPricing(
+                        "pro",
+                        "Pricing com o plano mais vendavel em foco",
+                        "O Pro fica em destaque porque e o ponto certo para a maioria das equipas imobiliarias em Portugal."
+                      )
+                    }
                   >
                     Comparar planos
                   </button>
@@ -2698,14 +2800,26 @@ function App() {
                 <button
                   className="primary-button"
                   type="button"
-                  onClick={() => scrollToElement("landing-login")}
+                  onClick={() =>
+                    openLandingLogin(
+                      activePlanId,
+                      "Entrar agora e ver o ganho de tempo na pratica",
+                      "Ja escolhemos um perfil demo compativel com este plano para reduzires atrito e entrares direto na experiencia certa."
+                    )
+                  }
                 >
                   Pedir demonstracao
                 </button>
                 <button
                   className="ghost-button"
                   type="button"
-                  onClick={() => scrollToElement("landing-pricing")}
+                  onClick={() =>
+                    openLandingPricing(
+                      activePlanId,
+                      "Rever a oferta antes de decidir",
+                      "Mantemos o plano atual em foco para comparares sem perder o contexto do que ja viste."
+                    )
+                  }
                 >
                   Rever oferta
                 </button>
@@ -2776,11 +2890,16 @@ function App() {
                         }
                         type="button"
                         onClick={() => {
-                          setActivePlanId(plan.basePlanId);
-                          scrollToElement("landing-login");
+                          openLandingLogin(
+                            plan.basePlanId,
+                            `${plan.publicName} pronto para demonstracao`,
+                            `Preparamos o perfil demo mais adequado para mostrar como o ${plan.publicName} facilita a operacao logo nos primeiros minutos.`
+                          );
                         }}
                       >
-                        {plan.basePlanId === activePlanId ? "Plano em destaque" : "Escolher plano"}
+                        {plan.basePlanId === activePlanId
+                          ? "Demo pronta para este plano"
+                          : "Quero ver este plano em acao"}
                       </button>
                     </div>
                   </article>
@@ -2838,6 +2957,35 @@ function App() {
                 O passo seguinte e simples: usar esta landing como frente comercial e manter
                 o cockpit para utilizadores autenticados, com a mesma identidade de marca.
               </p>
+
+              <div className="marketing-final-actions">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    openLandingLogin(
+                      "custom",
+                      "Demo enterprise preparada para impressionar decisores",
+                      "Abrimos a conta ADM para mostrares governance, planos, equipas e a leitura executiva do produto."
+                    )
+                  }
+                >
+                  Abrir demo enterprise
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() =>
+                    openLandingPricing(
+                      "custom",
+                      "Oferta enterprise em foco",
+                      "A secao de planos abre com a camada enterprise destacada para conversa de valor e escala."
+                    )
+                  }
+                >
+                  Rever proposta enterprise
+                </button>
+              </div>
             </div>
 
             <div className="marketing-final-grid">
@@ -2869,6 +3017,41 @@ function App() {
               Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo
               por perfil.
             </p>
+          </div>
+
+          <div className="auth-guidance-card">
+            <span>Proximo passo recomendado</span>
+            <strong>{landingGuidance.title}</strong>
+            <p>{landingGuidance.detail}</p>
+
+            <div className="mini-tags">
+              <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+              <span>{suggestedDemoEntry.role}</span>
+              <span>{suggestedDemoEntry.email}</span>
+            </div>
+          </div>
+
+          <div className="auth-helper-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => selectDemoProfile(suggestedDemoEntry)}
+            >
+              Usar perfil sugerido
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() =>
+                openLandingPricing(
+                  activePlanId,
+                  "Revisao rapida do plano selecionado",
+                  "Voltamos a oferta mantendo o plano atual ativo para comparacao imediata."
+                )
+              }
+            >
+              Rever planos
+            </button>
           </div>
 
           <form className="lead-form auth-form" onSubmit={handleLogin}>
@@ -2915,12 +3098,7 @@ function App() {
                 className="auth-demo-card"
                 key={entry.email}
                 type="button"
-                onClick={() =>
-                  setLoginForm({
-                    email: entry.email,
-                    password: entry.password,
-                  })
-                }
+                onClick={() => selectDemoProfile(entry)}
               >
                 <span>{entry.role}</span>
                 <strong>{entry.email}</strong>

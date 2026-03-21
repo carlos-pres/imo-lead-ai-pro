@@ -1720,6 +1720,13 @@
     linear-gradient(180deg, rgba(255, 250, 244, 0.9), rgba(248, 241, 232, 0.88));
 }
 
+.marketing-final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 .marketing-auth-panel {
   position: sticky;
   top: 24px;
@@ -2300,6 +2307,48 @@
 .auth-panel-note p {
   margin: 8px 0 0;
   color: #5c6b80;
+}
+
+.auth-guidance-card {
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.12), transparent 36%),
+    rgba(255, 255, 255, 0.76);
+}
+
+.auth-guidance-card span {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7f6f5c;
+}
+
+.auth-guidance-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.auth-guidance-card p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+  line-height: 1.55;
+}
+
+.auth-helper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.auth-helper-actions .secondary-button,
+.auth-helper-actions .ghost-button {
+  margin-top: 0;
 }
 
 .admin-hero {
