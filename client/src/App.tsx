@@ -59,6 +59,10 @@ type AdminPlanDraft = {
   recommendedFor: string;
   includedCountryCodes: string;
   leadLimit: string;
+  includedUsers: string;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: string;
+  extraUserYearlyPrice: string;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;
@@ -188,6 +192,10 @@ function createEmptyAdminPlanDraft(): AdminPlanDraft {
     recommendedFor: "",
     includedCountryCodes: "PT\nES",
     leadLimit: "600",
+    includedUsers: "7",
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: "17",
+    extraUserYearlyPrice: "163.2",
     advancedAI: true,
     autoContact: true,
     multiLocation: true,
@@ -218,6 +226,10 @@ function buildAdminPlanDraft(plan: PlanCatalogEntry): AdminPlanDraft {
     recommendedFor: plan.recommendedFor,
     includedCountryCodes: joinLines(plan.includedCountryCodes),
     leadLimit: String(plan.leadLimit),
+    includedUsers: String(plan.includedUsers),
+    allowsExtraUsers: plan.allowsExtraUsers,
+    extraUserMonthlyPrice: String(plan.extraUserMonthlyPrice),
+    extraUserYearlyPrice: String(plan.extraUserYearlyPrice),
     advancedAI: plan.advancedAI,
     autoContact: plan.autoContact,
     multiLocation: plan.multiLocation,
@@ -248,6 +260,10 @@ function toCommercialPlanPayload(draft: AdminPlanDraft): CommercialPlanInput {
     recommendedFor: draft.recommendedFor.trim(),
     includedCountryCodes: splitLines(draft.includedCountryCodes),
     leadLimit: Number(draft.leadLimit || 0),
+    includedUsers: Number(draft.includedUsers || 1),
+    allowsExtraUsers: draft.allowsExtraUsers,
+    extraUserMonthlyPrice: Number(draft.extraUserMonthlyPrice || 0),
+    extraUserYearlyPrice: Number(draft.extraUserYearlyPrice || 0),
     advancedAI: draft.advancedAI,
     autoContact: draft.autoContact,
     multiLocation: draft.multiLocation,
@@ -399,10 +415,24 @@ function getStageLabel(stage: PipelineStage) {
 
 function formatLeadLimit(limit: number) {
   if (limit >= 999999) {
-    return "Escala enterprise";
+    return "Capacidade enterprise";
   }
 
-  return `Ate ${limit} leads/mes`;
+  return `Capacidade ate ${limit} leads/mes`;
+}
+
+function formatIncludedUsers(count: number) {
+  return `${count} utilizador${count === 1 ? "" : "es"} incluido${count === 1 ? "" : "s"}`;
+}
+
+function formatExtraUsers(plan: PlanCatalogEntry, billing: BillingMode) {
+  if (!plan.allowsExtraUsers) {
+    return "Sem utilizadores extra";
+  }
+
+  const value = billing === "year" ? plan.extraUserYearlyPrice : plan.extraUserMonthlyPrice;
+  const suffix = billing === "year" ? "/ano" : "/mes";
+  return `Utilizador extra ${formatCurrency(value, "EUR", value % 1 !== 0)}${suffix}`;
 }
 
 function getTrialDaysForPlan(planId: PlanType) {
@@ -1716,6 +1746,9 @@ function App() {
                   <span>{plan.publicName}</span>
                   <strong>{plan.agentLabel}</strong>
                   <p>{plan.recommendedFor}</p>
+                  <p className="pricing-note">
+                    {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                  </p>
                   <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 </article>
               ))}
@@ -2162,11 +2195,15 @@ function App() {
                 <span>{plan.publicName}</span>
                 <strong>{plan.reportsLabel}</strong>
                 <p>{plan.recommendedFor}</p>
+                <p className="pricing-note">
+                  {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                </p>
                 <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 <div className="mini-tags">
                   {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
                     <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
                   ) : null}
+                  <span>{formatLeadLimit(plan.leadLimit)}</span>
                   {plan.marketReports.map((report) => (
                     <span key={report}>{report}</span>
                   ))}
@@ -2236,11 +2273,17 @@ function App() {
                       <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
                     ) : null}
                     <span>{formatLeadLimit(plan.leadLimit)}</span>
+                    <span>{formatIncludedUsers(plan.includedUsers)}</span>
                     <span>{plan.agentLabel}</span>
-                    <span>{plan.reportsLabel}</span>
                   </div>
 
+                  <p className="pricing-note">
+                    {formatExtraUsers(plan, billingMode)} · {plan.reportsLabel}
+                  </p>
                   <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
+                  <p className="pricing-note">
+                    Capacidade operacional mensal, nao promessa de captacao garantida.
+                  </p>
 
                   <div className="pricing-action-row">
                     <button
@@ -2280,6 +2323,14 @@ function App() {
                       {plan.features.map((feature) => (
                         <li key={feature}>{feature}</li>
                       ))}
+                    </ul>
+                  </div>
+
+                  <div className="pricing-section">
+                    <p className="pricing-section-title">Utilizadores</p>
+                    <ul className="feature-list compact-list">
+                      <li>{formatIncludedUsers(plan.includedUsers)}</li>
+                      <li>{formatExtraUsers(plan, billingMode)}</li>
                     </ul>
                   </div>
 
@@ -2353,7 +2404,7 @@ function App() {
         </label>
 
         <label>
-          Recommended for
+          Indicado para
           <input
             value={draft.recommendedFor}
             onChange={(event) => onChange({ recommendedFor: event.target.value })}
@@ -2394,12 +2445,46 @@ function App() {
         </label>
 
         <label>
-          Lead limit
+          Capacidade leads/mes
           <input
             type="number"
             min="0"
             value={draft.leadLimit}
             onChange={(event) => onChange({ leadLimit: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Utilizadores incluidos
+          <input
+            type="number"
+            min="1"
+            value={draft.includedUsers}
+            onChange={(event) => onChange({ includedUsers: event.target.value })}
+          />
+        </label>
+
+        <label>
+          Utilizador extra /mes
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={draft.extraUserMonthlyPrice}
+            onChange={(event) => onChange({ extraUserMonthlyPrice: event.target.value })}
+            disabled={!draft.allowsExtraUsers}
+          />
+        </label>
+
+        <label>
+          Utilizador extra /ano
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={draft.extraUserYearlyPrice}
+            onChange={(event) => onChange({ extraUserYearlyPrice: event.target.value })}
+            disabled={!draft.allowsExtraUsers}
           />
         </label>
 
@@ -2424,7 +2509,7 @@ function App() {
         </label>
 
         <label>
-          Reports label
+          Label de relatorios
           <input
             value={draft.reportsLabel}
             onChange={(event) => onChange({ reportsLabel: event.target.value })}
@@ -2433,7 +2518,7 @@ function App() {
         </label>
 
         <label>
-          Agent label
+          Label do agente
           <input
             value={draft.agentLabel}
             onChange={(event) => onChange({ agentLabel: event.target.value })}
@@ -2442,7 +2527,7 @@ function App() {
         </label>
 
         <label className="admin-span">
-          Support label
+          Label de suporte
           <input
             value={draft.supportLabel}
             onChange={(event) => onChange({ supportLabel: event.target.value })}
@@ -2471,7 +2556,7 @@ function App() {
         </label>
 
         <label className="admin-span">
-          Market reports
+          Relatorios de mercado
           <textarea
             rows={4}
             value={draft.marketReports}
@@ -2481,7 +2566,7 @@ function App() {
         </label>
 
         <label className="admin-span">
-          Agent capabilities
+          Capacidades do agente
           <textarea
             rows={4}
             value={draft.agentCapabilities}
@@ -2496,7 +2581,9 @@ function App() {
             rows={5}
             value={draft.features}
             onChange={(event) => onChange({ features: event.target.value })}
-            placeholder={"Ate 600 leads por mes\nMulti-owner\nRelatorios semanais"}
+            placeholder={
+              "Capacidade ate 600 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17€/mes ou 163,20€/ano"
+            }
           />
         </label>
 
@@ -2507,7 +2594,7 @@ function App() {
               checked={draft.advancedAI}
               onChange={(event) => onChange({ advancedAI: event.target.checked })}
             />
-            <span>Advanced AI</span>
+            <span>AI avancada</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -2516,6 +2603,14 @@ function App() {
               onChange={(event) => onChange({ autoContact: event.target.checked })}
             />
             <span>Auto contact</span>
+          </label>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.allowsExtraUsers}
+              onChange={(event) => onChange({ allowsExtraUsers: event.target.checked })}
+            />
+            <span>Utilizadores extra</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -2975,6 +3070,17 @@ function App() {
 
                     <p className="pricing-note">{plan.agentLabel}</p>
                     <p className="hero-text">{plan.reportsLabel}</p>
+                    <div className="mini-tags">
+                      {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
+                        <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
+                      ) : null}
+                      <span>{formatLeadLimit(plan.leadLimit)}</span>
+                      <span>{formatIncludedUsers(plan.includedUsers)}</span>
+                      <span>{formatExtraUsers(plan, billingMode)}</span>
+                    </div>
+                    <p className="pricing-note">
+                      Capacidade operacional mensal, nao volume garantido de leads captadas.
+                    </p>
                     <p className="upgrade-note">
                       {getUpgradeHintForPlan(plan.basePlanId, plans)}
                     </p>
@@ -3290,6 +3396,9 @@ function App() {
                 <span>{plan.publicName}</span>
                 <strong>{plan.agentLabel}</strong>
                 <p>{plan.recommendedFor}</p>
+                <p className="pricing-note">
+                  {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                </p>
                 <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
               </article>
             ))}

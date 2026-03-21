@@ -9,6 +9,10 @@ export type PlanConfig = {
   trialDays: number;
   includedCountryCodes: string[];
   leadLimit: number;
+  includedUsers: number;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: number;
+  extraUserYearlyPrice: number;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;
@@ -34,6 +38,10 @@ export type CommercialPlan = {
   recommendedFor: string;
   includedCountryCodes: string[];
   leadLimit: number;
+  includedUsers: number;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: number;
+  extraUserYearlyPrice: number;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;
@@ -61,6 +69,32 @@ function yearlyPriceFromMonthly(monthlyPrice: number) {
   return Number((monthlyPrice * 12 * (1 - ANNUAL_DISCOUNT_PERCENT / 100)).toFixed(2));
 }
 
+function formatPriceLabel(value: number) {
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+  }).format(value);
+}
+
+function getLeadCapacityLabel(leadLimit: number) {
+  return leadLimit >= 999999
+    ? "Capacidade enterprise para leads geridas e analisadas"
+    : `Capacidade ate ${leadLimit} leads geridas/analisadas por mes`;
+}
+
+function getExtraUsersLabel(plan: Pick<
+  PlanConfig,
+  "allowsExtraUsers" | "extraUserMonthlyPrice" | "extraUserYearlyPrice"
+>) {
+  if (!plan.allowsExtraUsers) {
+    return "Sem utilizadores extra no Starter durante o trial e na operacao base";
+  }
+
+  return `Utilizador extra: ${formatPriceLabel(plan.extraUserMonthlyPrice)}/mes ou ${formatPriceLabel(plan.extraUserYearlyPrice)}/ano`;
+}
+
 export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
   basic: {
     id: "basic",
@@ -69,6 +103,10 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     trialDays: 15,
     includedCountryCodes: ["PT"],
     leadLimit: 120,
+    includedUsers: 1,
+    allowsExtraUsers: false,
+    extraUserMonthlyPrice: 0,
+    extraUserYearlyPrice: 0,
     advancedAI: false,
     autoContact: false,
     multiLocation: false,
@@ -93,8 +131,13 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     ],
     features: [
       "15 dias de trial para validar a operacao sem friccao",
-      "Ate 120 leads por mes",
-      "1 utilizador e 1 loja",
+      getLeadCapacityLabel(120),
+      "1 utilizador incluido e 1 loja",
+      getExtraUsersLabel({
+        allowsExtraUsers: false,
+        extraUserMonthlyPrice: 0,
+        extraUserYearlyPrice: 0,
+      }),
       "Pipeline e follow-up base",
       "Classificacao AI essencial",
       "Relatorio de mercado local mensal",
@@ -108,6 +151,10 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     trialDays: 0,
     includedCountryCodes: ["PT", "ES"],
     leadLimit: 600,
+    includedUsers: 7,
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: 17,
+    extraUserYearlyPrice: yearlyPriceFromMonthly(17),
     advancedAI: true,
     autoContact: true,
     multiLocation: true,
@@ -133,8 +180,13 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     ],
     features: [
       "Upgrade natural apos o trial Starter",
-      "Ate 600 leads por mes",
-      "Ate 7 utilizadores",
+      getLeadCapacityLabel(600),
+      "7 utilizadores incluidos",
+      getExtraUsersLabel({
+        allowsExtraUsers: true,
+        extraUserMonthlyPrice: 17,
+        extraUserYearlyPrice: yearlyPriceFromMonthly(17),
+      }),
       "Multi-loja e multi-owner",
       "Automacao comercial e AI avancada",
       "Relatorios de mercado semanais",
@@ -149,6 +201,10 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     trialDays: 0,
     includedCountryCodes: ["PT", "ES", "FR", "IT"],
     leadLimit: 999999,
+    includedUsers: 25,
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: 27,
+    extraUserYearlyPrice: yearlyPriceFromMonthly(27),
     advancedAI: true,
     autoContact: true,
     multiLocation: true,
@@ -174,7 +230,13 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     ],
     features: [
       "Camada seguinte para operacoes que ultrapassam o Pro",
-      "Leads, mensagens e lojas sem limite pratico",
+      getLeadCapacityLabel(999999),
+      "25 utilizadores incluidos",
+      getExtraUsersLabel({
+        allowsExtraUsers: true,
+        extraUserMonthlyPrice: 27,
+        extraUserYearlyPrice: yearlyPriceFromMonthly(27),
+      }),
       "Permissoes enterprise e desks internacionais",
       "Operacao multilingue",
       "Relatorios executivos de mercado",
@@ -202,6 +264,10 @@ export function buildCommercialPlanSeedEntries() {
     recommendedFor: plan.recommendedFor,
     includedCountryCodes: [...plan.includedCountryCodes],
     leadLimit: plan.leadLimit,
+    includedUsers: plan.includedUsers,
+    allowsExtraUsers: plan.allowsExtraUsers,
+    extraUserMonthlyPrice: plan.extraUserMonthlyPrice,
+    extraUserYearlyPrice: plan.extraUserYearlyPrice,
     advancedAI: plan.advancedAI,
     autoContact: plan.autoContact,
     multiLocation: plan.multiLocation,
@@ -246,8 +312,10 @@ export function getPlanPresentation(planId: PlanType) {
   return {
     name: plan.publicName,
     trialDays: plan.trialDays,
-    leads:
-      plan.leadLimit >= 999999 ? "Leads ilimitados" : `${plan.leadLimit} leads/mes`,
+    leads: getLeadCapacityLabel(plan.leadLimit),
+    includedUsers: plan.includedUsers,
+    allowsExtraUsers: plan.allowsExtraUsers,
+    extraUsers: getExtraUsersLabel(plan),
     reports: plan.reportsLabel,
     canScheduleVisits: plan.id !== "basic",
     hasAdvancedAI: plan.advancedAI,
@@ -324,6 +392,8 @@ export function getPaymentPlanOptions() {
       interval: "month" as const,
       features: [
         ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
+        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluido${plan.includedUsers === 1 ? "" : "s"}`,
+        getExtraUsersLabel(plan),
         ...plan.features,
         `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,
       ],
@@ -337,6 +407,8 @@ export function getPaymentPlanOptions() {
       interval: "year" as const,
       features: [
         ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
+        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluido${plan.includedUsers === 1 ? "" : "s"}`,
+        getExtraUsersLabel(plan),
         ...plan.features,
         `Desconto anual fixo de ${plan.annualDiscountPercent}%`,
         `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,

@@ -49,6 +49,10 @@ export type PlanCatalogEntry = {
   recommendedFor: string;
   includedCountryCodes: string[];
   leadLimit: number;
+  includedUsers: number;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: number;
+  extraUserYearlyPrice: number;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;
@@ -77,6 +81,10 @@ export type CommercialPlanInput = {
   recommendedFor: string;
   includedCountryCodes: string[];
   leadLimit: number;
+  includedUsers: number;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: number;
+  extraUserYearlyPrice: number;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;

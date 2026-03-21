@@ -170,6 +170,10 @@ export type UpsertCommercialPlanInput = {
   recommendedFor: string;
   includedCountryCodes: string[];
   leadLimit: number;
+  includedUsers: number;
+  allowsExtraUsers: boolean;
+  extraUserMonthlyPrice: number;
+  extraUserYearlyPrice: number;
   advancedAI: boolean;
   autoContact: boolean;
   multiLocation: boolean;
@@ -1254,9 +1258,9 @@ async function seedCommercialPlans(activePool: Pool) {
       `
         INSERT INTO commercial_plans (
           id, base_plan_id, slug, public_name, recommended_for,
-          included_country_codes, lead_limit, advanced_ai, auto_contact,
-          multi_location, multi_language, max_messages_per_month,
-          monthly_price, yearly_price, annual_discount_percent,
+          included_country_codes, lead_limit, included_users, allows_extra_users,
+          extra_user_monthly_price, extra_user_yearly_price, advanced_ai, auto_contact,
+          multi_location, multi_language, max_messages_per_month, monthly_price, yearly_price, annual_discount_percent,
           reports_label, market_reports, included_markets, support_label,
           agent_label, agent_capabilities, features, is_active, is_public, sort_order
         )
@@ -1264,8 +1268,8 @@ async function seedCommercialPlans(activePool: Pool) {
           $1, $2, $3, $4, $5,
           $6::jsonb, $7, $8, $9,
           $10, $11, $12, $13, $14, $15,
-          $16, $17::jsonb, $18::jsonb, $19,
-          $20, $21::jsonb, $22::jsonb, $23, $24, $25
+          $16, $17, $18, $19, $20, $21::jsonb, $22::jsonb, $23,
+          $24, $25::jsonb, $26::jsonb, $27, $28, $29
         )
         ON CONFLICT (id) DO UPDATE
         SET
@@ -1275,6 +1279,10 @@ async function seedCommercialPlans(activePool: Pool) {
           recommended_for = EXCLUDED.recommended_for,
           included_country_codes = EXCLUDED.included_country_codes,
           lead_limit = EXCLUDED.lead_limit,
+          included_users = EXCLUDED.included_users,
+          allows_extra_users = EXCLUDED.allows_extra_users,
+          extra_user_monthly_price = EXCLUDED.extra_user_monthly_price,
+          extra_user_yearly_price = EXCLUDED.extra_user_yearly_price,
           advanced_ai = EXCLUDED.advanced_ai,
           auto_contact = EXCLUDED.auto_contact,
           multi_location = EXCLUDED.multi_location,
@@ -1303,6 +1311,10 @@ async function seedCommercialPlans(activePool: Pool) {
         plan.recommendedFor,
         JSON.stringify(plan.includedCountryCodes),
         plan.leadLimit,
+        plan.includedUsers,
+        plan.allowsExtraUsers,
+        plan.extraUserMonthlyPrice,
+        plan.extraUserYearlyPrice,
         plan.advancedAI,
         plan.autoContact,
         plan.multiLocation,
@@ -1514,6 +1526,10 @@ async function initializeDatabase() {
         recommended_for TEXT NOT NULL,
         included_country_codes JSONB NOT NULL DEFAULT '[]'::jsonb,
         lead_limit INTEGER NOT NULL,
+        included_users INTEGER NOT NULL DEFAULT 1,
+        allows_extra_users BOOLEAN NOT NULL DEFAULT false,
+        extra_user_monthly_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        extra_user_yearly_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
         advanced_ai BOOLEAN NOT NULL DEFAULT false,
         auto_contact BOOLEAN NOT NULL DEFAULT false,
         multi_location BOOLEAN NOT NULL DEFAULT false,
@@ -1562,6 +1578,14 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS plan_name TEXT,
       ADD COLUMN IF NOT EXISTS agent_label TEXT,
       ADD COLUMN IF NOT EXISTS intelligence_version INTEGER NOT NULL DEFAULT 0
+    `);
+
+    await activePool.query(`
+      ALTER TABLE commercial_plans
+      ADD COLUMN IF NOT EXISTS included_users INTEGER NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS allows_extra_users BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS extra_user_monthly_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS extra_user_yearly_price NUMERIC(12, 2) NOT NULL DEFAULT 0
     `);
 
     await activePool.query(`
@@ -1873,6 +1897,14 @@ function mapCommercialPlanRow(row: any): CommercialPlan {
     recommendedFor: String(row.recommended_for || fallbackPlan.recommendedFor),
     includedCountryCodes: parseJsonArray(row.included_country_codes, fallbackPlan.includedCountryCodes),
     leadLimit: Number(row.lead_limit ?? fallbackPlan.leadLimit),
+    includedUsers: Number(row.included_users ?? fallbackPlan.includedUsers),
+    allowsExtraUsers: Boolean(row.allows_extra_users ?? fallbackPlan.allowsExtraUsers),
+    extraUserMonthlyPrice: Number(
+      row.extra_user_monthly_price ?? fallbackPlan.extraUserMonthlyPrice
+    ),
+    extraUserYearlyPrice: Number(
+      row.extra_user_yearly_price ?? fallbackPlan.extraUserYearlyPrice
+    ),
     advancedAI: Boolean(row.advanced_ai ?? fallbackPlan.advancedAI),
     autoContact: Boolean(row.auto_contact ?? fallbackPlan.autoContact),
     multiLocation: Boolean(row.multi_location ?? fallbackPlan.multiLocation),
@@ -1909,6 +1941,19 @@ function buildCommercialPlanRecord(input: UpsertCommercialPlanInput): Commercial
   const fallbackYearly = Number(
     (monthlyPrice * 12 * (1 - annualDiscountPercent / 100)).toFixed(2)
   );
+  const allowsExtraUsers = Boolean(input.allowsExtraUsers);
+  const extraUserMonthlyPrice = allowsExtraUsers
+    ? Math.max(0, Number(input.extraUserMonthlyPrice ?? basePlan.extraUserMonthlyPrice ?? 0))
+    : 0;
+  const fallbackExtraUserYearly = Number(
+    (extraUserMonthlyPrice * 12 * (1 - annualDiscountPercent / 100)).toFixed(2)
+  );
+  const extraUserYearlyPrice = allowsExtraUsers
+    ? Math.max(
+        0,
+        Number(input.extraUserYearlyPrice ?? basePlan.extraUserYearlyPrice ?? fallbackExtraUserYearly)
+      )
+    : 0;
 
   return {
     id: input.id || randomUUID(),
@@ -1925,6 +1970,10 @@ function buildCommercialPlanRecord(input: UpsertCommercialPlanInput): Commercial
       basePlan.includedCountryCodes
     ),
     leadLimit: Math.max(0, Number(input.leadLimit || 0)),
+    includedUsers: Math.max(1, Number(input.includedUsers || basePlan.includedUsers || 1)),
+    allowsExtraUsers,
+    extraUserMonthlyPrice,
+    extraUserYearlyPrice,
     advancedAI: Boolean(input.advancedAI),
     autoContact: Boolean(input.autoContact),
     multiLocation: Boolean(input.multiLocation),
@@ -2054,9 +2103,9 @@ export async function listCommercialPlans(
         `
           SELECT
             id, base_plan_id, slug, public_name, recommended_for,
-            included_country_codes, lead_limit, advanced_ai, auto_contact,
-            multi_location, multi_language, max_messages_per_month,
-            monthly_price, yearly_price, annual_discount_percent,
+            included_country_codes, lead_limit, included_users, allows_extra_users,
+            extra_user_monthly_price, extra_user_yearly_price, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month, monthly_price, yearly_price, annual_discount_percent,
             reports_label, market_reports, included_markets, support_label,
             agent_label, agent_capabilities, features, is_active, is_public, sort_order
           FROM commercial_plans
@@ -2099,9 +2148,9 @@ export async function createCommercialPlan(
         `
           INSERT INTO commercial_plans (
             id, base_plan_id, slug, public_name, recommended_for,
-            included_country_codes, lead_limit, advanced_ai, auto_contact,
-            multi_location, multi_language, max_messages_per_month,
-            monthly_price, yearly_price, annual_discount_percent,
+            included_country_codes, lead_limit, included_users, allows_extra_users,
+            extra_user_monthly_price, extra_user_yearly_price, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month, monthly_price, yearly_price, annual_discount_percent,
             reports_label, market_reports, included_markets, support_label,
             agent_label, agent_capabilities, features, is_active, is_public, sort_order
           )
@@ -2109,14 +2158,14 @@ export async function createCommercialPlan(
             $1, $2, $3, $4, $5,
             $6::jsonb, $7, $8, $9,
             $10, $11, $12, $13, $14, $15,
-            $16, $17::jsonb, $18::jsonb, $19,
-            $20, $21::jsonb, $22::jsonb, $23, $24, $25
+            $16, $17, $18, $19, $20, $21::jsonb, $22::jsonb, $23,
+            $24, $25::jsonb, $26::jsonb, $27, $28, $29
           )
           RETURNING
             id, base_plan_id, slug, public_name, recommended_for,
-            included_country_codes, lead_limit, advanced_ai, auto_contact,
-            multi_location, multi_language, max_messages_per_month,
-            monthly_price, yearly_price, annual_discount_percent,
+            included_country_codes, lead_limit, included_users, allows_extra_users,
+            extra_user_monthly_price, extra_user_yearly_price, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month, monthly_price, yearly_price, annual_discount_percent,
             reports_label, market_reports, included_markets, support_label,
             agent_label, agent_capabilities, features, is_active, is_public, sort_order
         `,
@@ -2128,6 +2177,10 @@ export async function createCommercialPlan(
           plan.recommendedFor,
           JSON.stringify(plan.includedCountryCodes),
           plan.leadLimit,
+          plan.includedUsers,
+          plan.allowsExtraUsers,
+          plan.extraUserMonthlyPrice,
+          plan.extraUserYearlyPrice,
           plan.advancedAI,
           plan.autoContact,
           plan.multiLocation,
@@ -2194,31 +2247,35 @@ export async function updateCommercialPlan(
             recommended_for = $5,
             included_country_codes = $6::jsonb,
             lead_limit = $7,
-            advanced_ai = $8,
-            auto_contact = $9,
-            multi_location = $10,
-            multi_language = $11,
-            max_messages_per_month = $12,
-            monthly_price = $13,
-            yearly_price = $14,
-            annual_discount_percent = $15,
-            reports_label = $16,
-            market_reports = $17::jsonb,
-            included_markets = $18::jsonb,
-            support_label = $19,
-            agent_label = $20,
-            agent_capabilities = $21::jsonb,
-            features = $22::jsonb,
-            is_active = $23,
-            is_public = $24,
-            sort_order = $25,
+            included_users = $8,
+            allows_extra_users = $9,
+            extra_user_monthly_price = $10,
+            extra_user_yearly_price = $11,
+            advanced_ai = $12,
+            auto_contact = $13,
+            multi_location = $14,
+            multi_language = $15,
+            max_messages_per_month = $16,
+            monthly_price = $17,
+            yearly_price = $18,
+            annual_discount_percent = $19,
+            reports_label = $20,
+            market_reports = $21::jsonb,
+            included_markets = $22::jsonb,
+            support_label = $23,
+            agent_label = $24,
+            agent_capabilities = $25::jsonb,
+            features = $26::jsonb,
+            is_active = $27,
+            is_public = $28,
+            sort_order = $29,
             updated_at = NOW()
           WHERE id = $1
           RETURNING
             id, base_plan_id, slug, public_name, recommended_for,
-            included_country_codes, lead_limit, advanced_ai, auto_contact,
-            multi_location, multi_language, max_messages_per_month,
-            monthly_price, yearly_price, annual_discount_percent,
+            included_country_codes, lead_limit, included_users, allows_extra_users,
+            extra_user_monthly_price, extra_user_yearly_price, advanced_ai, auto_contact,
+            multi_location, multi_language, max_messages_per_month, monthly_price, yearly_price, annual_discount_percent,
             reports_label, market_reports, included_markets, support_label,
             agent_label, agent_capabilities, features, is_active, is_public, sort_order
         `,
@@ -2230,6 +2287,10 @@ export async function updateCommercialPlan(
           nextPlan.recommendedFor,
           JSON.stringify(nextPlan.includedCountryCodes),
           nextPlan.leadLimit,
+          nextPlan.includedUsers,
+          nextPlan.allowsExtraUsers,
+          nextPlan.extraUserMonthlyPrice,
+          nextPlan.extraUserYearlyPrice,
           nextPlan.advancedAI,
           nextPlan.autoContact,
           nextPlan.multiLocation,
