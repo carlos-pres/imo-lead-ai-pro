@@ -4483,98 +4483,38 @@ function App() {
         action: "Explorar precos",
       },
       {
-        page: "contact" as const,
-        eyebrow: "Contacto",
-        title: "Contacto comercial, RGPD e proposta enterprise sem atrito",
-        description:
-          "A frente publica fecha a conversa com contacto real, compliance visivel e argumento executivo.",
-        image: adminSectionImg,
-        alt: "Vista de administracao e acesso protegido",
-        action: "Abrir contacto",
-      },
-      {
         page: "login" as const,
         eyebrow: "Entrar",
         title: "Acesso protegido para demonstracoes assistidas e contas reais",
         description:
           "O cockpit fica reservado para equipas validadas, trial protegido e demonstracoes com contexto.",
-        image: mobileDashboardImg,
-        alt: "Vista mobile real do cockpit",
+        image: adminSectionImg,
+        alt: "Vista de administracao e acesso protegido",
         action: "Ir para entrar",
       },
     ];
 
     return (
       <>
-        <section className="shell-panel marketing-hero">
-          {renderPublicNav()}
-
-          <div className="marketing-hero-grid">
-            <div className="marketing-copy">
-              <p className="eyebrow">Control tower para redes imobiliarias</p>
-              <h1>Automatize a prospeccao imobiliaria com IA.</h1>
-              <p className="hero-text">
-                O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais
-                contexto e menos trabalho manual para a equipa comercial.
-              </p>
-
-              <div className="marketing-cta-row">
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={() =>
-                    openLandingLogin(
-                      "pro",
-                      "Demonstracao preparada para impacto imediato",
-                      "Levamos-te diretamente para a experiencia que melhor mostra como a plataforma acelera follow-up, priorizacao e controlo comercial."
-                    )
-                  }
-                >
-                  Comecar agora
-                </button>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => navigatePublicPage("features")}
-                >
-                  Ver funcionalidades
-                </button>
-              </div>
-
-              <div className="marketing-chip-row">
-                <div className="status-chip">{marketingApiLabel}</div>
-                <div className="status-chip muted">{marketingAiLabel}</div>
-                <div className="status-chip muted">{marketingInfraLabel}</div>
-              </div>
-            </div>
-
-            <div className="marketing-visual">
-              <div className="marketing-mockup-shell marketing-mockup-desktop">
-                <img src={homeFullImg} alt="Vista desktop do ImoLead AI Pro" />
-              </div>
-
-              <div className="marketing-mockup-shell marketing-mockup-mobile">
-                <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
-              </div>
-
-              <div className="marketing-float-card marketing-float-main">
-                <span>Desk dominante</span>
-                <strong>{dominantDeskLabel}</strong>
-                <p>{dashboardStats.urgent_actions} acoes urgentes sob monitorizacao.</p>
-              </div>
-
-              <div className="marketing-float-card marketing-float-side">
-                <span>Mercado em foco</span>
-                <strong>{topMarket?.market || "Portugal"}</strong>
-                <p>
-                  {topMarket
-                    ? `${topMarket.totalLeads} leads com score medio ${topMarket.averageAiScore}`
-                    : "Operacao pronta para captar o primeiro lote de leads."}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {renderPageHero({
+          eyebrow: "Automacao inteligente para imobiliario em Portugal",
+          title: "Automatize a prospeccao imobiliaria com IA.",
+          text:
+            "O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais contexto e menos trabalho manual para a equipa comercial.",
+          mainImage: homeFullImg,
+          mainAlt: "Vista desktop completa da home publica",
+          secondaryImage: mobileHomeHeroImg,
+          secondaryAlt: "Vista mobile da home publica",
+          primaryLabel: "Comecar agora",
+          secondaryLabel: "Ver funcionalidades",
+          onPrimaryClick: () =>
+            openLandingLogin(
+              "pro",
+              "Demonstracao preparada para impacto imediato",
+              "Levamos-te diretamente para a experiencia que melhor mostra como a plataforma acelera follow-up, priorizacao e controlo comercial."
+            ),
+          onSecondaryClick: () => navigatePublicPage("features"),
+        })}
 
         <section className="marketing-metric-ribbon">
           {landingMetricBar.map((item) => (
@@ -4590,11 +4530,11 @@ function App() {
           <div className="section-head">
             <div>
               <p className="eyebrow">Estrutura publica</p>
-              <h3>Paginas reais ligadas como a raiz pede</h3>
+              <h3>Home forte na entrada, aprofundamento claro nas paginas seguintes</h3>
             </div>
           </div>
 
-          <div className="public-route-grid">
+          <div className="public-route-grid public-route-grid-home">
             {routeCards.map((card) => (
               <article className="marketing-showcase-card public-route-card" key={card.page}>
                 <div className="marketing-showcase-copy">
@@ -4674,6 +4614,9 @@ function App() {
               </button>
               <button className="ghost-button" type="button" onClick={() => navigatePublicPage("pricing")}>
                 Rever oferta
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
+                Falar com a equipa
               </button>
             </div>
           </article>

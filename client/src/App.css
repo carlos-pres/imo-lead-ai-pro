@@ -1667,6 +1667,10 @@
   gap: 16px;
 }
 
+.public-route-grid-home {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .public-route-card {
   display: flex;
   flex-direction: column;
