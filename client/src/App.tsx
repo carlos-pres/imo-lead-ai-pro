@@ -2818,36 +2818,36 @@ function App() {
                 <div className="marketing-brand-mark">IL</div>
                 <div>
                   <p>ImoLead AI Pro</p>
-                  <span>Automacao inteligente para imobiliario em Portugal</span>
+                  <span>Automacao inteligente para profissionais imobiliarios</span>
                 </div>
+              </div>
+
+              <div className="marketing-nav-links">
+                <a href="#landing-features">Funcionalidades</a>
+                <a href="#landing-pricing">Precos</a>
+                <a href="#landing-contact">Contacto</a>
               </div>
 
               <div className="marketing-nav-actions">
                 <button
                   className="ghost-button"
                   type="button"
-                  onClick={() =>
-                    openLandingPricing(
-                      activePlanId,
-                      "Compara os planos sem perder contexto",
-                      "Deixamos o plano atual em destaque para te mostrar logo a oferta mais proxima da tua operacao."
-                    )
-                  }
+                  onClick={() => scrollToElement("landing-login")}
                 >
-                  Ver planos
+                  Entrar
                 </button>
                 <button
                   className="primary-button"
                   type="button"
                   onClick={() =>
-                    openLandingLogin(
-                      "pro",
-                      "Demo Pro preparada para uma equipa comercial real",
-                      "Abrimos o perfil de manager para mostrares pipeline, equipas, mercado e operacao sem teres de configurar nada."
+                    openLandingPricing(
+                      "basic",
+                      "Criacao de conta orientada para conversao",
+                      "Levamos-te diretamente ao plano de entrada com trial protegido e caminho natural para Pro e Enterprise."
                     )
                   }
                 >
-                  Abrir demonstracao
+                  Criar conta
                 </button>
               </div>
             </div>
@@ -2855,10 +2855,10 @@ function App() {
             <div className="marketing-hero-grid">
               <div className="marketing-copy">
                 <p className="eyebrow">Control tower para redes imobiliarias</p>
-                <h1>Uma entrada comercial forte. Um cockpit operacional por dentro.</h1>
+                <h1>Automatize a prospeccao imobiliaria com IA.</h1>
                 <p className="hero-text">
-                  Posicionamento premium, mensagem clara e um produto que transmite
-                  produtividade, mercado e automacao antes mesmo do primeiro login.
+                  O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade,
+                  mais contexto e menos trabalho manual para a equipa comercial.
                 </p>
 
                 <div className="marketing-cta-row">
@@ -2873,7 +2873,7 @@ function App() {
                       )
                     }
                   >
-                    Entrar numa demo assistida
+                    Comecar agora
                   </button>
                   <button
                     className="ghost-button"
@@ -2886,7 +2886,7 @@ function App() {
                       )
                     }
                   >
-                    Comparar planos
+                    Ver demonstracao
                   </button>
                 </div>
 
@@ -2939,11 +2939,11 @@ function App() {
             ))}
           </section>
 
-          <section className="marketing-section">
+          <section className="marketing-section" id="landing-features">
             <div className="section-head">
               <div>
-                <p className="eyebrow">O que o mercado espera</p>
-                <h3>Uma landing que vende valor antes do utilizador ver o software</h3>
+                <p className="eyebrow">Tudo o que precisa para automatizar</p>
+                <h3>Captacao, classificacao, mensagens e controlo num unico sistema</h3>
               </div>
             </div>
 
