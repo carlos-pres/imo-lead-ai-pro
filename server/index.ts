@@ -2,7 +2,10 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import { generateToken, verifyToken } from "./auth.js";
+import { generateToken, isAuthSecretConfigured, verifyToken } from "./auth.js";
+import { getComplianceSummary, LEGAL_POLICY_VERSION } from "./compliance.js";
+import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
+import { sanitizeInputs } from "./middleware/sanitize.js";
 import { PLAN_CONFIG, getDefaultPlanId, getPlanConfig } from "./core/plans.js";
 import {
   authenticateWorkspaceUser,
@@ -32,7 +35,7 @@ const hasAiProvider =
     process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL &&
       process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY
   );
-const hasAuthConfig = Boolean(process.env.JWT_SECRET || process.env.SESSION_SECRET);
+const hasAuthConfig = isAuthSecretConfigured();
 const hasDatabaseConfig =
   Boolean(process.env.DATABASE_URL) ||
   Boolean(
@@ -42,8 +45,103 @@ const hasDatabaseConfig =
       process.env.PGDATABASE
   );
 
-app.use(cors());
-app.use(express.json());
+function normalizeOrigin(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return "";
+  }
+}
+
+function buildAllowedOrigins() {
+  const configuredOrigins = [
+    process.env.APP_BASE_URL,
+    process.env.CORS_ORIGIN,
+    process.env.CLIENT_BASE_URL,
+  ]
+    .map((value) => normalizeOrigin(String(value || "")))
+    .filter(Boolean);
+
+  const defaults =
+    process.env.NODE_ENV === "production"
+      ? []
+      : ["http://localhost:5173", "http://127.0.0.1:5173"];
+
+  return [...new Set([...configuredOrigins, ...defaults])];
+}
+
+function isAllowedRailwayOrigin(origin: string) {
+  try {
+    const hostname = new URL(origin).hostname;
+    return hostname.endsWith(".up.railway.app");
+  } catch {
+    return false;
+  }
+}
+
+const allowedOrigins = buildAllowedOrigins();
+
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        isAllowedRailwayOrigin(normalizedOrigin)
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin nao autorizada."));
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.use((req: Request, res: Response, next) => {
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "font-src 'self' data:",
+    "img-src 'self' data: https:",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https://api.openai.com https://openrouter.ai https://*.up.railway.app",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ].join("; ");
+
+  res.setHeader("Content-Security-Policy", contentSecurityPolicy);
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+  }
+
+  next();
+});
+app.use(express.json({ limit: "1mb" }));
+app.use(sanitizeInputs);
+app.use("/api", apiRateLimiter);
+app.use("/api/auth/login", authRateLimiter);
 
 function getAuthorizationToken(req: Request) {
   const header = req.headers.authorization;
@@ -125,6 +223,14 @@ async function getAdminScope(req: Request) {
 }
 
 app.get("/health", (_req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") {
+    res.json({
+      ok: true,
+      service: "imolead-ai-pro",
+    });
+    return;
+  }
+
   const defaultPlanId = getDefaultPlanId();
   res.json({
     ok: true,
@@ -134,6 +240,20 @@ app.get("/health", (_req: Request, res: Response) => {
     databaseConfigured: hasDatabaseConfig,
     defaultPlanId,
     defaultPlanName: getPlanConfig(defaultPlanId).publicName,
+  });
+});
+
+app.get("/api/compliance", (_req: Request, res: Response) => {
+  const summary = getComplianceSummary();
+
+  res.json({
+    ...summary,
+    trialRequirements: {
+      uniqueEmail: true,
+      uniquePhone: true,
+      explicitConsentRequired: true,
+      policyVersion: LEGAL_POLICY_VERSION,
+    },
   });
 });
 
@@ -221,7 +341,17 @@ app.get("/api/plans", async (_req: Request, res: Response) => {
 });
 
 app.post("/api/trial-requests", async (req: Request, res: Response) => {
-  const { name, email, phone, requestedPlanId, source } = req.body || {};
+  const {
+    name,
+    email,
+    phone,
+    requestedPlanId,
+    source,
+    privacyAccepted,
+    termsAccepted,
+    aiDisclosureAccepted,
+    policyVersion,
+  } = req.body || {};
 
   if (!name || String(name).trim().length < 2) {
     return res.status(400).json({ error: "Nome invalido para ativar o trial." });
@@ -235,6 +365,13 @@ app.post("/api/trial-requests", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Telefone invalido para ativar o trial." });
   }
 
+  if (!privacyAccepted || !termsAccepted || !aiDisclosureAccepted) {
+    return res.status(400).json({
+      error:
+        "Para ativar o trial tens de aceitar a Politica de Privacidade, os Termos de Utilizacao e a nota de uso de IA.",
+    });
+  }
+
   try {
     const trialRequest = await createTrialRequest({
       name: String(name),
@@ -242,6 +379,10 @@ app.post("/api/trial-requests", async (req: Request, res: Response) => {
       phone: String(phone),
       requestedPlanId: requestedPlanId ? String(requestedPlanId) as "basic" | "pro" | "custom" : "basic",
       source: source ? String(source) : "landing",
+      privacyAccepted: Boolean(privacyAccepted),
+      termsAccepted: Boolean(termsAccepted),
+      aiDisclosureAccepted: Boolean(aiDisclosureAccepted),
+      policyVersion: policyVersion ? String(policyVersion) : LEGAL_POLICY_VERSION,
     });
 
     res.status(201).json({
@@ -402,6 +543,10 @@ if (hasClientBuild) {
 const PORT = Number(process.env.PORT) || 5000;
 
 async function startServer() {
+  if (process.env.NODE_ENV === "production" && !hasAuthConfig) {
+    throw new Error("JWT_SECRET ou SESSION_SECRET sao obrigatorios para arrancar em producao.");
+  }
+
   const storageState = await prepareStorage();
 
   if (storageState.mode === "database") {

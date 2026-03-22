@@ -1719,6 +1719,48 @@
   box-shadow: 0 18px 36px rgba(21, 33, 48, 0.06);
 }
 
+.marketing-legal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.marketing-legal-card {
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 34%),
+    rgba(255, 255, 255, 0.84);
+  box-shadow: 0 16px 34px rgba(21, 33, 48, 0.06);
+}
+
+.marketing-legal-card span,
+.auth-guard-card span,
+.auth-legal-card span {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7f6f5c;
+}
+
+.marketing-legal-card strong,
+.auth-guard-card strong,
+.auth-legal-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.marketing-legal-card p,
+.auth-guard-card p,
+.auth-legal-card p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+  line-height: 1.6;
+}
+
 .marketing-final-cta {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
@@ -1791,6 +1833,19 @@
   margin: 10px 0 0;
   color: #5c6b80;
   line-height: 1.5;
+}
+
+.auth-guard-card,
+.auth-legal-card {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(252, 249, 244, 0.84);
+}
+
+.auth-legal-stack {
+  display: grid;
+  gap: 12px;
 }
 
 .pricing-section {
@@ -1886,6 +1941,7 @@
   .marketing-metric-ribbon,
   .marketing-proof-grid,
   .marketing-feature-grid,
+  .marketing-legal-grid,
   .marketing-duo-grid,
   .marketing-results-shell,
   .marketing-results-grid,
@@ -2378,6 +2434,44 @@
 
 .trial-form {
   gap: 14px;
+}
+
+.consent-check {
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 12px !important;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.consent-check input {
+  width: auto !important;
+  margin-top: 2px;
+}
+
+.consent-check span {
+  color: #314154;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.consent-check a {
+  color: #8d5b38;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.consent-check a:hover {
+  text-decoration: underline;
+}
+
+.trial-legal-note {
+  margin: 0;
+  color: #6b7788;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 
 .admin-hero {

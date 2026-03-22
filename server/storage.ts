@@ -4,6 +4,7 @@ import { Pool, PoolConfig } from "pg";
 import bcrypt from "bcrypt";
 import { runLeadAgent } from "./ai/agentService.js";
 import { buildHeuristicLeadIntelligence, type RoutingBucket } from "./ai/enterpriseLeadAgent.js";
+import { LEGAL_POLICY_VERSION } from "./compliance.js";
 import {
   buildCommercialPlanSeedEntries,
   getPlanConfig,
@@ -31,6 +32,11 @@ export type TrialRequest = {
   normalizedPhone: string;
   requestedPlanId: PlanType;
   source: string;
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+  aiDisclosureAccepted: boolean;
+  policyVersion: string;
+  consentedAt: string;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
 };
@@ -233,12 +239,23 @@ const PREVIOUS_PRIMARY_ADMIN_EMAIL = "carlospsantos@gmail.com";
 const PRIMARY_ADMIN_EMAIL = "carlospsantos19820@gmail.com";
 const PRIMARY_ADMIN_NAME = "Carlos Santos";
 const PRIMARY_ADMIN_PASSWORD = process.env.ADMIN_BOOTSTRAP_PASSWORD || "Demo123!";
+const PUBLIC_DEMO_USER_EMAILS = new Set(["lucas@imolead.ai", "ana@imolead.ai"]);
 const fallbackCustomers: Customer[] = [];
 const fallbackTrialRequests: TrialRequest[] = [];
 const fallbackCommercialPlans: CommercialPlan[] = buildCommercialPlanSeedEntries();
 
+if (process.env.NODE_ENV === "production" && !process.env.ADMIN_BOOTSTRAP_PASSWORD) {
+  console.warn(
+    "ADMIN_BOOTSTRAP_PASSWORD ausente em producao. O utilizador admin bootstrap esta a usar a password demo por compatibilidade."
+  );
+}
+
 function createPasswordHash(password: string) {
   return bcrypt.hashSync(password, 10);
+}
+
+function isPublicDemoAccessEnabled() {
+  return process.env.NODE_ENV !== "production" || process.env.ENABLE_PUBLIC_DEMO_ACCOUNTS === "true";
 }
 
 function sanitizeWorkspaceUser(user: WorkspaceUserRecord): WorkspaceUser {
@@ -1457,6 +1474,11 @@ async function initializeDatabase() {
         normalized_phone TEXT NOT NULL,
         requested_plan_id TEXT NOT NULL DEFAULT 'basic',
         source TEXT NOT NULL DEFAULT 'landing',
+        privacy_accepted BOOLEAN NOT NULL DEFAULT false,
+        terms_accepted BOOLEAN NOT NULL DEFAULT false,
+        ai_disclosure_accepted BOOLEAN NOT NULL DEFAULT false,
+        policy_version TEXT NOT NULL DEFAULT '2026-03-21',
+        consented_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         status TEXT NOT NULL DEFAULT 'pending',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
@@ -1578,6 +1600,15 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS plan_name TEXT,
       ADD COLUMN IF NOT EXISTS agent_label TEXT,
       ADD COLUMN IF NOT EXISTS intelligence_version INTEGER NOT NULL DEFAULT 0
+    `);
+
+    await activePool.query(`
+      ALTER TABLE trial_requests
+      ADD COLUMN IF NOT EXISTS privacy_accepted BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS terms_accepted BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS ai_disclosure_accepted BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS policy_version TEXT NOT NULL DEFAULT '2026-03-21',
+      ADD COLUMN IF NOT EXISTS consented_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     `);
 
     await activePool.query(`
@@ -1749,11 +1780,22 @@ export async function createTrialRequest(input: {
   phone: string;
   requestedPlanId?: PlanType;
   source?: string;
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+  aiDisclosureAccepted: boolean;
+  policyVersion?: string;
 }) {
   const normalizedEmail = normalizeEmailAddress(input.email);
   const normalizedPhone = normalizePhoneNumber(input.phone);
   const planId = resolvePlanId(input.requestedPlanId || "basic");
   const source = normalizeOptionalString(input.source) || "landing";
+  const policyVersion = normalizeOptionalString(input.policyVersion) || LEGAL_POLICY_VERSION;
+
+  if (!input.privacyAccepted || !input.termsAccepted || !input.aiDisclosureAccepted) {
+    throw new Error(
+      "Para ativar o trial tens de aceitar a Politica de Privacidade, os Termos de Utilizacao e a nota de uso de IA."
+    );
+  }
 
   const nextRequest: TrialRequest = {
     id: randomUUID(),
@@ -1764,6 +1806,11 @@ export async function createTrialRequest(input: {
     normalizedPhone,
     requestedPlanId: planId,
     source,
+    privacyAccepted: true,
+    termsAccepted: true,
+    aiDisclosureAccepted: true,
+    policyVersion,
+    consentedAt: new Date().toISOString(),
     status: "pending",
     createdAt: new Date().toISOString(),
   };
@@ -1791,12 +1838,14 @@ export async function createTrialRequest(input: {
         `
           INSERT INTO trial_requests (
             id, name, email, normalized_email, phone, normalized_phone,
-            requested_plan_id, source, status, created_at
+            requested_plan_id, source, privacy_accepted, terms_accepted,
+            ai_disclosure_accepted, policy_version, consented_at, status, created_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
           RETURNING
             id, name, email, normalized_email, phone, normalized_phone,
-            requested_plan_id, source, status, created_at
+            requested_plan_id, source, privacy_accepted, terms_accepted,
+            ai_disclosure_accepted, policy_version, consented_at, status, created_at
         `,
         [
           nextRequest.id,
@@ -1807,6 +1856,11 @@ export async function createTrialRequest(input: {
           nextRequest.normalizedPhone,
           nextRequest.requestedPlanId,
           nextRequest.source,
+          nextRequest.privacyAccepted,
+          nextRequest.termsAccepted,
+          nextRequest.aiDisclosureAccepted,
+          nextRequest.policyVersion,
+          nextRequest.consentedAt,
           nextRequest.status,
           nextRequest.createdAt,
         ]
@@ -1823,6 +1877,11 @@ export async function createTrialRequest(input: {
         normalizedPhone: String(row.normalized_phone),
         requestedPlanId: resolvePlanId(String(row.requested_plan_id)),
         source: String(row.source),
+        privacyAccepted: Boolean(row.privacy_accepted),
+        termsAccepted: Boolean(row.terms_accepted),
+        aiDisclosureAccepted: Boolean(row.ai_disclosure_accepted),
+        policyVersion: String(row.policy_version || LEGAL_POLICY_VERSION),
+        consentedAt: new Date(row.consented_at || row.created_at).toISOString(),
         status: String(row.status) as TrialRequest["status"],
         createdAt: new Date(row.created_at).toISOString(),
       } satisfies TrialRequest;
@@ -2074,6 +2133,10 @@ export async function authenticateWorkspaceUser(email: string, password: string)
   );
 
   if (!record) {
+    return null;
+  }
+
+  if (!isPublicDemoAccessEnabled() && PUBLIC_DEMO_USER_EMAILS.has(record.email.toLowerCase())) {
     return null;
   }
 

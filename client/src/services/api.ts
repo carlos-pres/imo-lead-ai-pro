@@ -111,6 +111,10 @@ export type TrialRequestInput = {
   phone: string;
   requestedPlanId?: PlanType;
   source?: string;
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+  aiDisclosureAccepted: boolean;
+  policyVersion: string;
 };
 
 export type WorkspaceUser = {
@@ -128,6 +132,20 @@ export type WorkspaceUser = {
 export type AuthSession = {
   token: string;
   user: WorkspaceUser;
+};
+
+export type ComplianceSummary = {
+  policyVersion: string;
+  privacyContactEmail: string;
+  dataUseSummary: string;
+  aiUseSummary: string;
+  retentionSummary: string;
+  trialRequirements: {
+    uniqueEmail: boolean;
+    uniquePhone: boolean;
+    explicitConsentRequired: boolean;
+    policyVersion: string;
+  };
 };
 
 export type Lead = {
@@ -249,7 +267,20 @@ export function getSessionToken() {
     return "";
   }
 
-  return window.localStorage.getItem(SESSION_TOKEN_KEY) || "";
+  const sessionValue = window.sessionStorage.getItem(SESSION_TOKEN_KEY);
+
+  if (sessionValue) {
+    return sessionValue;
+  }
+
+  const legacyValue = window.localStorage.getItem(SESSION_TOKEN_KEY) || "";
+
+  if (legacyValue) {
+    window.sessionStorage.setItem(SESSION_TOKEN_KEY, legacyValue);
+    window.localStorage.removeItem(SESSION_TOKEN_KEY);
+  }
+
+  return legacyValue;
 }
 
 export function setSessionToken(token: string) {
@@ -257,7 +288,8 @@ export function setSessionToken(token: string) {
     return;
   }
 
-  window.localStorage.setItem(SESSION_TOKEN_KEY, token);
+  window.sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  window.localStorage.removeItem(SESSION_TOKEN_KEY);
 }
 
 export function clearSessionToken() {
@@ -265,6 +297,7 @@ export function clearSessionToken() {
     return;
   }
 
+  window.sessionStorage.removeItem(SESSION_TOKEN_KEY);
   window.localStorage.removeItem(SESSION_TOKEN_KEY);
 }
 
@@ -273,11 +306,16 @@ export async function getHealth() {
   return readJson<{
     ok: boolean;
     service: string;
-    aiMode: "hybrid" | "heuristic";
-    databaseConfigured: boolean;
-    defaultPlanId: PlanType;
-    defaultPlanName: string;
+    aiMode?: "hybrid" | "heuristic";
+    databaseConfigured?: boolean;
+    defaultPlanId?: PlanType;
+    defaultPlanName?: string;
   }>(response);
+}
+
+export async function getCompliance() {
+  const response = await apiFetch("/api/compliance");
+  return readJson<ComplianceSummary>(response);
 }
 
 export async function getLeads() {

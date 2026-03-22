@@ -9,6 +9,7 @@ import {
   createTrialRequest,
   deleteAdminPlan,
   getAdminPlans,
+  getCompliance,
   getCurrentSession,
   getHealth,
   getLeads,
@@ -20,6 +21,7 @@ import {
   updateAdminPlan,
   updateLeadWorkflow,
   type AuthSession,
+  type ComplianceSummary,
   type CommercialPlanInput,
   type CreateLeadInput,
   type Lead,
@@ -32,6 +34,7 @@ import {
   type UpdateLeadWorkflowInput,
   type WorkspaceRole,
 } from "./services/api";
+import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
 
 type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing" | "admin";
 type BillingMode = "month" | "year";
@@ -48,6 +51,9 @@ type TrialForm = {
   name: string;
   email: string;
   phone: string;
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+  aiDisclosureAccepted: boolean;
 };
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
 
@@ -305,6 +311,9 @@ const DEMO_ACCESS = [
     description: "Operacao comercial limitada a equipa e carteira propria.",
   },
 ] as const;
+
+const PUBLIC_DEMO_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_DEMO === "true";
 
 type DemoAccessEntry = (typeof DEMO_ACCESS)[number];
 
@@ -613,11 +622,12 @@ function App() {
   const [billingMode, setBillingMode] = useState<BillingMode>("month");
   const [activePlanId, setActivePlanId] = useState<PlanType>("pro");
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [compliance, setCompliance] = useState<ComplianceSummary | null>(null);
   const [authBooting, setAuthBooting] = useState(true);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [loginForm, setLoginForm] = useState<LoginForm>({
-    email: DEMO_ACCESS[0].email,
-    password: DEMO_ACCESS[0].password,
+    email: PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "",
+    password: PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].password : "",
   });
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
@@ -649,6 +659,9 @@ function App() {
     name: "",
     email: "",
     phone: "",
+    privacyAccepted: false,
+    termsAccepted: false,
+    aiDisclosureAccepted: false,
   });
   const [trialSubmitting, setTrialSubmitting] = useState(false);
   const [trialFeedback, setTrialFeedback] = useState("");
@@ -719,7 +732,7 @@ function App() {
   }, [session]);
 
   async function bootstrap() {
-    await Promise.all([loadHealth(), loadPlansCatalog()]);
+    await Promise.all([loadHealth(), loadPlansCatalog(), loadCompliance()]);
 
     try {
       const currentSession = await getCurrentSession();
@@ -750,14 +763,26 @@ function App() {
           ? window.localStorage.getItem("imolead-active-plan")
           : null;
 
-      setAiMode(health.aiMode);
-      setDatabaseConfigured(health.databaseConfigured);
+      const resolvedDefaultPlanId =
+        health.defaultPlanId && isPlanType(health.defaultPlanId) ? health.defaultPlanId : "pro";
+
+      setAiMode(health.aiMode || "heuristic");
+      setDatabaseConfigured(Boolean(health.databaseConfigured));
       setApiState(health.ok ? "API online" : "API com alerta");
       if (!session) {
-        setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : health.defaultPlanId);
+        setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : resolvedDefaultPlanId);
       }
     } catch {
       setApiState("API offline");
+    }
+  }
+
+  async function loadCompliance() {
+    try {
+      const nextCompliance = await getCompliance();
+      setCompliance(nextCompliance);
+    } catch {
+      setCompliance(null);
     }
   }
 
@@ -858,6 +883,10 @@ function App() {
         phone: trialForm.phone,
         requestedPlanId: "basic",
         source: "landing",
+        privacyAccepted: trialForm.privacyAccepted,
+        termsAccepted: trialForm.termsAccepted,
+        aiDisclosureAccepted: trialForm.aiDisclosureAccepted,
+        policyVersion,
       });
 
       setTrialFeedbackTone("success");
@@ -866,6 +895,9 @@ function App() {
         name: "",
         email: "",
         phone: "",
+        privacyAccepted: false,
+        termsAccepted: false,
+        aiDisclosureAccepted: false,
       });
       updateLandingGuidance(
         "Trial reservado com protecao anti-reutilizacao",
@@ -1092,6 +1124,8 @@ function App() {
     null;
   const suggestedDemoEntry = getSuggestedDemoEntry(activePlanId);
   const activePlanTrialDays = getTrialDaysForPlan(activePlanId);
+  const policyVersion = compliance?.policyVersion || LEGAL_POLICY_VERSION;
+  const privacyContactEmail = compliance?.privacyContactEmail || PRIVACY_CONTACT_EMAIL;
   const availableCountries = activePlan?.includedCountryCodes || COUNTRY_OPTIONS.map((item) => item.code);
   const offices = teamOverview?.offices || [];
   const members = teamOverview?.members || [];
@@ -1285,15 +1319,31 @@ function App() {
     entry: DemoAccessEntry = getSuggestedDemoEntry(planId)
   ) {
     setActivePlanId(planId);
-    setLoginForm({
-      email: entry.email,
-      password: entry.password,
-    });
+    if (PUBLIC_DEMO_ENABLED) {
+      setLoginForm({
+        email: entry.email,
+        password: entry.password,
+      });
+    } else {
+      setLoginForm({
+        email: "",
+        password: "",
+      });
+    }
     updateLandingGuidance(title, enrichGuidance(detail, planId));
     scrollToElement("landing-login");
   }
 
   function selectDemoProfile(entry: DemoAccessEntry) {
+    if (!PUBLIC_DEMO_ENABLED) {
+      openLandingLogin(
+        getPlanForDemoEntry(entry),
+        "Demo assistida recomendada",
+        "A demo publica esta desativada em producao. Usa credenciais reais ou pede uma sessao assistida para percorrer o fluxo completo."
+      );
+      return;
+    }
+
     const suggestedPlan = getPlanForDemoEntry(entry);
     openLandingLogin(
       suggestedPlan,
@@ -3163,6 +3213,30 @@ function App() {
             </article>
           </section>
 
+          <section className="marketing-section" id="landing-legal">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Compliance</p>
+                <h3>Privacidade, termos e IA explicados sem esconder o que tratamos</h3>
+              </div>
+            </div>
+
+            <div className="marketing-legal-grid">
+              {LEGAL_SECTIONS.map((section) => (
+                <article className="marketing-legal-card" id={section.id} key={section.id}>
+                  <span>{section.eyebrow}</span>
+                  <strong>{section.title}</strong>
+                  <p>{section.summary}</p>
+                  <ul className="feature-list compact-list">
+                    {section.bullets.map((bullet) => (
+                      <li key={bullet}>{bullet}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section className="shell-panel marketing-final-cta" id="landing-contact">
             <div>
               <p className="eyebrow">Fecho comercial</p>
@@ -3213,6 +3287,11 @@ function App() {
                 <strong>{coverageLabel}</strong>
                 <p>Base pronta para Portugal agora e Europa nas proximas fases.</p>
               </article>
+              <article className="marketing-final-card">
+                <span>Contacto RGPD</span>
+                <strong>{privacyContactEmail}</strong>
+                <p>Versao de politica ativa {policyVersion} com consentimento explicito no trial.</p>
+              </article>
             </div>
           </section>
         </div>
@@ -3226,10 +3305,11 @@ function App() {
           </div>
 
           <div className="auth-panel-note">
-            <span>Entrada guiada</span>
+            <span>{PUBLIC_DEMO_ENABLED ? "Entrada guiada" : "Acesso protegido"}</span>
             <p>
-              Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo
-              por perfil.
+              {PUBLIC_DEMO_ENABLED
+                ? "Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo por perfil."
+                : "A demo publica fica desativada em producao. O login abaixo serve para utilizadores reais e demonstracoes assistidas."}
             </p>
           </div>
 
@@ -3241,19 +3321,35 @@ function App() {
             <div className="mini-tags">
               <span>{activePlan?.publicName || "ImoLead Pro"}</span>
               {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
-              <span>{suggestedDemoEntry.role}</span>
-              <span>{suggestedDemoEntry.email}</span>
+              <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.role : "Demo assistida"}</span>
+              <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.email : "Acesso validado pela equipa"}</span>
             </div>
           </div>
 
           <div className="auth-helper-actions">
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={() => selectDemoProfile(suggestedDemoEntry)}
-            >
-              Usar perfil sugerido
-            </button>
+            {PUBLIC_DEMO_ENABLED ? (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => selectDemoProfile(suggestedDemoEntry)}
+              >
+                Usar perfil sugerido
+              </button>
+            ) : (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() =>
+                  openLandingLogin(
+                    activePlanId,
+                    "Demo assistida recomendada",
+                    "A equipa prepara a demonstracao com o plano certo, sem expor credenciais demo na frente publica."
+                  )
+                }
+              >
+                Pedir demo assistida
+              </button>
+            )}
             <button
               className="ghost-button"
               type="button"
@@ -3280,7 +3376,8 @@ function App() {
 
               <p className="trial-copy">
                 O trial fica limitado a um unico email e um unico telefone, para evitar
-                reutilizacao do periodo inicial.
+                reutilizacao do periodo inicial. Antes de reservar, confirmas privacidade,
+                termos e uso de IA.
               </p>
 
               <form className="lead-form trial-form" onSubmit={handleTrialRequest}>
@@ -3321,6 +3418,64 @@ function App() {
                   />
                 </label>
 
+                <label className="consent-check">
+                  <input
+                    type="checkbox"
+                    checked={trialForm.privacyAccepted}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({
+                        ...current,
+                        privacyAccepted: event.target.checked,
+                      }))
+                    }
+                    required
+                  />
+                  <span>
+                    Aceito a <a href="#legal-privacy">Politica de Privacidade</a> e o tratamento
+                    dos meus dados para contacto comercial e operacao do trial.
+                  </span>
+                </label>
+
+                <label className="consent-check">
+                  <input
+                    type="checkbox"
+                    checked={trialForm.termsAccepted}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({
+                        ...current,
+                        termsAccepted: event.target.checked,
+                      }))
+                    }
+                    required
+                  />
+                  <span>
+                    Aceito os <a href="#legal-terms">Termos de Utilizacao</a> e compreendo que os
+                    planos representam capacidade operacional, nao volume garantido de leads.
+                  </span>
+                </label>
+
+                <label className="consent-check">
+                  <input
+                    type="checkbox"
+                    checked={trialForm.aiDisclosureAccepted}
+                    onChange={(event) =>
+                      setTrialForm((current) => ({
+                        ...current,
+                        aiDisclosureAccepted: event.target.checked,
+                      }))
+                    }
+                    required
+                  />
+                  <span>
+                    Compreendo a nota de <a href="#legal-ai">uso de IA</a> e que algumas funcoes
+                    podem envolver processamento por fornecedores externos quando o plano o permitir.
+                  </span>
+                </label>
+
+                <p className="trial-legal-note">
+                  Versao de politica {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
+                </p>
+
                 {trialFeedback ? (
                   <p className={trialFeedbackTone === "success" ? "feedback success" : "feedback error"}>
                     {trialFeedback}
@@ -3342,7 +3497,7 @@ function App() {
                 onChange={(event) =>
                   setLoginForm((current) => ({ ...current, email: event.target.value }))
                 }
-                placeholder={DEMO_ACCESS[0].email}
+                placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt"}
                 required
               />
             </label>
@@ -3355,7 +3510,7 @@ function App() {
                 onChange={(event) =>
                   setLoginForm((current) => ({ ...current, password: event.target.value }))
                 }
-                placeholder="Demo123!"
+                placeholder={PUBLIC_DEMO_ENABLED ? "Demo123!" : "Acesso seguro"}
                 required
               />
             </label>
@@ -3372,20 +3527,31 @@ function App() {
             </button>
           </form>
 
-          <div className="auth-demo-grid">
-            {DEMO_ACCESS.map((entry) => (
-              <button
-                className="auth-demo-card"
-                key={entry.email}
-                type="button"
-                onClick={() => selectDemoProfile(entry)}
-              >
-                <span>{entry.role}</span>
-                <strong>{entry.email}</strong>
-                <p>{entry.description}</p>
-              </button>
-            ))}
-          </div>
+          {PUBLIC_DEMO_ENABLED ? (
+            <div className="auth-demo-grid">
+              {DEMO_ACCESS.map((entry) => (
+                <button
+                  className="auth-demo-card"
+                  key={entry.email}
+                  type="button"
+                  onClick={() => selectDemoProfile(entry)}
+                >
+                  <span>{entry.role}</span>
+                  <strong>{entry.email}</strong>
+                  <p>{entry.description}</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="auth-guard-card">
+              <span>Demo publica desativada</span>
+              <strong>As credenciais demo nao ficam expostas na frente publica.</strong>
+              <p>
+                Mantemos a experiencia comercial ativa, mas a demonstracao entra por validacao
+                humana ou por contas reais do workspace.
+              </p>
+            </div>
+          )}
 
           <div className="plan-preview-list">
             {plans.map((plan) => (
@@ -3402,6 +3568,21 @@ function App() {
                 <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
               </article>
             ))}
+          </div>
+
+          <div className="auth-legal-stack">
+            <article className="auth-legal-card">
+              <span>Politica ativa</span>
+              <strong>Versao {policyVersion}</strong>
+              <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
+            </article>
+            <article className="auth-legal-card">
+              <span>Contacto RGPD</span>
+              <strong>{privacyContactEmail}</strong>
+              <p>
+                Direitos de acesso, retificacao, apagamento e oposicao tratados por este contacto.
+              </p>
+            </article>
           </div>
         </aside>
       </main>
