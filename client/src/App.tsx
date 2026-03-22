@@ -2900,15 +2900,6 @@ function App() {
                   <div className="status-chip muted">{marketingInfraLabel}</div>
                 </div>
 
-                <div className="marketing-proof-grid">
-                  {commandSignals.map((signal) => (
-                    <article className="marketing-proof-card" key={signal.label}>
-                      <span>{signal.label}</span>
-                      <strong>{signal.value}</strong>
-                      <p>{signal.detail}</p>
-                    </article>
-                  ))}
-                </div>
               </div>
 
               <div className="marketing-visual">
@@ -2918,18 +2909,6 @@ function App() {
 
                 <div className="marketing-mockup-shell marketing-mockup-mobile">
                   <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
-                </div>
-
-                <div className="marketing-mockup-shell marketing-mockup-dashboard">
-                  <img src={mobileDashboardImg} alt="Vista mobile de acesso restrito" />
-                </div>
-
-                <div className="marketing-mockup-shell marketing-mockup-admin">
-                  <img src={adminSectionImg} alt="Entrada do painel administrativo" />
-                </div>
-
-                <div className="marketing-mockup-shell marketing-mockup-features">
-                  <img src={featuresSectionImg} alt="Bloco de funcionalidades do produto" />
                 </div>
 
                 <div className="marketing-float-card marketing-float-main">
@@ -2959,6 +2938,50 @@ function App() {
                 <p>{item.detail}</p>
               </article>
             ))}
+          </section>
+
+          <section className="marketing-section">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Produto em acao</p>
+                <h3>As telas reais sustentam a promessa comercial</h3>
+              </div>
+            </div>
+
+            <div className="marketing-showcase-grid">
+              <article className="marketing-showcase-card featured">
+                <div className="marketing-showcase-copy">
+                  <span>Funcionalidades</span>
+                  <strong>Blocos claros para explicar valor sem parecer software genérico</strong>
+                  <p>
+                    Captacao, classificacao, mensagens, agenda e relatorios apresentados de forma
+                    simples, vendavel e orientada ao mercado.
+                  </p>
+                </div>
+                <img src={featuresSectionImg} alt="Secao real de funcionalidades do produto" />
+              </article>
+
+              <article className="marketing-showcase-card">
+                <div className="marketing-showcase-copy">
+                  <span>Administracao</span>
+                  <strong>Painel protegido e pronto para controlo real do negocio</strong>
+                  <p>Governance, acessos e operacao com cara de plataforma, nao de prototipo.</p>
+                </div>
+                <img src={adminSectionImg} alt="Entrada real do painel administrativo" />
+              </article>
+
+              <article className="marketing-showcase-card">
+                <div className="marketing-showcase-copy">
+                  <span>Mobile</span>
+                  <strong>Experiencia preparada para demonstracao no telemovel</strong>
+                  <p>
+                    A leitura continua forte em mobile, com entrada clara e restricao controlada
+                    quando necessario.
+                  </p>
+                </div>
+                <img src={mobileDashboardImg} alt="Vista mobile real do produto" />
+              </article>
+            </div>
           </section>
 
           <section className="marketing-section" id="landing-features">

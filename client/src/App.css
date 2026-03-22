@@ -1373,7 +1373,7 @@
 .marketing-hero-grid {
   display: grid;
   grid-template-columns: 1fr;
-  min-height: 620px;
+  min-height: 560px;
   position: relative;
   align-items: stretch;
 }
@@ -1386,7 +1386,7 @@
   gap: 18px;
   justify-content: center;
   padding: 48px;
-  max-width: 620px;
+  max-width: 560px;
 }
 
 .marketing-copy .eyebrow,
@@ -1508,40 +1508,18 @@
 }
 
 .marketing-mockup-desktop {
-  right: 46px;
-  top: 94px;
-  width: min(48vw, 700px);
+  right: 52px;
+  top: 92px;
+  width: min(46vw, 660px);
   aspect-ratio: 1.62;
 }
 
 .marketing-mockup-mobile {
-  right: 520px;
-  bottom: 38px;
-  width: min(14vw, 220px);
+  right: 472px;
+  bottom: 34px;
+  width: min(13vw, 200px);
   aspect-ratio: 9 / 19.5;
   border-radius: 28px;
-}
-
-.marketing-mockup-dashboard {
-  right: 24px;
-  bottom: 24px;
-  width: min(12vw, 180px);
-  aspect-ratio: 9 / 19;
-  border-radius: 28px;
-}
-
-.marketing-mockup-admin {
-  right: 72px;
-  top: 32px;
-  width: min(22vw, 330px);
-  aspect-ratio: 1.7;
-}
-
-.marketing-mockup-features {
-  right: 320px;
-  top: 332px;
-  width: min(16vw, 250px);
-  aspect-ratio: 0.58;
 }
 
 .marketing-float-card {
@@ -1596,6 +1574,58 @@
 
 .marketing-metric-ribbon {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.marketing-showcase-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 0.9fr;
+  gap: 16px;
+}
+
+.marketing-showcase-card {
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 34px rgba(21, 33, 48, 0.06);
+}
+
+.marketing-showcase-card.featured {
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 187, 0.08), transparent 30%),
+    rgba(255, 255, 255, 0.9);
+}
+
+.marketing-showcase-copy {
+  padding: 20px 20px 0;
+}
+
+.marketing-showcase-copy span {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7f6f5c;
+}
+
+.marketing-showcase-copy strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.marketing-showcase-copy p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+  line-height: 1.55;
+}
+
+.marketing-showcase-card img {
+  display: block;
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  margin-top: 18px;
 }
 
 .marketing-metric-card {
@@ -2025,6 +2055,7 @@
   .marketing-hero-grid,
   .marketing-metric-ribbon,
   .marketing-proof-grid,
+  .marketing-showcase-grid,
   .marketing-feature-grid,
   .marketing-legal-grid,
   .marketing-duo-grid,
@@ -2072,26 +2103,6 @@
     bottom: 24px;
     width: 150px;
   }
-
-  .marketing-mockup-dashboard {
-    left: 24px;
-    right: auto;
-    bottom: 24px;
-    width: 116px;
-  }
-
-  .marketing-mockup-admin {
-    right: 32px;
-    top: 14px;
-    width: 220px;
-  }
-
-  .marketing-mockup-features {
-    left: 36px;
-    right: auto;
-    top: 76px;
-    width: 144px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -2116,7 +2127,6 @@
     grid-template-columns: 1fr;
   }
 
-  .marketing-hero,
   .marketing-story-card {
     padding: 18px;
   }
@@ -2154,17 +2164,6 @@
     width: 108px;
   }
 
-  .marketing-mockup-dashboard {
-    left: 16px;
-    bottom: 16px;
-    width: 92px;
-  }
-
-  .marketing-mockup-admin,
-  .marketing-mockup-features {
-    display: none;
-  }
-
   .marketing-float-main,
   .marketing-float-side {
     left: 12px;
@@ -2178,6 +2177,10 @@
 
   .marketing-float-side {
     top: 12px;
+  }
+
+  .marketing-showcase-card img {
+    height: 220px;
   }
 }
 
