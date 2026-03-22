@@ -250,14 +250,14 @@ function createEmptyAdminPlanDraft(): AdminPlanDraft {
     includedUsers: "7",
     allowsExtraUsers: true,
     extraUserMonthlyPrice: "17",
-    extraUserYearlyPrice: "163.2",
+    extraUserYearlyPrice: "163.20",
     advancedAI: true,
     autoContact: true,
     multiLocation: true,
     multiLanguage: true,
     maxMessagesPerMonth: "1200",
     monthlyPrice: "97",
-    yearlyPrice: "931.2",
+    yearlyPrice: "931.20",
     annualDiscountPercent: "20",
     reportsLabel: "",
     marketReports: "",
@@ -4132,6 +4132,11 @@ function App() {
 
                 <p className="pricing-note">{plan.agentLabel}</p>
                 <p className="hero-text">{plan.reportsLabel}</p>
+                <p className="pricing-note">
+                  {formatCurrency(plan.monthlyPrice, "EUR", plan.monthlyPrice % 1 !== 0)}/mes ou{" "}
+                  {formatCurrency(plan.yearlyPrice, "EUR", plan.yearlyPrice % 1 !== 0)}/ano com{" "}
+                  {plan.annualDiscountPercent}% de desconto anual fixo.
+                </p>
                 <div className="mini-tags">
                   {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
                     <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
