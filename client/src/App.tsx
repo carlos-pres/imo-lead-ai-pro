@@ -643,7 +643,7 @@ function App() {
   const [savingAdminPlanId, setSavingAdminPlanId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
   const [error, setError] = useState("");
-  const [apiState, setApiState] = useState("A verificar ligacao");
+  const [apiState, setApiState] = useState("A preparar experiencia");
   const [aiMode, setAiMode] = useState<"hybrid" | "heuristic">("heuristic");
   const [databaseConfigured, setDatabaseConfigured] = useState(false);
   const [search, setSearch] = useState("");
@@ -768,12 +768,12 @@ function App() {
 
       setAiMode(health.aiMode || "heuristic");
       setDatabaseConfigured(Boolean(health.databaseConfigured));
-      setApiState(health.ok ? "API online" : "API com alerta");
+      setApiState(health.ok ? "Plataforma online" : "Plataforma com alerta");
       if (!session) {
         setActivePlanId(isPlanType(storedPlanId) ? storedPlanId : resolvedDefaultPlanId);
       }
     } catch {
-      setApiState("API offline");
+      setApiState("A verificar disponibilidade");
     }
   }
 
@@ -1139,6 +1139,12 @@ function App() {
   const canSwitchPlan = !session;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
+  const marketingApiLabel =
+    apiState === "A verificar disponibilidade" ? "A validar acesso" : "Plataforma online";
+  const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
+  const marketingInfraLabel = databaseConfigured
+    ? "Base segura e persistente"
+    : "Ambiente pronto para demonstracao";
   const hotLeadRatio =
     dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
   const routingMix = [
@@ -2841,7 +2847,7 @@ function App() {
                     )
                   }
                 >
-                  Abrir demo guiada
+                  Abrir demonstracao
                 </button>
               </div>
             </div>
@@ -2849,11 +2855,10 @@ function App() {
             <div className="marketing-hero-grid">
               <div className="marketing-copy">
                 <p className="eyebrow">Control tower para redes imobiliarias</p>
-                <h1>Um front comercial forte na entrada. Um cockpit real por dentro.</h1>
+                <h1>Uma entrada comercial forte. Um cockpit operacional por dentro.</h1>
                 <p className="hero-text">
-                  O prototipo aponta para a direcao certa: marketing premium, mensagem clara
-                  e uma plataforma que vende produtividade, mercado e automacao antes mesmo
-                  do login.
+                  Posicionamento premium, mensagem clara e um produto que transmite
+                  produtividade, mercado e automacao antes mesmo do primeiro login.
                 </p>
 
                 <div className="marketing-cta-row">
@@ -2886,13 +2891,9 @@ function App() {
                 </div>
 
                 <div className="marketing-chip-row">
-                  <div className="status-chip">{apiState}</div>
-                  <div className="status-chip muted">
-                    AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
-                  </div>
-                  <div className="status-chip muted">
-                    {databaseConfigured ? "DB configurada" : "Fallback local ativo"}
-                  </div>
+                  <div className="status-chip">{marketingApiLabel}</div>
+                  <div className="status-chip muted">{marketingAiLabel}</div>
+                  <div className="status-chip muted">{marketingInfraLabel}</div>
                 </div>
 
                 <div className="marketing-proof-grid">
