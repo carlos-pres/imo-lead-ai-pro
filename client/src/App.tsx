@@ -4324,6 +4324,80 @@ function App() {
     );
   }
 
+  function renderLoginEntryHero() {
+    const featuredPlan = activePlan || plans.find((plan) => plan.basePlanId === "pro") || plans[0] || null;
+
+    return (
+      <section className="shell-panel public-login-intro">
+        {renderPublicNav()}
+
+        <div className="public-login-intro-grid">
+          <div className="public-login-copy">
+            <p className="eyebrow">Acesso protegido</p>
+            <h1>Entrada protegida para equipas reais e demos assistidas.</h1>
+            <p className="public-login-lead">
+              A frente publica continua comercial. O acesso aqui abre no plano certo, com o agente
+              certo e com um contexto de demonstracao que transmite confianca logo no primeiro
+              contacto.
+            </p>
+            <p className="hero-text">
+              A demonstração publica fica fechada. Esta entrada serve contas reais, trials
+              protegidos e sessoes assistidas para mostrar valor sem expor a operacao.
+            </p>
+
+            <div className="marketing-cta-row">
+              <button className="primary-button" type="button" onClick={() => navigatePublicPage("pricing")}>
+                Ver planos
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
+                Pedir demonstracao
+              </button>
+            </div>
+
+            <div className="public-hero-chips">
+              <div className="status-chip">{activePlan?.publicName || "ImoLead Pro"}</div>
+              <div className="status-chip muted">
+                {PUBLIC_DEMO_ENABLED ? "Demo publica ativa" : "Demo assistida"}
+              </div>
+              <div className="status-chip muted">{featuredPlan?.agentLabel || marketingAiLabel}</div>
+            </div>
+          </div>
+
+          <div className="public-login-stage-panel">
+            <article className="public-login-stage-card public-login-stage-card-wide">
+              <span>Workspace preparado</span>
+              <strong>{activePlan?.publicName || "ImoLead Pro"} pronto para mostrar valor real</strong>
+              <p>
+                O login nao aparece solto. Ele entra no fluxo comercial com escopo, discurso e
+                governanca para a demonstracao parecer produto serio e nao uma area tecnica perdida.
+              </p>
+            </article>
+
+            <div className="public-login-stage-grid">
+              <article className="public-login-stage-card">
+                <span>Validacao do trial</span>
+                <strong>Email e telefone unicos protegem a oferta inicial</strong>
+                <p>Reduz abuso, filtra curiosos e empurra a conversa certa para o plano Pro.</p>
+              </article>
+
+              <article className="public-login-stage-card">
+                <span>Governanca comercial</span>
+                <strong>Perfis, lojas e desks entram com responsabilidade real</strong>
+                <p>Admin, manager e consultant acedem ao que lhes pertence sem desorganizar a demo.</p>
+              </article>
+
+              <article className="public-login-stage-card">
+                <span>Cobertura operacional</span>
+                <strong>{coverageLabel}</strong>
+                <p>{landingGuidance.detail}</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   function renderAuthPanel() {
     return (
       <aside className="auth-panel shell-panel marketing-auth-panel" id="landing-login">
@@ -5030,45 +5104,7 @@ function App() {
       return (
         <main className="auth-shell marketing-auth-shell public-login-shell">
           <div className="marketing-main public-login-main">
-            {renderPageHero({
-              eyebrow: "Acesso protegido",
-              title: "Entrar com contexto, trial protegido e demonstracao assistida.",
-              text:
-                "A pagina de entrada passa a ser propria, sem empurrar o cockpit para a frente publica e sem perder a ligacao com os planos, trial e governance.",
-              stage: "login",
-              primaryLabel: "Ver planos",
-              secondaryLabel: "Ir para contacto",
-              onPrimaryClick: () => navigatePublicPage("pricing"),
-              onSecondaryClick: () => navigatePublicPage("contact"),
-            })}
-
-            <section className="marketing-section public-login-proof-grid">
-              <article className="public-sales-card">
-                <span>Workspace</span>
-                <strong>O cockpit so abre depois do contexto certo estar definido</strong>
-                <p>
-                  O acesso entra pela pagina certa, o plano certo e a guidance certa. Isso melhora
-                  a demonstracao e protege a operacao publica.
-                </p>
-              </article>
-
-              <article className="public-sales-card">
-                <span>Trial protegido</span>
-                <strong>Email e telefone unicos reduzem abuso do plano de entrada</strong>
-                <p>
-                  O trial de 15 dias abre a porta sem vender gato por lebre e sem deixar a frente
-                  comercial vulneravel.
-                </p>
-              </article>
-
-              <article className="public-sales-card">
-                <span>Governance</span>
-                <strong>Planos, perfis e desks continuam ligados ao que mostramos no pitch</strong>
-                <p>
-                  O utilizador percebe valor na entrada e encontra a mesma coerencia depois do login.
-                </p>
-              </article>
-            </section>
+            {renderLoginEntryHero()}
           </div>
 
           {renderAuthPanel()}
