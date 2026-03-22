@@ -1,6 +1,10 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import heroImg from "./assets/hero.png";
+import adminSectionImg from "../../admin-section-before-login.png";
+import featuresSectionImg from "../../features_section.png";
+import homeFullImg from "../../home_full.png";
+import mobileDashboardImg from "../../mobile_dashboard_after_nav.png";
+import mobileHomeHeroImg from "../../mobile_home_hero.png";
 import "./App.css";
 import {
   clearSessionToken,
@@ -1647,7 +1651,7 @@ function App() {
           </div>
 
           <div className="hero-visual market-stage">
-            <img src={heroImg} alt="Painel enterprise ImoLead AI Pro" />
+            <img src={homeFullImg} alt="Painel enterprise ImoLead AI Pro" />
             <div className="market-stage-grid">
               <div className="insight-card spotlight-card">
                 <span>Radar do mercado</span>
@@ -2908,7 +2912,25 @@ function App() {
               </div>
 
               <div className="marketing-visual">
-                <img src={heroImg} alt="Painel enterprise ImoLead AI Pro" />
+                <div className="marketing-mockup-shell marketing-mockup-desktop">
+                  <img src={homeFullImg} alt="Vista desktop do ImoLead AI Pro" />
+                </div>
+
+                <div className="marketing-mockup-shell marketing-mockup-mobile">
+                  <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
+                </div>
+
+                <div className="marketing-mockup-shell marketing-mockup-dashboard">
+                  <img src={mobileDashboardImg} alt="Vista mobile de acesso restrito" />
+                </div>
+
+                <div className="marketing-mockup-shell marketing-mockup-admin">
+                  <img src={adminSectionImg} alt="Entrada do painel administrativo" />
+                </div>
+
+                <div className="marketing-mockup-shell marketing-mockup-features">
+                  <img src={featuresSectionImg} alt="Bloco de funcionalidades do produto" />
+                </div>
 
                 <div className="marketing-float-card marketing-float-main">
                   <span>Desk dominante</span>
