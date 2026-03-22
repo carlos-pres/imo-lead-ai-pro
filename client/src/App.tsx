@@ -1,12 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
-import adminSectionImg from "../../admin-section-before-login.png";
-import featuresSectionImg from "../../features_section.png";
 import homeFullImg from "../../home_full.png";
-import mobileDashboardImg from "../../mobile_dashboard_after_nav.png";
-import mobileFeaturesPricingImg from "../../mobile_features_pricing_testimonials.png";
-import mobileHomeHeroImg from "../../mobile_home_hero.png";
-import mobileMenuOpenImg from "../../mobile_menu_open.png";
 import "./App.css";
 import {
   clearSessionToken,
@@ -682,17 +676,6 @@ function buildSourceMix(leads: Lead[]) {
   return Array.from(counter.entries()).sort((left, right) => right[1] - left[1]);
 }
 
-function scrollToElement(id: string) {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  document.getElementById(id)?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-}
-
 function App() {
   const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
   const [publicPage, setPublicPage] = useState<PublicPageId>(() =>
@@ -1279,12 +1262,7 @@ function App() {
   const canSwitchPlan = !session;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
-  const marketingApiLabel =
-    apiState === "A verificar disponibilidade" ? "A validar acesso" : "Plataforma online";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
-  const marketingInfraLabel = databaseConfigured
-    ? "Base segura e persistente"
-    : "Ambiente pronto para demonstracao";
   const hotLeadRatio =
     dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
   const routingMix = [
@@ -2985,6 +2963,7 @@ function App() {
   function renderLoginView() {
     return renderPublicSite();
 
+    /*
     return (
       <main className="auth-shell marketing-auth-shell">
         <div className="marketing-main">
@@ -3805,6 +3784,7 @@ function App() {
         </aside>
       </main>
     );
+    */
   }
 
   function renderPublicNav() {
@@ -3853,14 +3833,220 @@ function App() {
     );
   }
 
+  function renderPublicStage(page: PublicPageId) {
+    const featuredPlan =
+      activePlan || plans.find((plan) => plan.basePlanId === "pro") || plans[0] || null;
+    const compactPlans = plans.slice(0, 3);
+
+    if (page === "features") {
+      return (
+        <div className="public-stage public-stage-features">
+          <div className="public-stage-head">
+            <span>Motor do produto</span>
+            <strong>Seis blocos que explicam valor sem parecer software generico</strong>
+          </div>
+
+          <div className="public-stage-cluster">
+            {landingFeatureCards.slice(0, 4).map((feature) => (
+              <article className="public-stage-card" key={feature.title}>
+                <span>{feature.eyebrow}</span>
+                <strong>{feature.title}</strong>
+                <p>{feature.description}</p>
+              </article>
+            ))}
+          </div>
+
+          <article className="public-stage-card public-stage-card-accent">
+            <span>Sequencia operacional</span>
+            <strong>
+              {landingWorkflow[0]?.title}, {landingWorkflow[1]?.title.toLowerCase()} e{" "}
+              {landingWorkflow[2]?.title.toLowerCase()} no mesmo sistema.
+            </strong>
+            <p>
+              O produto liga captacao, triagem e resposta comercial sem depender de folhas soltas,
+              grupos dispersos ou CRMs sem contexto.
+            </p>
+          </article>
+        </div>
+      );
+    }
+
+    if (page === "pricing") {
+      return (
+        <div className="public-stage public-stage-pricing">
+          <div className="public-stage-head">
+            <span>Escada comercial</span>
+            <strong>Planos com progressao clara, trial protegido e margem para crescer</strong>
+          </div>
+
+          <div className="public-plan-ladder">
+            {compactPlans.map((plan) => {
+              const highlighted = plan.basePlanId === "pro";
+
+              return (
+                <article
+                  className={highlighted ? "public-plan-chip highlighted" : "public-plan-chip"}
+                  key={plan.id}
+                >
+                  <span>{plan.publicName}</span>
+                  <strong>{formatCurrency(plan.monthlyPrice, "EUR", plan.monthlyPrice % 1 !== 0)}</strong>
+                  <p>
+                    {formatIncludedUsers(plan.includedUsers)} · {formatLeadLimit(plan.leadLimit)}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+
+          <article className="public-stage-card public-stage-card-accent">
+            <span>Plano em foco</span>
+            <strong>{featuredPlan?.publicName || "ImoLead Pro"}</strong>
+            <p>
+              {featuredPlan?.reportsLabel || "Relatorios executivos prontos para decisores."}{" "}
+              {featuredPlan?.allowsExtraUsers
+                ? formatExtraUsers(featuredPlan, "month")
+                : "Sem utilizadores extra no plano de entrada."}
+            </p>
+            <div className="public-stage-pill-row">
+              <span>Anual -20%</span>
+              {featuredPlan ? <span>{featuredPlan.agentLabel}</span> : null}
+              {featuredPlan ? <span>{featuredPlan.supportLabel}</span> : null}
+            </div>
+          </article>
+        </div>
+      );
+    }
+
+    if (page === "contact") {
+      return (
+        <div className="public-stage public-stage-contact">
+          <div className="public-stage-head">
+            <span>Fecho e governance</span>
+            <strong>Contacto real, linguagem clara e compliance visivel antes da reuniao</strong>
+          </div>
+
+          <div className="public-stage-cluster">
+            <article className="public-stage-card public-stage-card-accent">
+              <span>Email ADM</span>
+              <strong>carlospsantos19820@gmail.com</strong>
+              <p>Conta principal para controlo total do workspace, planos e operacao comercial.</p>
+            </article>
+
+            <article className="public-stage-card">
+              <span>Contacto RGPD</span>
+              <strong>{privacyContactEmail}</strong>
+              <p>Canal ativo para privacidade, pedidos de eliminacao, direitos do titular e auditoria.</p>
+            </article>
+
+            <article className="public-stage-card">
+              <span>Mercados</span>
+              <strong>{coverageLabel}</strong>
+              <p>Portugal como entrada, Iberia como proximo passo e base pronta para Europa.</p>
+            </article>
+
+            <article className="public-stage-card">
+              <span>Politica ativa</span>
+              <strong>{policyVersion}</strong>
+              <p>Trial com consentimento, uso de IA explicado e documentos legais ligados ao fluxo.</p>
+            </article>
+          </div>
+        </div>
+      );
+    }
+
+    if (page === "login") {
+      return (
+        <div className="public-stage public-stage-login">
+          <div className="public-stage-head">
+            <span>Acesso protegido</span>
+            <strong>Entrar com contexto, trial controlado e demonstracao assistida</strong>
+          </div>
+
+          <article className="public-stage-card public-stage-card-accent public-stage-card-large">
+            <span>Workspace preparado</span>
+            <strong>{featuredPlan?.publicName || "ImoLead Pro"} pronto para entrada comercial</strong>
+            <p>
+              O acesso abre no plano certo, com o agente certo e sem expor uma demo publica solta
+              na frente comercial.
+            </p>
+            <div className="public-stage-pill-row">
+              <span>{PUBLIC_DEMO_ENABLED ? "Demo publica ativa" : "Demo assistida"}</span>
+              {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
+              <span>{featuredPlan?.agentLabel || marketingAiLabel}</span>
+            </div>
+          </article>
+
+          <div className="public-stage-cluster public-stage-cluster-compact">
+            <article className="public-stage-card">
+              <span>Validacao</span>
+              <strong>Email e telefone unicos no trial</strong>
+              <p>Reduz reutilizacao e protege o plano de entrada antes da conversao para Pro.</p>
+            </article>
+            <article className="public-stage-card">
+              <span>Governance</span>
+              <strong>Perfis, lojas e desks ja condicionam o acesso</strong>
+              <p>Admin, manager e consultant entram com contexto operacional e escopo real.</p>
+            </article>
+            <article className="public-stage-card">
+              <span>Proxima acao</span>
+              <strong>{landingGuidance.title}</strong>
+              <p>{landingGuidance.detail}</p>
+            </article>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="public-stage public-stage-home">
+        <div className="public-stage-head">
+          <span>Entrada comercial viva</span>
+          <strong>Menos ruído visual. Mais sinal de negocio logo na primeira dobra.</strong>
+        </div>
+
+        <article className="public-stage-card public-stage-card-accent public-stage-card-large">
+          <span>Mercado em foco</span>
+          <strong>{topMarket?.market || "Portugal"} lidera a operacao atual</strong>
+          <p>
+            {topMarket
+              ? `${topMarket.totalLeads} leads ativas, score medio ${topMarket.averageAiScore} e ${dashboardStats.urgent_actions} acoes urgentes visiveis.`
+              : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com criterio comercial."}
+          </p>
+          <div className="public-stage-pill-row">
+            <span>{coverageLabel}</span>
+            <span>{featuredPlan?.publicName || "ImoLead Pro"}</span>
+            <span>{featuredPlan?.agentLabel || marketingAiLabel}</span>
+          </div>
+        </article>
+
+        <div className="public-stage-cluster">
+          {commandSignals.map((signal) => (
+            <article className="public-stage-card" key={signal.label}>
+              <span>{signal.label}</span>
+              <strong>{signal.value}</strong>
+              <p>{signal.detail}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="public-stage-cluster public-stage-cluster-compact">
+          {landingWorkflow.map((item) => (
+            <article className="public-stage-card" key={item.step}>
+              <span>{item.step}</span>
+              <strong>{item.title}</strong>
+              <p>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   function renderPageHero(options: {
     eyebrow: string;
     title: string;
     text: string;
-    mainImage: string;
-    mainAlt: string;
-    secondaryImage?: string;
-    secondaryAlt?: string;
+    stage: PublicPageId;
     primaryLabel: string;
     secondaryLabel: string;
     onPrimaryClick: () => void;
@@ -3885,27 +4071,16 @@ function App() {
               </button>
             </div>
 
-            <div className="marketing-chip-row">
-              <div className="status-chip">{marketingApiLabel}</div>
-              <div className="status-chip muted">{marketingAiLabel}</div>
-              <div className="status-chip muted">{marketingInfraLabel}</div>
-            </div>
-          </div>
-
-          <div className="public-route-visual">
-            <div className="public-route-visual-shell public-route-visual-main">
-              <img src={options.mainImage} alt={options.mainAlt} />
-            </div>
-
-            {options.secondaryImage ? (
-              <div className="public-route-visual-shell public-route-visual-mobile">
-                <img
-                  src={options.secondaryImage}
-                  alt={options.secondaryAlt || options.mainAlt}
-                />
+            <div className="public-hero-chips">
+              <div className="status-chip">Mercado {topMarket?.market || "Portugal"}</div>
+              <div className="status-chip muted">{activePlan?.publicName || "ImoLead Pro"}</div>
+              <div className="status-chip muted">
+                {PUBLIC_DEMO_ENABLED ? "Demo publica ativa" : "Acesso protegido"}
               </div>
-            ) : null}
+            </div>
           </div>
+
+          {renderPublicStage(options.stage)}
         </div>
       </section>
     );
@@ -4468,10 +4643,7 @@ function App() {
           title: "Automatize a prospeccao imobiliaria com IA.",
           text:
             "O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais contexto e menos trabalho manual para a equipa comercial.",
-          mainImage: homeFullImg,
-          mainAlt: "Vista desktop completa da home publica",
-          secondaryImage: mobileHomeHeroImg,
-          secondaryAlt: "Vista mobile da home publica",
+          stage: "home",
           primaryLabel: "Comecar agora",
           secondaryLabel: "Ver funcionalidades",
           onPrimaryClick: () =>
@@ -4493,7 +4665,31 @@ function App() {
           ))}
         </section>
 
-        <section className="marketing-section">
+        <section className="marketing-section public-sales-grid">
+          <article className="public-sales-card public-sales-card-featured">
+            <span>Pitch de venda</span>
+            <strong>Uma entrada que vende autoridade e uma area interna que entrega operacao.</strong>
+            <p>
+              A conversa deixa de ser "mais um CRM" e passa a ser controlo comercial, triagem com
+              IA, desks claros e crescimento preparado para Portugal e Europa.
+            </p>
+            <div className="public-stage-pill-row">
+              <span>{coverageLabel}</span>
+              <span>{dominantDeskLabel}</span>
+              <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+            </div>
+          </article>
+
+          {commandSignals.map((signal) => (
+            <article className="public-sales-card" key={signal.label}>
+              <span>{signal.label}</span>
+              <strong>{signal.value}</strong>
+              <p>{signal.detail}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="marketing-section" id="landing-features">
           <div className="section-head">
             <div>
               <p className="eyebrow">Tudo o que precisa para automatizar</p>
@@ -4512,59 +4708,40 @@ function App() {
           </div>
         </section>
 
-        <section className="marketing-section">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Produto em acao</p>
-              <h3>As telas reais sustentam a promessa comercial</h3>
-            </div>
-          </div>
-
-          <div className="marketing-showcase-grid home-showcase-grid">
-            <article className="marketing-showcase-card featured">
-              <div className="marketing-showcase-copy">
-                <span>Home publica</span>
-                <strong>Entrada forte, clara e pronta para vender valor logo no primeiro scroll</strong>
-                <p>
-                  A home precisa de impressionar sem confundir. Hero forte, prova visual real e
-                  mensagem comercial direta.
-                </p>
-              </div>
-              <img src={homeFullImg} alt="Vista desktop da home publica" />
-            </article>
-
-            <article className="marketing-showcase-card">
-              <div className="marketing-showcase-copy">
-                <span>Funcionalidades</span>
-                <strong>Explicacao visual do produto sem parecer software generico</strong>
-                <p>
-                  Os blocos de funcionalidades ganham autonomia e ligam diretamente a pagina propria
-                  de produto.
-                </p>
-              </div>
-              <img src={featuresSectionImg} alt="Secao real de funcionalidades do produto" />
-            </article>
-
-            <article className="marketing-showcase-card">
-              <div className="marketing-showcase-copy">
-                <span>Mobile</span>
-                <strong>Prova visual forte tambem no telemovel</strong>
-                <p>
-                  A leitura continua limpa e vendavel em mobile para reunioes, apresentacoes e
-                  follow-up comercial.
-                </p>
-              </div>
-              <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
-            </article>
-          </div>
-        </section>
-
         <section className="marketing-section marketing-results-shell">
+          <article className="shell-panel marketing-results-visual">
+            <div className="marketing-results-board">
+              <div className="marketing-results-head">
+                <span>Vista executiva</span>
+                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
+              </div>
+
+              <div className="marketing-results-grid">
+                <article>
+                  <span>Desk</span>
+                  <strong>{dominantDeskLabel}</strong>
+                </article>
+                <article>
+                  <span>Fonte lider</span>
+                  <strong>{dominantSource}</strong>
+                </article>
+                <article>
+                  <span>Quentes</span>
+                  <strong>{dashboardStats.quente}</strong>
+                </article>
+                <article>
+                  <span>SLA urgente</span>
+                  <strong>{dashboardStats.urgent_actions}</strong>
+                </article>
+              </div>
+            </div>
+          </article>
+
           <article className="shell-panel marketing-results-copy">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Porque isto impacta</p>
-                <h3>Uma entrada comercial forte e um cockpit real por dentro</h3>
+                <p className="eyebrow">Resultado pedido</p>
+                <h3>Uma estrutura que explica valor sem parecer improviso</h3>
               </div>
             </div>
 
@@ -4596,34 +4773,6 @@ function App() {
               </button>
             </div>
           </article>
-
-          <article className="shell-panel marketing-results-visual">
-            <div className="marketing-results-board">
-              <div className="marketing-results-head">
-                <span>Vista executiva</span>
-                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
-              </div>
-
-              <div className="marketing-results-grid">
-                <article>
-                  <span>Desk</span>
-                  <strong>{dominantDeskLabel}</strong>
-                </article>
-                <article>
-                  <span>Fonte lider</span>
-                  <strong>{dominantSource}</strong>
-                </article>
-                <article>
-                  <span>Quentes</span>
-                  <strong>{dashboardStats.quente}</strong>
-                </article>
-                <article>
-                  <span>SLA urgente</span>
-                  <strong>{dashboardStats.urgent_actions}</strong>
-                </article>
-              </div>
-            </div>
-          </article>
         </section>
 
         {renderPricingCardsSection()}
@@ -4640,11 +4789,8 @@ function App() {
           eyebrow: "Tudo o que precisa para automatizar",
           title: "Captacao, classificacao, mensagens e controlo num unico sistema.",
           text:
-            "Seguimos a estrutura real da raiz: prova visual forte, blocos claros de valor e workflow explicado de forma vendavel para decisores.",
-          mainImage: featuresSectionImg,
-          mainAlt: "Secao de funcionalidades do produto",
-          secondaryImage: mobileDashboardImg,
-          secondaryAlt: "Vista mobile do cockpit operacional",
+            "A pagina de produto foca o essencial: blocos de valor, workflow operacional e o discurso certo para direcao, equipas e redes imobiliarias.",
+          stage: "features",
           primaryLabel: "Ver planos",
           secondaryLabel: "Pedir demo",
           onPrimaryClick: () =>
@@ -4660,50 +4806,6 @@ function App() {
               "Entramos diretamente com o plano mais vendavel para mostrar o fluxo completo."
             ),
         })}
-
-        <section className="marketing-section">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Produto em acao</p>
-              <h3>As telas reais sustentam a promessa comercial</h3>
-            </div>
-          </div>
-
-          <div className="marketing-showcase-grid">
-            <article className="marketing-showcase-card featured">
-              <div className="marketing-showcase-copy">
-                <span>Funcionalidades</span>
-                <strong>Blocos claros para explicar valor sem parecer software generico</strong>
-                <p>
-                  Captacao, classificacao, mensagens, agenda e relatorios apresentados de forma
-                  simples, vendavel e orientada ao mercado.
-                </p>
-              </div>
-              <img src={featuresSectionImg} alt="Secao real de funcionalidades do produto" />
-            </article>
-
-            <article className="marketing-showcase-card">
-              <div className="marketing-showcase-copy">
-                <span>Administracao</span>
-                <strong>Painel protegido e pronto para controlo real do negocio</strong>
-                <p>Governance, acessos e operacao com cara de plataforma, nao de prototipo.</p>
-              </div>
-              <img src={adminSectionImg} alt="Entrada real do painel administrativo" />
-            </article>
-
-            <article className="marketing-showcase-card">
-              <div className="marketing-showcase-copy">
-                <span>Mobile</span>
-                <strong>Experiencia preparada para demonstracao no telemovel</strong>
-                <p>
-                  A leitura continua forte em mobile, com entrada clara e restricao controlada
-                  quando necessario.
-                </p>
-              </div>
-              <img src={mobileDashboardImg} alt="Vista mobile real do produto" />
-            </article>
-          </div>
-        </section>
 
         <section className="marketing-section" id="landing-features">
           <div className="section-head">
@@ -4722,6 +4824,16 @@ function App() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="marketing-section public-sales-grid">
+          {commandSignals.map((signal) => (
+            <article className="public-sales-card" key={signal.label}>
+              <span>{signal.label}</span>
+              <strong>{signal.value}</strong>
+              <p>{signal.detail}</p>
+            </article>
+          ))}
         </section>
 
         <section className="marketing-section marketing-duo-grid">
@@ -4767,6 +4879,30 @@ function App() {
         </section>
 
         <section className="marketing-section marketing-results-shell">
+          <article className="shell-panel marketing-results-copy">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Resultado</p>
+                <h3>O produto mostra valor antes de pedirmos a reuniao seguinte</h3>
+              </div>
+            </div>
+
+            <ul className="marketing-benefit-list">
+              {landingBenefitBullets.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <div className="marketing-inline-actions">
+              <button className="primary-button" type="button" onClick={() => navigatePublicPage("pricing")}>
+                Ver planos
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
+                Ir para contacto
+              </button>
+            </div>
+          </article>
+
           <article className="shell-panel marketing-results-visual">
             <div className="marketing-results-board">
               <div className="marketing-results-head">
@@ -4794,31 +4930,10 @@ function App() {
               </div>
             </div>
           </article>
-
-          <article className="shell-panel marketing-results-copy">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Resultado</p>
-                <h3>O produto mostra valor antes de pedirmos a reuniao seguinte</h3>
-              </div>
-            </div>
-
-            <ul className="marketing-benefit-list">
-              {landingBenefitBullets.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-
-            <div className="marketing-inline-actions">
-              <button className="primary-button" type="button" onClick={() => navigatePublicPage("pricing")}>
-                Ver planos
-              </button>
-              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
-                Ir para contacto
-              </button>
-            </div>
-          </article>
         </section>
+
+        {renderSocialProofSection()}
+        {renderFinalCtaSection()}
       </>
     );
   }
@@ -4831,10 +4946,7 @@ function App() {
           title: "Uma proposta clara para vender Starter, Pro e Enterprise sem ambiguidades.",
           text:
             "A pagina de precos passa a ter autonomia propria, com trial, utilizadores incluidos, extra users e progressao natural entre planos.",
-          mainImage: mobileFeaturesPricingImg,
-          mainAlt: "Vista mobile da secao de precos e prova social",
-          secondaryImage: homeFullImg,
-          secondaryAlt: "Vista desktop completa da home publica",
+          stage: "pricing",
           primaryLabel: "Entrar com este plano",
           secondaryLabel: "Falar com a equipa",
           onPrimaryClick: () =>
@@ -4846,7 +4958,22 @@ function App() {
           onSecondaryClick: () => navigatePublicPage("contact"),
         })}
         {renderPricingCardsSection()}
+        <section className="marketing-section public-plan-summary-grid">
+          {plans.map((plan) => (
+            <article className="public-plan-summary-card" key={plan.id}>
+              <span>{plan.publicName}</span>
+              <strong>{plan.agentLabel}</strong>
+              <p>{plan.reportsLabel}</p>
+              <ul className="feature-list compact-list">
+                <li>{formatLeadLimit(plan.leadLimit)}</li>
+                <li>{formatIncludedUsers(plan.includedUsers)}</li>
+                <li>{formatExtraUsers(plan, billingMode)}</li>
+              </ul>
+            </article>
+          ))}
+        </section>
         {renderSocialProofSection()}
+        {renderFinalCtaSection()}
       </>
     );
   }
@@ -4859,10 +4986,7 @@ function App() {
           title: "Fechar a conversa com contacto real, governance e politicas visiveis.",
           text:
             "Esta pagina concentra fecho comercial, contacto RGPD, oferta enterprise e os documentos que sustentam a operacao publica.",
-          mainImage: adminSectionImg,
-          mainAlt: "Vista do painel administrativo antes do login",
-          secondaryImage: mobileMenuOpenImg,
-          secondaryAlt: "Vista mobile da navegacao publica",
+          stage: "contact",
           primaryLabel: "Abrir demo enterprise",
           secondaryLabel: "Ver login protegido",
           onPrimaryClick: () =>
@@ -4873,6 +4997,23 @@ function App() {
             ),
           onSecondaryClick: () => navigatePublicPage("login"),
         })}
+        <section className="marketing-section public-contact-grid">
+          <article className="public-contact-card">
+            <span>Contacto comercial</span>
+            <strong>carlospsantos19820@gmail.com</strong>
+            <p>Canal direto para proposta, demonstracao orientada e configuracao enterprise.</p>
+          </article>
+          <article className="public-contact-card">
+            <span>Privacidade</span>
+            <strong>{privacyContactEmail}</strong>
+            <p>Tratamento de dados, direitos do titular e processos RGPD com contacto explicito.</p>
+          </article>
+          <article className="public-contact-card">
+            <span>Versao legal</span>
+            <strong>{policyVersion}</strong>
+            <p>Politicas visiveis, trial com consentimento e uso de IA explicado sem esconder riscos.</p>
+          </article>
+        </section>
         {renderFinalCtaSection()}
         {renderLegalSection()}
       </>
@@ -4888,11 +5029,8 @@ function App() {
               eyebrow: "Acesso protegido",
               title: "Entrar com contexto, trial protegido e demonstracao assistida.",
               text:
-                "A pagina de entrada passa a ser propria, sem empurrar o cockpit para a frente publica e sem perder a ligacao com os planos e a prova visual.",
-              mainImage: adminSectionImg,
-              mainAlt: "Vista do painel administrativo antes do login",
-              secondaryImage: mobileMenuOpenImg,
-              secondaryAlt: "Vista mobile da navegacao publica",
+                "A pagina de entrada passa a ser propria, sem empurrar o cockpit para a frente publica e sem perder a ligacao com os planos, trial e governance.",
+              stage: "login",
               primaryLabel: "Ver planos",
               secondaryLabel: "Ir para contacto",
               onPrimaryClick: () => navigatePublicPage("pricing"),
@@ -4900,28 +5038,30 @@ function App() {
             })}
 
             <section className="marketing-section public-login-proof-grid">
-              <article className="marketing-showcase-card public-route-card">
-                <div className="marketing-showcase-copy">
-                  <span>Workspace</span>
-                  <strong>O cockpit so abre depois do contexto certo estar definido</strong>
-                  <p>
-                    O acesso entra pela pagina certa, o plano certo e a guidance certa. Isso melhora
-                    a demonstracao e protege a operacao publica.
-                  </p>
-                </div>
-                <img src={homeFullImg} alt="Vista desktop da home publica" />
+              <article className="public-sales-card">
+                <span>Workspace</span>
+                <strong>O cockpit so abre depois do contexto certo estar definido</strong>
+                <p>
+                  O acesso entra pela pagina certa, o plano certo e a guidance certa. Isso melhora
+                  a demonstracao e protege a operacao publica.
+                </p>
               </article>
 
-              <article className="marketing-showcase-card public-route-card">
-                <div className="marketing-showcase-copy">
-                  <span>Mobile</span>
-                  <strong>Versao mobile pronta para demonstracao em reunioes e follow-up</strong>
-                  <p>
-                    As principais telas continuam legiveis no telemovel, sem perder identidade nem
-                    capacidade de explicacao comercial.
-                  </p>
-                </div>
-                <img src={mobileDashboardImg} alt="Vista mobile do cockpit" />
+              <article className="public-sales-card">
+                <span>Trial protegido</span>
+                <strong>Email e telefone unicos reduzem abuso do plano de entrada</strong>
+                <p>
+                  O trial de 15 dias abre a porta sem vender gato por lebre e sem deixar a frente
+                  comercial vulneravel.
+                </p>
+              </article>
+
+              <article className="public-sales-card">
+                <span>Governance</span>
+                <strong>Planos, perfis e desks continuam ligados ao que mostramos no pitch</strong>
+                <p>
+                  O utilizador percebe valor na entrada e encontra a mesma coerencia depois do login.
+                </p>
               </article>
             </section>
           </div>
