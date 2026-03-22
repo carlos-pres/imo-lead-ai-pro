@@ -1,10 +1,12 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, MouseEvent } from "react";
 import adminSectionImg from "../../admin-section-before-login.png";
 import featuresSectionImg from "../../features_section.png";
 import homeFullImg from "../../home_full.png";
 import mobileDashboardImg from "../../mobile_dashboard_after_nav.png";
+import mobileFeaturesPricingImg from "../../mobile_features_pricing_testimonials.png";
 import mobileHomeHeroImg from "../../mobile_home_hero.png";
+import mobileMenuOpenImg from "../../mobile_menu_open.png";
 import "./App.css";
 import {
   clearSessionToken,
@@ -41,6 +43,7 @@ import {
 import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
 
 type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing" | "admin";
+type PublicPageId = "home" | "features" | "pricing" | "contact" | "login";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
 type LoginForm = {
@@ -111,6 +114,13 @@ type NavItem = {
   description: string;
 };
 
+type PublicNavItem = {
+  id: PublicPageId;
+  label: string;
+  eyebrow: string;
+  description: string;
+};
+
 const NAV_ITEMS: NavItem[] = [
   {
     id: "dashboard",
@@ -147,6 +157,47 @@ const NAV_ITEMS: NavItem[] = [
     label: "ADM",
     eyebrow: "Governance",
     description: "Controlo total do catalogo comercial e do pricing.",
+  },
+];
+
+const PUBLIC_PAGE_PATHS: Record<PublicPageId, string> = {
+  home: "/",
+  features: "/funcionalidades",
+  pricing: "/precos",
+  contact: "/contacto",
+  login: "/entrar",
+};
+
+const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
+  {
+    id: "home",
+    label: "Inicio",
+    eyebrow: "Entrada",
+    description: "Apresentacao comercial e prova visual da plataforma.",
+  },
+  {
+    id: "features",
+    label: "Funcionalidades",
+    eyebrow: "Produto",
+    description: "Blocos de valor, workflow e prova operacional.",
+  },
+  {
+    id: "pricing",
+    label: "Precos",
+    eyebrow: "Oferta",
+    description: "Planos, trial, utilizadores e progressao comercial.",
+  },
+  {
+    id: "contact",
+    label: "Contacto",
+    eyebrow: "Fecho",
+    description: "Contacto comercial, RGPD e proposta enterprise.",
+  },
+  {
+    id: "login",
+    label: "Entrar",
+    eyebrow: "Acesso",
+    description: "Login protegido, trial e demonstracao assistida.",
   },
 ];
 
@@ -349,8 +400,29 @@ function isViewId(value: string): value is ViewId {
   return NAV_ITEMS.some((item) => item.id === value);
 }
 
+function isPublicPageId(value: string): value is PublicPageId {
+  return PUBLIC_NAV_ITEMS.some((item) => item.id === value);
+}
+
 function isPlanType(value: string | null | undefined): value is PlanType {
   return value === "basic" || value === "pro" || value === "custom";
+}
+
+function normalizePublicPath(pathname: string) {
+  if (!pathname || pathname === "/") {
+    return "/";
+  }
+
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
+function getPublicPageFromPath(pathname: string): PublicPageId {
+  const normalizedPath = normalizePublicPath(pathname);
+  const matched = (Object.keys(PUBLIC_PAGE_PATHS) as PublicPageId[]).find(
+    (pageId) => PUBLIC_PAGE_PATHS[pageId] === normalizedPath
+  );
+
+  return matched && isPublicPageId(matched) ? matched : "home";
 }
 
 function getViewFromHash(): ViewId {
@@ -623,6 +695,9 @@ function scrollToElement(id: string) {
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
+  const [publicPage, setPublicPage] = useState<PublicPageId>(() =>
+    typeof window === "undefined" ? "home" : getPublicPageFromPath(window.location.pathname)
+  );
   const [billingMode, setBillingMode] = useState<BillingMode>("month");
   const [activePlanId, setActivePlanId] = useState<PlanType>("pro");
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -682,23 +757,72 @@ function App() {
       return undefined;
     }
 
-    if (!window.location.hash) {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.search}#dashboard`
-      );
-    }
-
     const handleHashChange = () => {
       setActiveView(getViewFromHash());
     };
 
+    const handlePopState = () => {
+      setPublicPage(getPublicPageFromPath(window.location.pathname));
+      setActiveView(getViewFromHash());
+    };
+
     window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !session) {
+      return;
+    }
+
+    const nextHash = window.location.hash || "#dashboard";
+    const nextUrl = `${PUBLIC_PAGE_PATHS.home}${window.location.search}${nextHash}`;
+
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== nextUrl) {
+      window.history.replaceState(null, "", nextUrl);
+    }
+
+    setPublicPage("home");
+  }, [session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || authBooting || session) {
+      return;
+    }
+
+    const hash = window.location.hash.replace(/^#\/?/, "");
+
+    if (isViewId(hash)) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }, [authBooting, session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || session) {
+      return;
+    }
+
+    const hash = window.location.hash.replace(/^#/, "");
+
+    if (!hash || isViewId(hash)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [publicPage, session]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -919,7 +1043,13 @@ function App() {
 
   function handleLogout() {
     logout();
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", PUBLIC_PAGE_PATHS.home);
+    }
+
     startTransition(() => {
+      setPublicPage("home");
       setSession(null);
       setLeads([]);
       setStats(null);
@@ -933,8 +1063,14 @@ function App() {
   function navigateTo(view: ViewId) {
     setActiveView(view);
 
-    if (typeof window !== "undefined" && window.location.hash !== `#${view}`) {
-      window.location.hash = view;
+    if (typeof window !== "undefined") {
+      if (window.location.pathname !== PUBLIC_PAGE_PATHS.home) {
+        window.history.replaceState(null, "", `${PUBLIC_PAGE_PATHS.home}${window.location.search}`);
+      }
+
+      if (window.location.hash !== `#${view}`) {
+        window.location.hash = view;
+      }
     }
   }
 
@@ -1308,6 +1444,40 @@ function App() {
     });
   }
 
+  function navigatePublicPage(page: PublicPageId, anchorId?: string) {
+    setPublicPage(page);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const hash = anchorId ? `#${anchorId}` : "";
+    const nextUrl = `${PUBLIC_PAGE_PATHS[page]}${hash}`;
+
+    if (`${window.location.pathname}${window.location.hash}` !== nextUrl) {
+      window.history.pushState(null, "", nextUrl);
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    if (anchorId) {
+      window.setTimeout(() => {
+        document.getElementById(anchorId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 120);
+    }
+  }
+
+  function handlePublicNavigation(event: MouseEvent<HTMLAnchorElement>, page: PublicPageId) {
+    event.preventDefault();
+    navigatePublicPage(page);
+  }
+
   function enrichGuidance(detail: string, planId: PlanType) {
     return `${detail} ${getUpgradeHintForPlan(planId, plans)}`.trim();
   }
@@ -1319,7 +1489,7 @@ function App() {
   ) {
     setActivePlanId(planId);
     updateLandingGuidance(title, enrichGuidance(detail, planId));
-    scrollToElement("landing-pricing");
+    navigatePublicPage("pricing");
   }
 
   function openLandingLogin(
@@ -1341,7 +1511,7 @@ function App() {
       });
     }
     updateLandingGuidance(title, enrichGuidance(detail, planId));
-    scrollToElement("landing-login");
+    navigatePublicPage("login");
   }
 
   function selectDemoProfile(entry: DemoAccessEntry) {
@@ -2813,6 +2983,8 @@ function App() {
   }
 
   function renderLoginView() {
+    return renderPublicSite();
+
     return (
       <main className="auth-shell marketing-auth-shell">
         <div className="marketing-main">
@@ -3631,6 +3803,1194 @@ function App() {
             </article>
           </div>
         </aside>
+      </main>
+    );
+  }
+
+  function renderPublicNav() {
+    return (
+      <div className="marketing-nav">
+        <div className="marketing-brand">
+          <div className="marketing-brand-mark">IL</div>
+          <div>
+            <p>ImoLead AI Pro</p>
+            <span>Automacao inteligente para profissionais imobiliarios</span>
+          </div>
+        </div>
+
+        <div className="marketing-nav-links">
+          {PUBLIC_NAV_ITEMS.map((item) => (
+            <a
+              className={publicPage === item.id ? "active" : undefined}
+              href={PUBLIC_PAGE_PATHS[item.id]}
+              key={item.id}
+              onClick={(event) => handlePublicNavigation(event, item.id)}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+
+        <div className="marketing-nav-actions">
+          <button className="ghost-button" type="button" onClick={() => navigatePublicPage("login")}>
+            Entrar
+          </button>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() =>
+              openLandingPricing(
+                "basic",
+                "Criacao de conta orientada para conversao",
+                "Levamos-te diretamente ao plano de entrada com trial protegido e caminho natural para Pro e Enterprise."
+              )
+            }
+          >
+            Criar conta
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderPageHero(options: {
+    eyebrow: string;
+    title: string;
+    text: string;
+    mainImage: string;
+    mainAlt: string;
+    secondaryImage?: string;
+    secondaryAlt?: string;
+    primaryLabel: string;
+    secondaryLabel: string;
+    onPrimaryClick: () => void;
+    onSecondaryClick: () => void;
+  }) {
+    return (
+      <section className="shell-panel marketing-hero public-route-hero">
+        {renderPublicNav()}
+
+        <div className="public-route-hero-grid">
+          <div className="public-route-copy">
+            <p className="eyebrow">{options.eyebrow}</p>
+            <h1>{options.title}</h1>
+            <p className="hero-text">{options.text}</p>
+
+            <div className="marketing-cta-row">
+              <button className="primary-button" type="button" onClick={options.onPrimaryClick}>
+                {options.primaryLabel}
+              </button>
+              <button className="ghost-button" type="button" onClick={options.onSecondaryClick}>
+                {options.secondaryLabel}
+              </button>
+            </div>
+
+            <div className="marketing-chip-row">
+              <div className="status-chip">{marketingApiLabel}</div>
+              <div className="status-chip muted">{marketingAiLabel}</div>
+              <div className="status-chip muted">{marketingInfraLabel}</div>
+            </div>
+          </div>
+
+          <div className="public-route-visual">
+            <div className="public-route-visual-shell public-route-visual-main">
+              <img src={options.mainImage} alt={options.mainAlt} />
+            </div>
+
+            {options.secondaryImage ? (
+              <div className="public-route-visual-shell public-route-visual-mobile">
+                <img
+                  src={options.secondaryImage}
+                  alt={options.secondaryAlt || options.mainAlt}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPricingCardsSection() {
+    return (
+      <section className="marketing-section" id="landing-pricing">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Planos</p>
+            <h3>Oferta comercial clara, europeia e pronta para venda</h3>
+          </div>
+
+          <div className="billing-toggle">
+            <button
+              className={billingMode === "month" ? "toggle-button active" : "toggle-button"}
+              type="button"
+              onClick={() => setBillingMode("month")}
+            >
+              Mensal
+            </button>
+            <button
+              className={billingMode === "year" ? "toggle-button active" : "toggle-button"}
+              type="button"
+              onClick={() => setBillingMode("year")}
+            >
+              Anual -20%
+            </button>
+          </div>
+        </div>
+
+        <div className="pricing-grid marketing-pricing-grid">
+          {plans.map((plan) => {
+            const isYear = billingMode === "year";
+            const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
+            const suffix = isYear ? "/ano" : "/mes";
+            const featured = plan.basePlanId === "pro";
+
+            return (
+              <article className={featured ? "pricing-card featured" : "pricing-card"} key={plan.id}>
+                <div className="pricing-head">
+                  <span>{plan.recommendedFor}</span>
+                  <strong>
+                    {formatCurrency(price, "EUR", price % 1 !== 0)}
+                    <small>{suffix}</small>
+                  </strong>
+                </div>
+
+                <p className="pricing-note">{plan.agentLabel}</p>
+                <p className="hero-text">{plan.reportsLabel}</p>
+                <div className="mini-tags">
+                  {getTrialDaysForPlan(plan.basePlanId) > 0 ? (
+                    <span>{getTrialDaysForPlan(plan.basePlanId)} dias trial</span>
+                  ) : null}
+                  <span>{formatLeadLimit(plan.leadLimit)}</span>
+                  <span>{formatIncludedUsers(plan.includedUsers)}</span>
+                  <span>{formatExtraUsers(plan, billingMode)}</span>
+                </div>
+                <p className="pricing-note">
+                  Capacidade operacional mensal, nao volume garantido de leads captadas.
+                </p>
+                <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
+
+                <ul className="feature-list">
+                  {plan.features.slice(0, 4).map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+
+                <div className="pricing-action-row">
+                  <button
+                    className={
+                      plan.basePlanId === activePlanId
+                        ? "select-plan-button active"
+                        : "select-plan-button"
+                    }
+                    type="button"
+                    onClick={() =>
+                      openLandingLogin(
+                        plan.basePlanId,
+                        `${plan.publicName} pronto para demonstracao`,
+                        `Preparamos o perfil demo mais adequado para mostrar como o ${plan.publicName} facilita a operacao logo nos primeiros minutos.`
+                      )
+                    }
+                  >
+                    {getTrialDaysForPlan(plan.basePlanId) > 0
+                      ? plan.basePlanId === activePlanId
+                        ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias pronto`
+                        : `Comecar trial de ${getTrialDaysForPlan(plan.basePlanId)} dias`
+                      : plan.basePlanId === activePlanId
+                        ? "Demo pronta para este plano"
+                        : "Quero ver este plano em acao"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  function renderSocialProofSection() {
+    return (
+      <section className="marketing-section marketing-duo-grid">
+        <article className="shell-panel marketing-story-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Prova social</p>
+              <h3>O discurso que queremos que o mercado repita</h3>
+            </div>
+          </div>
+
+          <div className="marketing-testimonial-list">
+            {landingTestimonials.map((item) => (
+              <blockquote className="marketing-testimonial-card" key={item.author}>
+                <p>{item.quote}</p>
+                <footer>
+                  <strong>{item.author}</strong>
+                  <span>{item.role}</span>
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+        </article>
+
+        <article className="shell-panel marketing-story-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">FAQ</p>
+              <h3>Resposta curta para as duvidas que travam a venda</h3>
+            </div>
+          </div>
+
+          <div className="marketing-faq-list">
+            {landingFaqs.map((item) => (
+              <article className="marketing-faq-card" key={item.question}>
+                <strong>{item.question}</strong>
+                <p>{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </article>
+      </section>
+    );
+  }
+
+  function renderLegalSection() {
+    return (
+      <section className="marketing-section" id="landing-legal">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Compliance</p>
+            <h3>Privacidade, termos e IA explicados sem esconder o que tratamos</h3>
+          </div>
+        </div>
+
+        <div className="marketing-legal-grid">
+          {LEGAL_SECTIONS.map((section) => (
+            <article className="marketing-legal-card" id={section.id} key={section.id}>
+              <span>{section.eyebrow}</span>
+              <strong>{section.title}</strong>
+              <p>{section.summary}</p>
+              <ul className="feature-list compact-list">
+                {section.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderFinalCtaSection() {
+    return (
+      <section className="shell-panel marketing-final-cta" id="landing-contact">
+        <div>
+          <p className="eyebrow">Fecho comercial</p>
+          <h3>Vender isto deve parecer uma demonstracao, nao uma promessa vaga</h3>
+          <p className="hero-text">
+            O passo seguinte e simples: usar esta frente publica como venda e manter o cockpit para
+            utilizadores autenticados, com a mesma identidade de marca.
+          </p>
+
+          <div className="marketing-final-actions">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() =>
+                openLandingLogin(
+                  "custom",
+                  "Demo enterprise preparada para impressionar decisores",
+                  "Abrimos a conta ADM para mostrares governance, planos, equipas e a leitura executiva do produto."
+                )
+              }
+            >
+              Abrir demo enterprise
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() =>
+                openLandingPricing(
+                  "custom",
+                  "Oferta enterprise em foco",
+                  "A secao de planos abre com a camada enterprise destacada para conversa de valor e escala."
+                )
+              }
+            >
+              Rever proposta enterprise
+            </button>
+          </div>
+        </div>
+
+        <div className="marketing-final-grid">
+          <article className="marketing-final-card">
+            <span>Email ADM</span>
+            <strong>carlospsantos19820@gmail.com</strong>
+            <p>Conta principal com controlo total do workspace e dos planos.</p>
+          </article>
+          <article className="marketing-final-card">
+            <span>Mercados</span>
+            <strong>{coverageLabel}</strong>
+            <p>Base pronta para Portugal agora e Europa nas proximas fases.</p>
+          </article>
+          <article className="marketing-final-card">
+            <span>Contacto RGPD</span>
+            <strong>{privacyContactEmail}</strong>
+            <p>Versao de politica ativa {policyVersion} com consentimento explicito no trial.</p>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
+  function renderAuthPanel() {
+    return (
+      <aside className="auth-panel shell-panel marketing-auth-panel" id="landing-login">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Autenticacao</p>
+            <h3>Entrar no workspace</h3>
+          </div>
+        </div>
+
+        <div className="auth-panel-note">
+          <span>{PUBLIC_DEMO_ENABLED ? "Entrada guiada" : "Acesso protegido"}</span>
+          <p>
+            {PUBLIC_DEMO_ENABLED
+              ? "Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo por perfil."
+              : "A demo publica fica desativada em producao. O login abaixo serve para utilizadores reais e demonstracoes assistidas."}
+          </p>
+        </div>
+
+        <div className="auth-guidance-card">
+          <span>Proximo passo recomendado</span>
+          <strong>{landingGuidance.title}</strong>
+          <p>{landingGuidance.detail}</p>
+
+          <div className="mini-tags">
+            <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+            {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
+            <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.role : "Demo assistida"}</span>
+            <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.email : "Acesso validado pela equipa"}</span>
+          </div>
+        </div>
+
+        <div className="auth-helper-actions">
+          {PUBLIC_DEMO_ENABLED ? (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => selectDemoProfile(suggestedDemoEntry)}
+            >
+              Usar perfil sugerido
+            </button>
+          ) : (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() =>
+                openLandingLogin(
+                  activePlanId,
+                  "Demo assistida recomendada",
+                  "A equipa prepara a demonstracao com o plano certo, sem expor credenciais demo na frente publica."
+                )
+              }
+            >
+              Pedir demo assistida
+            </button>
+          )}
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={() =>
+              openLandingPricing(
+                activePlanId,
+                "Revisao rapida do plano selecionado",
+                "Voltamos a oferta mantendo o plano atual ativo para comparacao imediata."
+              )
+            }
+          >
+            Rever planos
+          </button>
+        </div>
+
+        {activePlanTrialDays > 0 ? (
+          <section className="trial-card">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Trial protegido</p>
+                <h3>Ativar 15 dias no Starter</h3>
+              </div>
+            </div>
+
+            <p className="trial-copy">
+              O trial fica limitado a um unico email e um unico telefone, para evitar reutilizacao
+              do periodo inicial. Antes de reservar, confirmas privacidade, termos e uso de IA.
+            </p>
+
+            <form className="lead-form trial-form" onSubmit={handleTrialRequest}>
+              <label>
+                Nome
+                <input
+                  value={trialForm.name}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                  placeholder="Nome do responsavel"
+                  required
+                />
+              </label>
+
+              <label>
+                Email profissional
+                <input
+                  type="email"
+                  value={trialForm.email}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({ ...current, email: event.target.value }))
+                  }
+                  placeholder="equipa@agencia.pt"
+                  required
+                />
+              </label>
+
+              <label>
+                Telefone
+                <input
+                  value={trialForm.phone}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  placeholder="+351 912 345 678"
+                  required
+                />
+              </label>
+
+              <label className="consent-check">
+                <input
+                  type="checkbox"
+                  checked={trialForm.privacyAccepted}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({
+                      ...current,
+                      privacyAccepted: event.target.checked,
+                    }))
+                  }
+                  required
+                />
+                <span>
+                  Aceito a{" "}
+                  <a
+                    href={`${PUBLIC_PAGE_PATHS.contact}#legal-privacy`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigatePublicPage("contact", "legal-privacy");
+                    }}
+                  >
+                    Politica de Privacidade
+                  </a>{" "}
+                  e o tratamento dos meus dados para contacto comercial e operacao do trial.
+                </span>
+              </label>
+
+              <label className="consent-check">
+                <input
+                  type="checkbox"
+                  checked={trialForm.termsAccepted}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({
+                      ...current,
+                      termsAccepted: event.target.checked,
+                    }))
+                  }
+                  required
+                />
+                <span>
+                  Aceito os{" "}
+                  <a
+                    href={`${PUBLIC_PAGE_PATHS.contact}#legal-terms`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigatePublicPage("contact", "legal-terms");
+                    }}
+                  >
+                    Termos de Utilizacao
+                  </a>{" "}
+                  e compreendo que os planos representam capacidade operacional, nao volume garantido
+                  de leads.
+                </span>
+              </label>
+
+              <label className="consent-check">
+                <input
+                  type="checkbox"
+                  checked={trialForm.aiDisclosureAccepted}
+                  onChange={(event) =>
+                    setTrialForm((current) => ({
+                      ...current,
+                      aiDisclosureAccepted: event.target.checked,
+                    }))
+                  }
+                  required
+                />
+                <span>
+                  Compreendo a nota de{" "}
+                  <a
+                    href={`${PUBLIC_PAGE_PATHS.contact}#legal-ai`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigatePublicPage("contact", "legal-ai");
+                    }}
+                  >
+                    uso de IA
+                  </a>{" "}
+                  e que algumas funcoes podem envolver processamento por fornecedores externos quando
+                  o plano o permitir.
+                </span>
+              </label>
+
+              <p className="trial-legal-note">
+                Versao de politica {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
+              </p>
+
+              {trialFeedback ? (
+                <p className={trialFeedbackTone === "success" ? "feedback success" : "feedback error"}>
+                  {trialFeedback}
+                </p>
+              ) : null}
+
+              <button className="primary-button" type="submit" disabled={trialSubmitting}>
+                {trialSubmitting ? "A validar trial..." : "Reservar trial de 15 dias"}
+              </button>
+            </form>
+          </section>
+        ) : null}
+
+        <form className="lead-form auth-form" onSubmit={handleLogin}>
+          <label>
+            Email
+            <input
+              value={loginForm.email}
+              onChange={(event) =>
+                setLoginForm((current) => ({ ...current, email: event.target.value }))
+              }
+              placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt"}
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={loginForm.password}
+              onChange={(event) =>
+                setLoginForm((current) => ({ ...current, password: event.target.value }))
+              }
+              placeholder={PUBLIC_DEMO_ENABLED ? "Demo123!" : "Acesso seguro"}
+              required
+            />
+          </label>
+
+          {error ? <p className="feedback error">{error}</p> : null}
+          {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
+
+          <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
+            {authSubmitting ? "A entrar..." : "Entrar no workspace"}
+          </button>
+        </form>
+
+        {PUBLIC_DEMO_ENABLED ? (
+          <div className="auth-demo-grid">
+            {DEMO_ACCESS.map((entry) => (
+              <button
+                className="auth-demo-card"
+                key={entry.email}
+                type="button"
+                onClick={() => selectDemoProfile(entry)}
+              >
+                <span>{entry.role}</span>
+                <strong>{entry.email}</strong>
+                <p>{entry.description}</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="auth-guard-card">
+            <span>Demo publica desativada</span>
+            <strong>As credenciais demo nao ficam expostas na frente publica.</strong>
+            <p>
+              Mantemos a experiencia comercial ativa, mas a demonstracao entra por validacao humana
+              ou por contas reais do workspace.
+            </p>
+          </div>
+        )}
+
+        <div className="plan-preview-list">
+          {plans.map((plan) => (
+            <article
+              className={plan.basePlanId === activePlanId ? "plan-preview active" : "plan-preview"}
+              key={plan.id}
+            >
+              <span>{plan.publicName}</span>
+              <strong>{plan.agentLabel}</strong>
+              <p>{plan.recommendedFor}</p>
+              <p className="pricing-note">
+                {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+              </p>
+              <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="auth-legal-stack">
+          <article className="auth-legal-card">
+            <span>Politica ativa</span>
+            <strong>Versao {policyVersion}</strong>
+            <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
+          </article>
+          <article className="auth-legal-card">
+            <span>Contacto RGPD</span>
+            <strong>{privacyContactEmail}</strong>
+            <p>Direitos de acesso, retificacao, apagamento e oposicao tratados por este contacto.</p>
+          </article>
+        </div>
+      </aside>
+    );
+  }
+
+  function renderHomePage() {
+    const routeCards = [
+      {
+        page: "features" as const,
+        eyebrow: "Funcionalidades",
+        title: "Tudo o que precisa para automatizar sem parecer software generico",
+        description:
+          "Prospeccao, classificacao, mensagens, agenda e controlo apresentados com clareza comercial.",
+        image: featuresSectionImg,
+        alt: "Secao de funcionalidades do produto",
+        action: "Ver funcionalidades",
+      },
+      {
+        page: "pricing" as const,
+        eyebrow: "Precos",
+        title: "Planos claros com trial, utilizadores e progressao comercial bem explicados",
+        description:
+          "Starter, Pro e Enterprise com capacidade operacional, agente por plano e percurso natural de upgrade.",
+        image: mobileFeaturesPricingImg,
+        alt: "Vista mobile da secao de precos e prova social",
+        action: "Explorar precos",
+      },
+      {
+        page: "contact" as const,
+        eyebrow: "Contacto",
+        title: "Contacto comercial, RGPD e proposta enterprise sem atrito",
+        description:
+          "A frente publica fecha a conversa com contacto real, compliance visivel e argumento executivo.",
+        image: adminSectionImg,
+        alt: "Vista de administracao e acesso protegido",
+        action: "Abrir contacto",
+      },
+      {
+        page: "login" as const,
+        eyebrow: "Entrar",
+        title: "Acesso protegido para demonstracoes assistidas e contas reais",
+        description:
+          "O cockpit fica reservado para equipas validadas, trial protegido e demonstracoes com contexto.",
+        image: mobileDashboardImg,
+        alt: "Vista mobile real do cockpit",
+        action: "Ir para entrar",
+      },
+    ];
+
+    return (
+      <>
+        <section className="shell-panel marketing-hero">
+          {renderPublicNav()}
+
+          <div className="marketing-hero-grid">
+            <div className="marketing-copy">
+              <p className="eyebrow">Control tower para redes imobiliarias</p>
+              <h1>Automatize a prospeccao imobiliaria com IA.</h1>
+              <p className="hero-text">
+                O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais
+                contexto e menos trabalho manual para a equipa comercial.
+              </p>
+
+              <div className="marketing-cta-row">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    openLandingLogin(
+                      "pro",
+                      "Demonstracao preparada para impacto imediato",
+                      "Levamos-te diretamente para a experiencia que melhor mostra como a plataforma acelera follow-up, priorizacao e controlo comercial."
+                    )
+                  }
+                >
+                  Comecar agora
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => navigatePublicPage("features")}
+                >
+                  Ver funcionalidades
+                </button>
+              </div>
+
+              <div className="marketing-chip-row">
+                <div className="status-chip">{marketingApiLabel}</div>
+                <div className="status-chip muted">{marketingAiLabel}</div>
+                <div className="status-chip muted">{marketingInfraLabel}</div>
+              </div>
+            </div>
+
+            <div className="marketing-visual">
+              <div className="marketing-mockup-shell marketing-mockup-desktop">
+                <img src={homeFullImg} alt="Vista desktop do ImoLead AI Pro" />
+              </div>
+
+              <div className="marketing-mockup-shell marketing-mockup-mobile">
+                <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
+              </div>
+
+              <div className="marketing-float-card marketing-float-main">
+                <span>Desk dominante</span>
+                <strong>{dominantDeskLabel}</strong>
+                <p>{dashboardStats.urgent_actions} acoes urgentes sob monitorizacao.</p>
+              </div>
+
+              <div className="marketing-float-card marketing-float-side">
+                <span>Mercado em foco</span>
+                <strong>{topMarket?.market || "Portugal"}</strong>
+                <p>
+                  {topMarket
+                    ? `${topMarket.totalLeads} leads com score medio ${topMarket.averageAiScore}`
+                    : "Operacao pronta para captar o primeiro lote de leads."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-metric-ribbon">
+          {landingMetricBar.map((item) => (
+            <article className="marketing-metric-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <p>{item.detail}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="marketing-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Estrutura publica</p>
+              <h3>Paginas reais ligadas como a raiz pede</h3>
+            </div>
+          </div>
+
+          <div className="public-route-grid">
+            {routeCards.map((card) => (
+              <article className="marketing-showcase-card public-route-card" key={card.page}>
+                <div className="marketing-showcase-copy">
+                  <span>{card.eyebrow}</span>
+                  <strong>{card.title}</strong>
+                  <p>{card.description}</p>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => navigatePublicPage(card.page)}
+                  >
+                    {card.action}
+                  </button>
+                </div>
+                <img src={card.image} alt={card.alt} />
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="marketing-section marketing-results-shell">
+          <article className="shell-panel marketing-results-visual">
+            <div className="marketing-results-board">
+              <div className="marketing-results-head">
+                <span>Vista executiva</span>
+                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
+              </div>
+
+              <div className="marketing-results-grid">
+                <article>
+                  <span>Desk</span>
+                  <strong>{dominantDeskLabel}</strong>
+                </article>
+                <article>
+                  <span>Fonte lider</span>
+                  <strong>{dominantSource}</strong>
+                </article>
+                <article>
+                  <span>Quentes</span>
+                  <strong>{dashboardStats.quente}</strong>
+                </article>
+                <article>
+                  <span>SLA urgente</span>
+                  <strong>{dashboardStats.urgent_actions}</strong>
+                </article>
+              </div>
+            </div>
+          </article>
+
+          <article className="shell-panel marketing-results-copy">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Porque isto impacta</p>
+                <h3>Uma home para vender, paginas para aprofundar e cockpit para fechar</h3>
+              </div>
+            </div>
+
+            <ul className="marketing-benefit-list">
+              {landingBenefitBullets.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <div className="marketing-inline-actions">
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() =>
+                  openLandingLogin(
+                    activePlanId,
+                    "Entrar agora e ver o ganho de tempo na pratica",
+                    "Ja escolhemos um perfil demo compativel com este plano para reduzires atrito e entrares direto na experiencia certa."
+                  )
+                }
+              >
+                Pedir demonstracao
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("pricing")}>
+                Rever oferta
+              </button>
+            </div>
+          </article>
+        </section>
+      </>
+    );
+  }
+
+  function renderFeaturesPage() {
+    return (
+      <>
+        {renderPageHero({
+          eyebrow: "Tudo o que precisa para automatizar",
+          title: "Captacao, classificacao, mensagens e controlo num unico sistema.",
+          text:
+            "Seguimos a estrutura real da raiz: prova visual forte, blocos claros de valor e workflow explicado de forma vendavel para decisores.",
+          mainImage: featuresSectionImg,
+          mainAlt: "Secao de funcionalidades do produto",
+          secondaryImage: mobileDashboardImg,
+          secondaryAlt: "Vista mobile do cockpit operacional",
+          primaryLabel: "Ver planos",
+          secondaryLabel: "Pedir demo",
+          onPrimaryClick: () =>
+            openLandingPricing(
+              "pro",
+              "Oferta comercial pronta para comparacao",
+              "A pagina de precos abre com o plano Pro em foco para uma leitura mais rapida."
+            ),
+          onSecondaryClick: () =>
+            openLandingLogin(
+              "pro",
+              "Demonstracao orientada ao valor do produto",
+              "Entramos diretamente com o plano mais vendavel para mostrar o fluxo completo."
+            ),
+        })}
+
+        <section className="marketing-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Produto em acao</p>
+              <h3>As telas reais sustentam a promessa comercial</h3>
+            </div>
+          </div>
+
+          <div className="marketing-showcase-grid">
+            <article className="marketing-showcase-card featured">
+              <div className="marketing-showcase-copy">
+                <span>Funcionalidades</span>
+                <strong>Blocos claros para explicar valor sem parecer software generico</strong>
+                <p>
+                  Captacao, classificacao, mensagens, agenda e relatorios apresentados de forma
+                  simples, vendavel e orientada ao mercado.
+                </p>
+              </div>
+              <img src={featuresSectionImg} alt="Secao real de funcionalidades do produto" />
+            </article>
+
+            <article className="marketing-showcase-card">
+              <div className="marketing-showcase-copy">
+                <span>Administracao</span>
+                <strong>Painel protegido e pronto para controlo real do negocio</strong>
+                <p>Governance, acessos e operacao com cara de plataforma, nao de prototipo.</p>
+              </div>
+              <img src={adminSectionImg} alt="Entrada real do painel administrativo" />
+            </article>
+
+            <article className="marketing-showcase-card">
+              <div className="marketing-showcase-copy">
+                <span>Mobile</span>
+                <strong>Experiencia preparada para demonstracao no telemovel</strong>
+                <p>
+                  A leitura continua forte em mobile, com entrada clara e restricao controlada
+                  quando necessario.
+                </p>
+              </div>
+              <img src={mobileDashboardImg} alt="Vista mobile real do produto" />
+            </article>
+          </div>
+        </section>
+
+        <section className="marketing-section" id="landing-features">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Funcionalidades</p>
+              <h3>Os blocos que resolvem o trabalho comercial no dia a dia</h3>
+            </div>
+          </div>
+
+          <div className="marketing-feature-grid">
+            {landingFeatureCards.map((feature) => (
+              <article className="marketing-feature-card" key={feature.title}>
+                <span>{feature.eyebrow}</span>
+                <strong>{feature.title}</strong>
+                <p>{feature.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="marketing-section marketing-duo-grid">
+          <article className="shell-panel marketing-story-card">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Workflow</p>
+                <h3>Da captacao ao follow-up numa experiencia unica</h3>
+              </div>
+            </div>
+
+            <div className="marketing-step-list">
+              {landingWorkflow.map((item) => (
+                <article className="marketing-step-card" key={item.step}>
+                  <span>{item.step}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="shell-panel marketing-story-card">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Percepcao de valor</p>
+                <h3>Como isto deve soar para um diretor comercial</h3>
+              </div>
+            </div>
+
+            <div className="marketing-testimonial-list">
+              {landingTestimonials.map((item) => (
+                <blockquote className="marketing-testimonial-card" key={item.author}>
+                  <p>{item.quote}</p>
+                  <footer>
+                    <strong>{item.author}</strong>
+                    <span>{item.role}</span>
+                  </footer>
+                </blockquote>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="marketing-section marketing-results-shell">
+          <article className="shell-panel marketing-results-visual">
+            <div className="marketing-results-board">
+              <div className="marketing-results-head">
+                <span>Vista executiva</span>
+                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
+              </div>
+
+              <div className="marketing-results-grid">
+                <article>
+                  <span>Desk</span>
+                  <strong>{dominantDeskLabel}</strong>
+                </article>
+                <article>
+                  <span>Fonte lider</span>
+                  <strong>{dominantSource}</strong>
+                </article>
+                <article>
+                  <span>Quentes</span>
+                  <strong>{dashboardStats.quente}</strong>
+                </article>
+                <article>
+                  <span>SLA urgente</span>
+                  <strong>{dashboardStats.urgent_actions}</strong>
+                </article>
+              </div>
+            </div>
+          </article>
+
+          <article className="shell-panel marketing-results-copy">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Resultado</p>
+                <h3>O produto mostra valor antes de pedirmos a reuniao seguinte</h3>
+              </div>
+            </div>
+
+            <ul className="marketing-benefit-list">
+              {landingBenefitBullets.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <div className="marketing-inline-actions">
+              <button className="primary-button" type="button" onClick={() => navigatePublicPage("pricing")}>
+                Ver planos
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
+                Ir para contacto
+              </button>
+            </div>
+          </article>
+        </section>
+      </>
+    );
+  }
+
+  function renderPricingPage() {
+    return (
+      <>
+        {renderPageHero({
+          eyebrow: "Planos transparentes e flexiveis",
+          title: "Uma proposta clara para vender Starter, Pro e Enterprise sem ambiguidades.",
+          text:
+            "A pagina de precos passa a ter autonomia propria, com trial, utilizadores incluidos, extra users e progressao natural entre planos.",
+          mainImage: mobileFeaturesPricingImg,
+          mainAlt: "Vista mobile da secao de precos e prova social",
+          secondaryImage: homeFullImg,
+          secondaryAlt: "Vista desktop completa da home publica",
+          primaryLabel: "Entrar com este plano",
+          secondaryLabel: "Falar com a equipa",
+          onPrimaryClick: () =>
+            openLandingLogin(
+              activePlanId,
+              "Plano atual pronto para demonstracao",
+              "Abrimos a pagina de entrada com o plano selecionado e a guidance certa."
+            ),
+          onSecondaryClick: () => navigatePublicPage("contact"),
+        })}
+        {renderPricingCardsSection()}
+        {renderSocialProofSection()}
+      </>
+    );
+  }
+
+  function renderContactPage() {
+    return (
+      <>
+        {renderPageHero({
+          eyebrow: "Contacto e compliance",
+          title: "Fechar a conversa com contacto real, governance e politicas visiveis.",
+          text:
+            "Esta pagina concentra fecho comercial, contacto RGPD, oferta enterprise e os documentos que sustentam a operacao publica.",
+          mainImage: adminSectionImg,
+          mainAlt: "Vista do painel administrativo antes do login",
+          secondaryImage: mobileMenuOpenImg,
+          secondaryAlt: "Vista mobile da navegacao publica",
+          primaryLabel: "Abrir demo enterprise",
+          secondaryLabel: "Ver login protegido",
+          onPrimaryClick: () =>
+            openLandingLogin(
+              "custom",
+              "Demo enterprise preparada para impressionar decisores",
+              "Mostramos governance, planos, equipas e leitura executiva com a conta ADM."
+            ),
+          onSecondaryClick: () => navigatePublicPage("login"),
+        })}
+        {renderFinalCtaSection()}
+        {renderLegalSection()}
+      </>
+    );
+  }
+
+  function renderPublicSite() {
+    if (publicPage === "login") {
+      return (
+        <main className="auth-shell marketing-auth-shell public-login-shell">
+          <div className="marketing-main public-login-main">
+            {renderPageHero({
+              eyebrow: "Acesso protegido",
+              title: "Entrar com contexto, trial protegido e demonstracao assistida.",
+              text:
+                "A pagina de entrada passa a ser propria, sem empurrar o cockpit para a frente publica e sem perder a ligacao com os planos e a prova visual.",
+              mainImage: adminSectionImg,
+              mainAlt: "Vista do painel administrativo antes do login",
+              secondaryImage: mobileMenuOpenImg,
+              secondaryAlt: "Vista mobile da navegacao publica",
+              primaryLabel: "Ver planos",
+              secondaryLabel: "Ir para contacto",
+              onPrimaryClick: () => navigatePublicPage("pricing"),
+              onSecondaryClick: () => navigatePublicPage("contact"),
+            })}
+
+            <section className="marketing-section public-login-proof-grid">
+              <article className="marketing-showcase-card public-route-card">
+                <div className="marketing-showcase-copy">
+                  <span>Workspace</span>
+                  <strong>O cockpit so abre depois do contexto certo estar definido</strong>
+                  <p>
+                    O acesso entra pela pagina certa, o plano certo e a guidance certa. Isso melhora
+                    a demonstracao e protege a operacao publica.
+                  </p>
+                </div>
+                <img src={homeFullImg} alt="Vista desktop da home publica" />
+              </article>
+
+              <article className="marketing-showcase-card public-route-card">
+                <div className="marketing-showcase-copy">
+                  <span>Mobile</span>
+                  <strong>Versao mobile pronta para demonstracao em reunioes e follow-up</strong>
+                  <p>
+                    As principais telas continuam legiveis no telemovel, sem perder identidade nem
+                    capacidade de explicacao comercial.
+                  </p>
+                </div>
+                <img src={mobileDashboardImg} alt="Vista mobile do cockpit" />
+              </article>
+            </section>
+          </div>
+
+          {renderAuthPanel()}
+        </main>
+      );
+    }
+
+    return (
+      <main className="public-marketing-shell">
+        <div className="marketing-main public-marketing-main">
+          {publicPage === "features"
+            ? renderFeaturesPage()
+            : publicPage === "pricing"
+              ? renderPricingPage()
+              : publicPage === "contact"
+                ? renderContactPage()
+                : renderHomePage()}
+        </div>
       </main>
     );
   }
