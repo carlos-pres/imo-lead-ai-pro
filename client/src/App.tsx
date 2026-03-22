@@ -3124,7 +3124,7 @@ function App() {
               <article className="marketing-showcase-card featured">
                 <div className="marketing-showcase-copy">
                   <span>Funcionalidades</span>
-                  <strong>Blocos claros para explicar valor sem parecer software genérico</strong>
+                  <strong>Blocos claros para explicar valor sem parecer software generico</strong>
                   <p>
                     Captacao, classificacao, mensagens, agenda e relatorios apresentados de forma
                     simples, vendavel e orientada ao mercado.
@@ -4461,39 +4461,6 @@ function App() {
   }
 
   function renderHomePage() {
-    const routeCards = [
-      {
-        page: "features" as const,
-        eyebrow: "Funcionalidades",
-        title: "Tudo o que precisa para automatizar sem parecer software generico",
-        description:
-          "Prospeccao, classificacao, mensagens, agenda e controlo apresentados com clareza comercial.",
-        image: featuresSectionImg,
-        alt: "Secao de funcionalidades do produto",
-        action: "Ver funcionalidades",
-      },
-      {
-        page: "pricing" as const,
-        eyebrow: "Precos",
-        title: "Planos claros com trial, utilizadores e progressao comercial bem explicados",
-        description:
-          "Starter, Pro e Enterprise com capacidade operacional, agente por plano e percurso natural de upgrade.",
-        image: mobileFeaturesPricingImg,
-        alt: "Vista mobile da secao de precos e prova social",
-        action: "Explorar precos",
-      },
-      {
-        page: "login" as const,
-        eyebrow: "Entrar",
-        title: "Acesso protegido para demonstracoes assistidas e contas reais",
-        description:
-          "O cockpit fica reservado para equipas validadas, trial protegido e demonstracoes com contexto.",
-        image: adminSectionImg,
-        alt: "Vista de administracao e acesso protegido",
-        action: "Ir para entrar",
-      },
-    ];
-
     return (
       <>
         {renderPageHero({
@@ -4529,66 +4496,75 @@ function App() {
         <section className="marketing-section">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Estrutura publica</p>
-              <h3>Home forte na entrada, aprofundamento claro nas paginas seguintes</h3>
+              <p className="eyebrow">Tudo o que precisa para automatizar</p>
+              <h3>Captacao, classificacao, mensagens e controlo num unico sistema</h3>
             </div>
           </div>
 
-          <div className="public-route-grid public-route-grid-home">
-            {routeCards.map((card) => (
-              <article className="marketing-showcase-card public-route-card" key={card.page}>
-                <div className="marketing-showcase-copy">
-                  <span>{card.eyebrow}</span>
-                  <strong>{card.title}</strong>
-                  <p>{card.description}</p>
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => navigatePublicPage(card.page)}
-                  >
-                    {card.action}
-                  </button>
-                </div>
-                <img src={card.image} alt={card.alt} />
+          <div className="marketing-feature-grid home-feature-grid">
+            {landingFeatureCards.map((feature) => (
+              <article className="marketing-feature-card" key={feature.title}>
+                <span>{feature.eyebrow}</span>
+                <strong>{feature.title}</strong>
+                <p>{feature.description}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="marketing-section marketing-results-shell">
-          <article className="shell-panel marketing-results-visual">
-            <div className="marketing-results-board">
-              <div className="marketing-results-head">
-                <span>Vista executiva</span>
-                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
-              </div>
-
-              <div className="marketing-results-grid">
-                <article>
-                  <span>Desk</span>
-                  <strong>{dominantDeskLabel}</strong>
-                </article>
-                <article>
-                  <span>Fonte lider</span>
-                  <strong>{dominantSource}</strong>
-                </article>
-                <article>
-                  <span>Quentes</span>
-                  <strong>{dashboardStats.quente}</strong>
-                </article>
-                <article>
-                  <span>SLA urgente</span>
-                  <strong>{dashboardStats.urgent_actions}</strong>
-                </article>
-              </div>
+        <section className="marketing-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Produto em acao</p>
+              <h3>As telas reais sustentam a promessa comercial</h3>
             </div>
-          </article>
+          </div>
 
+          <div className="marketing-showcase-grid home-showcase-grid">
+            <article className="marketing-showcase-card featured">
+              <div className="marketing-showcase-copy">
+                <span>Home publica</span>
+                <strong>Entrada forte, clara e pronta para vender valor logo no primeiro scroll</strong>
+                <p>
+                  A home precisa de impressionar sem confundir. Hero forte, prova visual real e
+                  mensagem comercial direta.
+                </p>
+              </div>
+              <img src={homeFullImg} alt="Vista desktop da home publica" />
+            </article>
+
+            <article className="marketing-showcase-card">
+              <div className="marketing-showcase-copy">
+                <span>Funcionalidades</span>
+                <strong>Explicacao visual do produto sem parecer software generico</strong>
+                <p>
+                  Os blocos de funcionalidades ganham autonomia e ligam diretamente a pagina propria
+                  de produto.
+                </p>
+              </div>
+              <img src={featuresSectionImg} alt="Secao real de funcionalidades do produto" />
+            </article>
+
+            <article className="marketing-showcase-card">
+              <div className="marketing-showcase-copy">
+                <span>Mobile</span>
+                <strong>Prova visual forte tambem no telemovel</strong>
+                <p>
+                  A leitura continua limpa e vendavel em mobile para reunioes, apresentacoes e
+                  follow-up comercial.
+                </p>
+              </div>
+              <img src={mobileHomeHeroImg} alt="Vista mobile da home publica" />
+            </article>
+          </div>
+        </section>
+
+        <section className="marketing-section marketing-results-shell">
           <article className="shell-panel marketing-results-copy">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Porque isto impacta</p>
-                <h3>Uma home para vender, paginas para aprofundar e cockpit para fechar</h3>
+                <h3>Uma entrada comercial forte e um cockpit real por dentro</h3>
               </div>
             </div>
 
@@ -4620,7 +4596,39 @@ function App() {
               </button>
             </div>
           </article>
+
+          <article className="shell-panel marketing-results-visual">
+            <div className="marketing-results-board">
+              <div className="marketing-results-head">
+                <span>Vista executiva</span>
+                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
+              </div>
+
+              <div className="marketing-results-grid">
+                <article>
+                  <span>Desk</span>
+                  <strong>{dominantDeskLabel}</strong>
+                </article>
+                <article>
+                  <span>Fonte lider</span>
+                  <strong>{dominantSource}</strong>
+                </article>
+                <article>
+                  <span>Quentes</span>
+                  <strong>{dashboardStats.quente}</strong>
+                </article>
+                <article>
+                  <span>SLA urgente</span>
+                  <strong>{dashboardStats.urgent_actions}</strong>
+                </article>
+              </div>
+            </div>
+          </article>
         </section>
+
+        {renderPricingCardsSection()}
+        {renderSocialProofSection()}
+        {renderFinalCtaSection()}
       </>
     );
   }
