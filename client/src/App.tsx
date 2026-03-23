@@ -4346,10 +4346,30 @@ function App() {
             </p>
 
             <div className="marketing-cta-row">
-              <button className="primary-button" type="button" onClick={() => navigatePublicPage("pricing")}>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() =>
+                  openLandingPricing(
+                    activePlanId,
+                    "Comparacao orientada pelo plano selecionado",
+                    "Levamos-te para a oferta ja com o plano ativo, desconto anual e caminho natural de upgrade visiveis."
+                  )
+                }
+              >
                 Ver planos
               </button>
-              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() =>
+                  openLandingLogin(
+                    activePlanId,
+                    "Demonstracao assistida preparada para a tua realidade",
+                    "Mantemos o plano ativo, ajustamos a guidance e abrimos o acesso de forma coerente com o teu contexto comercial."
+                  )
+                }
+              >
                 Pedir demonstracao
               </button>
             </div>
