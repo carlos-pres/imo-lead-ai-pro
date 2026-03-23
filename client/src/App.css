@@ -845,6 +845,11 @@
   cursor: pointer;
 }
 
+.ghost-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .sidebar-button {
   width: 100%;
   margin-top: 16px;
@@ -967,6 +972,97 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.agent-command-card,
+.communication-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agent-command-head,
+.communication-head,
+.communication-actions,
+.agent-status-group {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agent-command-copy {
+  margin: 0;
+  color: #415066;
+  line-height: 1.6;
+}
+
+.agent-capability-grid,
+.communication-channel-grid,
+.agenda-radar-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.agent-capability-grid,
+.agenda-radar-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.communication-channel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agent-priority-box {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: linear-gradient(135deg, rgba(19, 34, 55, 0.94), rgba(41, 66, 99, 0.92));
+  color: #fffaf2;
+}
+
+.agent-priority-box span,
+.contact-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.agent-priority-box span {
+  color: rgba(255, 250, 242, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.agent-priority-box strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 1.2rem;
+}
+
+.agent-priority-box p {
+  margin: 10px 0 0;
+  color: rgba(255, 250, 242, 0.82);
+}
+
+.communication-contact-stack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.contact-pill {
+  background: rgba(214, 132, 74, 0.1);
+  color: #8d5b38;
+}
+
+.communication-actions {
+  margin-top: 14px;
 }
 
 .signal-card,
@@ -2566,6 +2662,9 @@
   .pipeline-layout,
   .report-hero,
   .signal-grid,
+  .agent-capability-grid,
+  .communication-channel-grid,
+  .agenda-radar-grid,
   .member-grid,
   .toolbar-grid {
     grid-template-columns: 1fr;
