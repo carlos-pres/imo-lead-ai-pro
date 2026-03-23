@@ -1511,6 +1511,73 @@ function App() {
     );
   }
 
+  const guidedUseCases = [
+    {
+      id: "starter",
+      eyebrow: "Consultor independente",
+      title: "Entrar no Starter com trial protegido e valor imediato",
+      detail:
+        "Ideal para mostrar triagem, foco comercial e validacao do trial sem expor uma demo solta na frente publica.",
+      tags: ["15 dias trial", "1 utilizador", "Portugal"],
+      primaryLabel: "Abrir jornada Starter",
+      primaryAction: () =>
+        openLandingLogin(
+          "basic",
+          "Starter pronto para trial protegido",
+          "Mostramos a entrada mais leve do produto, com controlo de trial e caminho claro para evolucao comercial.",
+          DEMO_ACCESS[2]
+        ),
+      secondaryLabel: "Comparar com Pro",
+      secondaryAction: () =>
+        openLandingPricing(
+          "pro",
+          "Comparacao entre Starter e Pro",
+          "Levamos-te para a oferta Pro para veres onde a automacao e a operacao de equipa sobem de nivel."
+        ),
+    },
+    {
+      id: "pro",
+      eyebrow: "Agencia ou equipa comercial",
+      title: "Ver o Pro como workspace vendavel para a maioria das equipas",
+      detail:
+        "A entrada certa para mostrar owners, desks, SLA, pipeline e o agente a trabalhar como copiloto operacional.",
+      tags: ["Plano mais vendavel", "Ate 7 utilizadores", "Portugal + Iberia"],
+      primaryLabel: "Abrir jornada Pro",
+      primaryAction: () =>
+        openLandingLogin(
+          "pro",
+          "Pro pronto para demonstracao comercial",
+          "Entramos diretamente na configuracao certa para mostrar ganho de tempo, visibilidade e controlo comercial.",
+          DEMO_ACCESS[1]
+        ),
+      secondaryLabel: "Ver plano Pro",
+      secondaryAction: () =>
+        openLandingPricing(
+          "pro",
+          "Oferta Pro em foco",
+          "Mantemos o Pro selecionado para veres utilizadores, relatorios e progressao de forma imediata."
+        ),
+    },
+    {
+      id: "enterprise",
+      eyebrow: "Rede multi-loja ou direcao",
+      title: "Abrir a leitura enterprise para decisores e expansao",
+      detail:
+        "Mostra governance, cobertura geografica, controlo ADM e estrutura preparada para Portugal hoje e Europa a seguir.",
+      tags: ["25 utilizadores", "ADM e governance", "Expansao europeia"],
+      primaryLabel: "Abrir jornada Enterprise",
+      primaryAction: () =>
+        openLandingLogin(
+          "custom",
+          "Enterprise preparado para decisores",
+          "Levamos a demonstracao para a leitura executiva certa, com foco em governance, equipas e escala.",
+          DEMO_ACCESS[0]
+        ),
+      secondaryLabel: "Falar com a equipa",
+      secondaryAction: () => navigatePublicPage("contact"),
+    },
+  ];
+
   const visibleLeads = leads.filter((lead) => {
     const term = deferredSearch.trim().toLowerCase();
 
@@ -3562,6 +3629,19 @@ function App() {
             </button>
           </div>
 
+          <div className="auth-scenario-grid">
+            {guidedUseCases.map((useCase) => (
+              <article className="auth-scenario-card" key={useCase.id}>
+                <span>{useCase.eyebrow}</span>
+                <strong>{useCase.title}</strong>
+                <p>{useCase.detail}</p>
+                <button className="ghost-button" type="button" onClick={useCase.primaryAction}>
+                  {useCase.primaryLabel}
+                </button>
+              </article>
+            ))}
+          </div>
+
           {activePlanTrialDays > 0 ? (
             <section className="trial-card">
               <div className="section-head">
@@ -4119,6 +4199,35 @@ function App() {
             const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
             const suffix = isYear ? "/ano" : "/mes";
             const featured = plan.basePlanId === "pro";
+            const secondaryAction =
+              plan.basePlanId === "custom"
+                ? () => navigatePublicPage("contact")
+                : plan.basePlanId === "basic"
+                  ? () =>
+                      openLandingPricing(
+                        "pro",
+                        "Caminho natural do Starter para o Pro",
+                        "Comparamos a entrada protegida com a camada vendavel para equipas e mostramos onde o upgrade faz sentido."
+                      )
+                  : () =>
+                      openLandingLogin(
+                        "custom",
+                        "Enterprise em foco para a fase seguinte",
+                        "Abrimos a leitura enterprise para mostrar governance, multi-loja e controlo executivo.",
+                        DEMO_ACCESS[0]
+                      );
+            const secondaryLabel =
+              plan.basePlanId === "custom"
+                ? "Falar com a equipa"
+                : plan.basePlanId === "basic"
+                  ? "Ver salto para Pro"
+                  : "Abrir leitura Enterprise";
+            const journeyLabel =
+              plan.basePlanId === "basic"
+                ? "Entrada sugerida: trial protegido com validacao e caminho claro de upgrade."
+                : plan.basePlanId === "pro"
+                  ? "Entrada sugerida: demonstracao de equipa com pipeline, owners e desks em acao."
+                  : "Entrada sugerida: leitura executiva com governance, ADM e expansao multi-loja.";
 
             return (
               <article className={featured ? "pricing-card featured" : "pricing-card"} key={plan.id}>
@@ -4180,7 +4289,12 @@ function App() {
                         ? "Demo pronta para este plano"
                         : "Quero ver este plano em acao"}
                   </button>
+                  <button className="ghost-button pricing-secondary-button" type="button" onClick={secondaryAction}>
+                    {secondaryLabel}
+                  </button>
                 </div>
+
+                <p className="pricing-note pricing-guidance-note">{journeyLabel}</p>
               </article>
             );
           })}
@@ -4762,6 +4876,43 @@ function App() {
               <p>{item.detail}</p>
             </article>
           ))}
+        </section>
+
+        <section className="marketing-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Entradas por cenario</p>
+              <h3>O cliente entra pelo contexto certo em vez de cair numa demo generica</h3>
+            </div>
+          </div>
+
+          <div className="marketing-scenario-grid">
+            {guidedUseCases.map((useCase) => (
+              <article
+                className={useCase.id === "pro" ? "marketing-scenario-card featured" : "marketing-scenario-card"}
+                key={useCase.id}
+              >
+                <span>{useCase.eyebrow}</span>
+                <strong>{useCase.title}</strong>
+                <p>{useCase.detail}</p>
+
+                <div className="mini-tags">
+                  {useCase.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+
+                <div className="marketing-inline-actions">
+                  <button className="primary-button" type="button" onClick={useCase.primaryAction}>
+                    {useCase.primaryLabel}
+                  </button>
+                  <button className="ghost-button" type="button" onClick={useCase.secondaryAction}>
+                    {useCase.secondaryLabel}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="marketing-section public-sales-grid">

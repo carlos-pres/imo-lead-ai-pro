@@ -1220,6 +1220,15 @@
   margin-top: 14px;
 }
 
+.pricing-secondary-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.pricing-guidance-note {
+  margin-top: 12px;
+}
+
 .select-plan-button {
   width: 100%;
   border: 1px solid rgba(19, 34, 55, 0.12);
@@ -1856,6 +1865,73 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.marketing-scenario-grid,
+.auth-scenario-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.marketing-scenario-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.marketing-scenario-card,
+.auth-scenario-card {
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(31, 99, 233, 0.08), transparent 34%),
+    rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 36px rgba(21, 33, 48, 0.06);
+}
+
+.marketing-scenario-card.featured {
+  background:
+    radial-gradient(circle at top left, rgba(31, 99, 233, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+  border-color: rgba(31, 99, 233, 0.14);
+}
+
+.marketing-scenario-card span,
+.auth-scenario-card span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a6d54;
+}
+
+.marketing-scenario-card strong,
+.auth-scenario-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+  font-size: 1.14rem;
+  line-height: 1.35;
+}
+
+.marketing-scenario-card p,
+.auth-scenario-card p {
+  margin: 10px 0 0;
+  color: #58677c;
+  line-height: 1.65;
+}
+
+.auth-scenario-grid {
+  grid-template-columns: 1fr;
+  margin-bottom: 18px;
+}
+
+.auth-scenario-card {
+  padding: 18px;
+}
+
+.auth-scenario-card .ghost-button {
+  width: 100%;
+  margin-top: 14px;
+}
+
 .public-login-shell {
   align-items: start;
 }
@@ -2453,6 +2529,8 @@
   .public-stage-cluster,
   .public-stage-cluster-compact,
   .public-login-stage-grid,
+  .marketing-scenario-grid,
+  .auth-scenario-grid,
   .public-plan-ladder,
   .public-sales-grid,
   .public-plan-summary-grid,
