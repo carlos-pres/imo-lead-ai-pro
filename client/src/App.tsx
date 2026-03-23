@@ -2081,31 +2081,31 @@ function App() {
             </div>
           </div>
 
-          <div className="hero-visual market-stage">
-            <img src={homeFullImg} alt="Painel enterprise ImoLead AI Pro" />
-            <div className="market-stage-grid">
-              <div className="insight-card spotlight-card">
-                <span>Radar do mercado</span>
-                <strong>
-                  {topMarket
-                    ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
-                    : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
-                </strong>
-              </div>
+          <div className="hero-visual command-surface">
+            <article className="command-surface-card command-surface-primary">
+              <span>Radar do mercado</span>
+              <strong>
+                {topMarket
+                  ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
+                  : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
+              </strong>
+              <p>{radarHighlight}</p>
+            </article>
 
-              <article className="floating-card metric-card">
+            <div className="command-surface-grid">
+              <article className="command-surface-card">
                 <span>Heat index</span>
                 <strong>{hotLeadRatio}%</strong>
-                <p>Da carteira atual esta em estado quente.</p>
+                <p>Carteira em estado quente e com urgencia comercial visivel.</p>
               </article>
 
-              <article className="floating-card metric-card">
+              <article className="command-surface-card">
                 <span>Fonte dominante</span>
                 <strong>{dominantSource}</strong>
-                <p>Canal com maior volume na operacao atual.</p>
+                <p>Origem mais forte a alimentar a operacao neste momento.</p>
               </article>
 
-              <article className="floating-card routing-card">
+              <article className="command-surface-card">
                 <span>Routing mix</span>
                 <div className="routing-mix">
                   {routingMix.map((item) => (
@@ -2115,6 +2115,16 @@ function App() {
                     </div>
                   ))}
                 </div>
+              </article>
+
+              <article className="command-surface-card">
+                <span>Agente ativo</span>
+                <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
+                <p>
+                  {activePlan
+                    ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cadencia operacional pronta.`
+                    : "Workspace pronto para ativar o agente comercial."}
+                </p>
               </article>
             </div>
           </div>
