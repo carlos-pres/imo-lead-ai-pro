@@ -2029,27 +2029,28 @@
 
 .public-login-intro-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(340px, 0.98fr);
-  gap: 24px;
-  align-items: stretch;
-  padding: 28px;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+  padding: 24px 28px 28px;
 }
 
 .public-login-copy {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
+  max-width: 760px;
 }
 
 .public-login-copy h1 {
   margin: 0;
   color: #132237;
-  font-size: clamp(2.8rem, 4.6vw, 4.9rem);
-  line-height: 0.92;
+  font-size: clamp(2.4rem, 3.8vw, 4rem);
+  line-height: 0.96;
   letter-spacing: -0.05em;
-  max-width: 8ch;
+  max-width: 11ch;
 }
 
 .public-login-copy > .hero-text {
@@ -2058,23 +2059,20 @@
 
 .public-login-lead {
   margin: 0;
-  max-width: 56ch;
+  max-width: 60ch;
   color: #53647a;
-  font-size: 1.04rem;
-  line-height: 1.7;
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
 .public-login-stage-panel {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 22px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background:
-    radial-gradient(circle at top left, rgba(43, 103, 255, 0.18), transparent 28%),
-    linear-gradient(160deg, rgba(18, 31, 50, 0.98), rgba(32, 52, 81, 0.92));
-  box-shadow: 0 24px 54px rgba(11, 22, 35, 0.18);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .public-login-stage-grid {
@@ -2087,16 +2085,14 @@
   min-width: 0;
   padding: 18px;
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 34px rgba(21, 33, 48, 0.06);
+  backdrop-filter: none;
 }
 
 .public-login-stage-card-wide {
-  padding: 22px;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 34%),
-    rgba(255, 255, 255, 0.08);
+  display: none;
 }
 
 .public-login-stage-card span {
@@ -2104,20 +2100,20 @@
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(244, 227, 208, 0.74);
+  color: #8a6d54;
 }
 
 .public-login-stage-card strong {
   display: block;
   margin-top: 10px;
-  color: #ffffff;
-  font-size: 1.16rem;
+  color: #132237;
+  font-size: 1.02rem;
   line-height: 1.35;
 }
 
 .public-login-stage-card p {
   margin: 10px 0 0;
-  color: rgba(233, 239, 248, 0.82);
+  color: #58677c;
   line-height: 1.6;
 }
 

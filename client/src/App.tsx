@@ -4631,11 +4631,10 @@ function App() {
         <div className="public-login-intro-grid">
           <div className="public-login-copy">
             <p className="eyebrow">Acesso protegido</p>
-            <h1>Entrada protegida para equipas reais e demos assistidas.</h1>
+            <h1>Entra no workspace certo sem perder a forca comercial.</h1>
             <p className="public-login-lead">
-              A frente publica continua comercial. O acesso aqui abre no plano certo, com o agente
-              certo e com um contexto de demonstracao que transmite confianca logo no primeiro
-              contacto.
+              Esta entrada serve contas reais, trial protegido e demos assistidas. O objetivo aqui
+              e simples: mostrar um acesso serio, curto e coerente com o plano que estas a vender.
             </p>
             <p className="hero-text">
               A demonstração publica fica fechada. Esta entrada serve contas reais, trials
@@ -4735,15 +4734,17 @@ function App() {
         </div>
 
         <div className="auth-guidance-card">
-          <span>Proximo passo recomendado</span>
-          <strong>{landingGuidance.title}</strong>
-          <p>{landingGuidance.detail}</p>
+          <span>Contexto ativo</span>
+          <strong>{activePlan?.publicName || "ImoLead Pro"} selecionado para este acesso</strong>
+          <p>
+            Se precisares de demonstracao, usamos o plano e o perfil certos. Se ja tens conta,
+            entra abaixo e continua no teu workspace.
+          </p>
 
           <div className="mini-tags">
             <span>{activePlan?.publicName || "ImoLead Pro"}</span>
             {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
-            <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.role : "Demo assistida"}</span>
-            <span>{PUBLIC_DEMO_ENABLED ? suggestedDemoEntry.email : "Acesso validado pela equipa"}</span>
+            <span>{coverageLabel}</span>
           </div>
         </div>
 
