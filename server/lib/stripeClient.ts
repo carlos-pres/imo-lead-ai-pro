@@ -1,21 +1,30 @@
 import Stripe from "stripe";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "";
+let stripe: Stripe | null = null;
 
-if (!stripeSecretKey) {
-  console.warn("STRIPE_SECRET_KEY nao definido");
+function ensureStripeClient() {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "";
+
+  if (!stripeSecretKey) {
+    console.warn("STRIPE_SECRET_KEY nao definido");
+    throw new Error("STRIPE_SECRET_KEY nao definido");
+  }
+
+  if (!stripe) {
+    stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2026-02-25.clover",
+    });
+  }
+
+  return stripe;
 }
 
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2026-02-25.clover",
-});
-
 export function getStripeClient() {
-  return stripe;
+  return ensureStripeClient();
 }
 
 export async function getUncachableStripeClient() {
-  return stripe;
+  return ensureStripeClient();
 }
 
 export async function getStripeSync() {

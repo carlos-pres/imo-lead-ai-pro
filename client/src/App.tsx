@@ -5,6 +5,7 @@ import "./App.css";
 import {
   clearSessionToken,
   createAdminPlan,
+  createPaymentCheckoutSession,
   createLead,
   createTrialRequest,
   deleteAdminPlan,
@@ -55,6 +56,10 @@ type TrialForm = {
   privacyAccepted: boolean;
   termsAccepted: boolean;
   aiDisclosureAccepted: boolean;
+};
+type CheckoutForm = {
+  name: string;
+  email: string;
 };
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
 
@@ -563,6 +568,10 @@ function getRoleLabel(role: WorkspaceRole | undefined) {
   return "Workspace";
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function deriveStats(leads: Lead[]): LeadStats {
   const teams = new Set(leads.map((lead) => lead.assignedTeam));
   const offices = new Set(leads.map((lead) => lead.officeName));
@@ -725,9 +734,16 @@ function App() {
     termsAccepted: false,
     aiDisclosureAccepted: false,
   });
+  const [checkoutForm, setCheckoutForm] = useState<CheckoutForm>({
+    name: "",
+    email: "",
+  });
   const [trialSubmitting, setTrialSubmitting] = useState(false);
   const [trialFeedback, setTrialFeedback] = useState("");
   const [trialFeedbackTone, setTrialFeedbackTone] = useState<"success" | "error">("success");
+  const [checkoutSubmittingPlanId, setCheckoutSubmittingPlanId] = useState<PlanType | "">("");
+  const [checkoutFeedback, setCheckoutFeedback] = useState("");
+  const [checkoutFeedbackTone, setCheckoutFeedbackTone] = useState<"success" | "error">("success");
 
   const deferredSearch = useDeferredValue(search);
 
@@ -783,6 +799,51 @@ function App() {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     }
   }, [authBooting, session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const checkoutState = params.get("checkout");
+
+    if (checkoutState === "success") {
+      setCheckoutFeedback(
+        "Checkout concluido com sucesso. Confirma no Stripe e volta ao workspace para continuar a ativacao."
+      );
+      setCheckoutFeedbackTone("success");
+      startTransition(() => {
+        setPublicPage("pricing");
+      });
+      return;
+    }
+
+    if (checkoutState === "cancel") {
+      setCheckoutFeedback("Checkout cancelado. Podes rever o plano e voltar a tentar quando quiseres.");
+      setCheckoutFeedbackTone("error");
+      startTransition(() => {
+        setPublicPage("pricing");
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session?.user) {
+      setCheckoutForm((current) => ({
+        name: current.name || session.user.name,
+        email: current.email || session.user.email,
+      }));
+      return;
+    }
+
+    if (trialForm.email || trialForm.name) {
+      setCheckoutForm((current) => ({
+        name: current.name || trialForm.name,
+        email: current.email || trialForm.email,
+      }));
+    }
+  }, [session, trialForm.email, trialForm.name]);
 
   useEffect(() => {
     if (typeof window === "undefined" || session) {
@@ -1509,6 +1570,51 @@ function App() {
       `Este perfil mostra a vista mais util para ${entry.description.toLowerCase()}`,
       entry
     );
+  }
+
+  async function handleStartCheckout(plan: PlanCatalogEntry) {
+    const normalizedName = checkoutForm.name.trim();
+    const normalizedEmail = checkoutForm.email.trim();
+
+    if (normalizedName.length < 2) {
+      setCheckoutFeedback("Indica o nome da pessoa ou da equipa que vai ativar o plano.");
+      setCheckoutFeedbackTone("error");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setCheckoutFeedback("Indica um email valido para abrir o checkout.");
+      setCheckoutFeedbackTone("error");
+      return;
+    }
+
+    setCheckoutSubmittingPlanId(plan.basePlanId);
+    setCheckoutFeedback("");
+
+    try {
+      const result = await createPaymentCheckoutSession({
+        planId: plan.basePlanId,
+        billingInterval: billingMode,
+        customerName: normalizedName,
+        customerEmail: normalizedEmail,
+      });
+
+      setCheckoutFeedbackTone("success");
+      setCheckoutFeedback("Checkout preparado. Estamos a redirecionar para o Stripe.");
+
+      if (typeof window !== "undefined") {
+        window.location.assign(result.checkoutUrl);
+      }
+    } catch (checkoutError) {
+      setCheckoutFeedbackTone("error");
+      setCheckoutFeedback(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : "Nao foi possivel abrir o checkout neste momento."
+      );
+    } finally {
+      setCheckoutSubmittingPlanId("");
+    }
   }
 
   const guidedUseCases = [
@@ -4166,7 +4272,9 @@ function App() {
     );
   }
 
-  function renderPricingCardsSection() {
+  function renderPricingCardsSection(options?: { enableCheckout?: boolean }) {
+    const enableCheckout = Boolean(options?.enableCheckout);
+
     return (
       <section className="marketing-section" id="landing-pricing">
         <div className="section-head">
@@ -4192,6 +4300,72 @@ function App() {
             </button>
           </div>
         </div>
+
+        {enableCheckout ? (
+          <article className="shell-panel payment-activation-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Ativacao imediata</p>
+                <h3>Prepara o checkout Stripe com os dados certos antes de escolher o plano</h3>
+              </div>
+            </div>
+
+            <div className="payment-activation-grid">
+              <label>
+                Nome
+                <input
+                  type="text"
+                  value={checkoutForm.name}
+                  onChange={(event) =>
+                    setCheckoutForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  placeholder="Nome da pessoa ou da equipa"
+                />
+              </label>
+
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={checkoutForm.email}
+                  onChange={(event) =>
+                    setCheckoutForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  placeholder="billing@agencia.pt"
+                />
+              </label>
+
+              <div className="payment-methods-note">
+                <span>Meios de pagamento ativos</span>
+                <strong>Cartao online via Stripe Checkout</strong>
+                <p>
+                  MB WAY e Multibanco ficam na camada assistida enquanto fechamos um fluxo real e
+                  compativel com subscricoes. Para venda imediata, o checkout robusto hoje e por
+                  cartao.
+                </p>
+
+                <div className="mini-tags">
+                  <span>Stripe Checkout</span>
+                  <span>Subscricao segura</span>
+                  <span>{billingMode === "year" ? "Modo anual ativo" : "Modo mensal ativo"}</span>
+                </div>
+              </div>
+            </div>
+
+            {checkoutFeedback ? (
+              <div className={checkoutFeedbackTone === "success" ? "form-helper success" : "form-helper"}>
+                <strong>{checkoutFeedbackTone === "success" ? "Pagamento" : "Checkout"}</strong>
+                <span>{checkoutFeedback}</span>
+              </div>
+            ) : null}
+          </article>
+        ) : null}
 
         <div className="pricing-grid marketing-pricing-grid">
           {plans.map((plan) => {
@@ -4273,21 +4447,30 @@ function App() {
                         : "select-plan-button"
                     }
                     type="button"
+                    disabled={enableCheckout && checkoutSubmittingPlanId === plan.basePlanId}
                     onClick={() =>
-                      openLandingLogin(
-                        plan.basePlanId,
-                        `${plan.publicName} pronto para demonstracao`,
-                        `Preparamos o perfil demo mais adequado para mostrar como o ${plan.publicName} facilita a operacao logo nos primeiros minutos.`
-                      )
+                      enableCheckout
+                        ? void handleStartCheckout(plan)
+                        : openLandingLogin(
+                            plan.basePlanId,
+                            `${plan.publicName} pronto para demonstracao`,
+                            `Preparamos o perfil demo mais adequado para mostrar como o ${plan.publicName} facilita a operacao logo nos primeiros minutos.`
+                          )
                     }
                   >
-                    {getTrialDaysForPlan(plan.basePlanId) > 0
-                      ? plan.basePlanId === activePlanId
-                        ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias pronto`
-                        : `Comecar trial de ${getTrialDaysForPlan(plan.basePlanId)} dias`
-                      : plan.basePlanId === activePlanId
-                        ? "Demo pronta para este plano"
-                        : "Quero ver este plano em acao"}
+                    {enableCheckout
+                      ? checkoutSubmittingPlanId === plan.basePlanId
+                        ? "A abrir checkout..."
+                        : getTrialDaysForPlan(plan.basePlanId) > 0
+                          ? `Ativar com ${getTrialDaysForPlan(plan.basePlanId)} dias de trial`
+                          : "Abrir checkout deste plano"
+                      : getTrialDaysForPlan(plan.basePlanId) > 0
+                        ? plan.basePlanId === activePlanId
+                          ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias pronto`
+                          : `Comecar trial de ${getTrialDaysForPlan(plan.basePlanId)} dias`
+                        : plan.basePlanId === activePlanId
+                          ? "Demo pronta para este plano"
+                          : "Quero ver este plano em acao"}
                   </button>
                   <button className="ghost-button pricing-secondary-button" type="button" onClick={secondaryAction}>
                     {secondaryLabel}
@@ -5207,7 +5390,7 @@ function App() {
             ),
           onSecondaryClick: () => navigatePublicPage("contact"),
         })}
-        {renderPricingCardsSection()}
+        {renderPricingCardsSection({ enableCheckout: true })}
         <section className="marketing-section public-plan-summary-grid">
           {plans.map((plan) => (
             <article className="public-plan-summary-card" key={plan.id}>

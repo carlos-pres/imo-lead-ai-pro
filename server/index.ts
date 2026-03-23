@@ -7,6 +7,7 @@ import { getComplianceSummary, LEGAL_POLICY_VERSION } from "./compliance.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
 import { sanitizeInputs } from "./middleware/sanitize.js";
 import { PLAN_CONFIG, getDefaultPlanId, getPlanConfig } from "./core/plans.js";
+import { stripeService } from "./lib/stripeService.js";
 import {
   authenticateWorkspaceUser,
   createCommercialPlan,
@@ -44,6 +45,22 @@ const hasDatabaseConfig =
       process.env.PGUSER &&
       process.env.PGDATABASE
   );
+const hasStripeConfig = Boolean(process.env.STRIPE_SECRET_KEY);
+
+const STRIPE_PRICE_ENV_MAP: Record<"basic" | "pro" | "custom", Record<"month" | "year", string>> = {
+  basic: {
+    month: "STRIPE_PRICE_STARTER_MONTHLY",
+    year: "STRIPE_PRICE_STARTER_YEARLY",
+  },
+  pro: {
+    month: "STRIPE_PRICE_PRO_MONTHLY",
+    year: "STRIPE_PRICE_PRO_YEARLY",
+  },
+  custom: {
+    month: "STRIPE_PRICE_ENTERPRISE_MONTHLY",
+    year: "STRIPE_PRICE_ENTERPRISE_YEARLY",
+  },
+};
 
 function normalizeOrigin(value: string) {
   try {
@@ -212,6 +229,21 @@ function isValidPhoneNumber(value: string) {
   return /^[0-9+\s()-]{9,20}$/.test(value.trim());
 }
 
+function getRequestBaseUrl(req: Request) {
+  if (process.env.APP_BASE_URL) {
+    return String(process.env.APP_BASE_URL).replace(/\/$/, "");
+  }
+
+  const protocol = req.headers["x-forwarded-proto"]?.toString().split(",")[0] || req.protocol;
+  const host = req.get("host");
+  return `${protocol}://${host}`;
+}
+
+function getStripePriceId(planId: "basic" | "pro" | "custom", billingInterval: "month" | "year") {
+  const envKey = STRIPE_PRICE_ENV_MAP[planId][billingInterval];
+  return process.env[envKey] || "";
+}
+
 async function getAdminScope(req: Request) {
   const scope = await getRequestScope(req);
 
@@ -337,6 +369,83 @@ app.get("/api/plans", async (_req: Request, res: Response) => {
     res.json(plans);
   } catch (error) {
     sendRouteError(res, error, "Nao foi possivel carregar os planos.");
+  }
+});
+
+app.post("/api/payments/checkout-session", async (req: Request, res: Response) => {
+  const { planId, billingInterval, customerName, customerEmail } = req.body || {};
+
+  if (!hasStripeConfig) {
+    return res.status(400).json({
+      error: "Pagamentos Stripe ainda nao configurados. Falta STRIPE_SECRET_KEY.",
+    });
+  }
+
+  if (!planId || !["basic", "pro", "custom"].includes(String(planId))) {
+    return res.status(400).json({ error: "Plano invalido para checkout." });
+  }
+
+  if (!billingInterval || !["month", "year"].includes(String(billingInterval))) {
+    return res.status(400).json({ error: "Periodicidade invalida para checkout." });
+  }
+
+  if (!customerName || String(customerName).trim().length < 2) {
+    return res.status(400).json({ error: "Nome invalido para ativar o pagamento." });
+  }
+
+  if (!customerEmail || !isValidEmailAddress(String(customerEmail))) {
+    return res.status(400).json({ error: "Email invalido para ativar o pagamento." });
+  }
+
+  const normalizedPlanId = String(planId) as "basic" | "pro" | "custom";
+  const normalizedBillingInterval = String(billingInterval) as "month" | "year";
+  const stripePriceId = getStripePriceId(normalizedPlanId, normalizedBillingInterval);
+
+  if (!stripePriceId) {
+    return res.status(400).json({
+      error:
+        "Preco Stripe nao configurado para este plano. Define o STRIPE_PRICE correspondente no ambiente.",
+    });
+  }
+
+  try {
+    const plan = getPlanConfig(normalizedPlanId);
+    const customer = await stripeService.createCustomer(
+      String(customerEmail).trim(),
+      String(customerName).trim(),
+      {
+        planId: normalizedPlanId,
+        billingInterval: normalizedBillingInterval,
+      }
+    );
+
+    const baseUrl = getRequestBaseUrl(req);
+    const successUrl = `${baseUrl}/precos?checkout=success&plan=${normalizedPlanId}&billing=${normalizedBillingInterval}`;
+    const cancelUrl = `${baseUrl}/precos?checkout=cancel&plan=${normalizedPlanId}&billing=${normalizedBillingInterval}`;
+
+    const session = await stripeService.createCheckoutSession(
+      customer.id,
+      stripePriceId,
+      successUrl,
+      cancelUrl,
+      "subscription",
+      plan.trialDays > 0 ? plan.trialDays : undefined
+    );
+
+    if (!session.url) {
+      throw new Error("Stripe nao devolveu URL de checkout para esta sessao.");
+    }
+
+    res.status(201).json({
+      ok: true,
+      provider: "stripe",
+      checkoutUrl: session.url,
+      sessionId: session.id,
+      paymentMethods: ["card"],
+    });
+  } catch (error) {
+    console.error("Erro ao criar checkout Stripe", error);
+    sendRouteError(res, error, "Nao foi possivel criar a sessao de checkout.");
   }
 });
 

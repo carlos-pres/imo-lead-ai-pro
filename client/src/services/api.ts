@@ -117,6 +117,21 @@ export type TrialRequestInput = {
   policyVersion: string;
 };
 
+export type PaymentCheckoutInput = {
+  planId: PlanType;
+  billingInterval: "month" | "year";
+  customerName: string;
+  customerEmail: string;
+};
+
+export type PaymentCheckoutSession = {
+  ok: boolean;
+  provider: "stripe";
+  checkoutUrl: string;
+  sessionId: string;
+  paymentMethods: string[];
+};
+
 export type WorkspaceUser = {
   id: string;
   name: string;
@@ -352,6 +367,18 @@ export async function createTrialRequest(data: TrialRequestInput) {
     trialRequestId: string;
     message: string;
   }>(response);
+}
+
+export async function createPaymentCheckoutSession(data: PaymentCheckoutInput) {
+  const response = await apiFetch("/api/payments/checkout-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<PaymentCheckoutSession>(response);
 }
 
 export async function getAdminPlans() {
