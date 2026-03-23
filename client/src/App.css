@@ -852,6 +852,45 @@
   gap: 8px;
 }
 
+.agent-tier-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.agent-tier-item {
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(252, 249, 244, 0.86);
+}
+
+.agent-tier-item.active {
+  border-color: rgba(214, 132, 74, 0.36);
+  box-shadow: 0 14px 28px rgba(214, 132, 74, 0.12);
+  background: linear-gradient(135deg, rgba(255, 248, 239, 0.96), rgba(255, 241, 229, 0.92));
+}
+
+.agent-tier-item span {
+  display: block;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7f6f5c;
+}
+
+.agent-tier-item strong {
+  display: block;
+  margin-top: 8px;
+  color: #132237;
+}
+
+.agent-tier-item p {
+  margin: 8px 0 0;
+  color: #5c6b80;
+  line-height: 1.5;
+}
+
 .sidebar-meta p {
   margin: 0;
 }

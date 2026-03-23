@@ -1411,6 +1411,7 @@ function App() {
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
+  const currentWorkspacePlanId = session?.user.planId || activePlanId;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
@@ -1442,6 +1443,19 @@ function App() {
       detail: `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
     },
   ];
+  const agentTierLadder = plans
+    .slice()
+    .sort((left, right) => {
+      const order = { basic: 0, pro: 1, custom: 2 };
+      return order[left.basePlanId] - order[right.basePlanId];
+    })
+    .map((plan) => ({
+      id: plan.basePlanId,
+      publicName: plan.publicName,
+      agentLabel: plan.agentLabel,
+      summary: plan.agentCapabilities[0] || plan.recommendedFor,
+      isActive: plan.basePlanId === currentWorkspacePlanId,
+    }));
   const landingFeatureCards = [
     {
       eyebrow: "Prospeccao",
@@ -6086,6 +6100,25 @@ function App() {
             <p>{activePlan?.reportsLabel || "Relatorios semanais"}</p>
             <p>{activePlan?.annualDiscountPercent || 20}% desconto anual fixo</p>
             <p>{activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}</p>
+          </div>
+        </section>
+
+        <section className="sidebar-panel">
+          <span>Escala do agente</span>
+          <strong>Niveis por plano</strong>
+          <div className="agent-tier-list">
+            {agentTierLadder.map((plan) => (
+              <article
+                className={plan.isActive ? "agent-tier-item active" : "agent-tier-item"}
+                key={plan.id}
+              >
+                <div>
+                  <span>{plan.publicName}</span>
+                  <strong>{plan.agentLabel}</strong>
+                </div>
+                <p>{plan.summary}</p>
+              </article>
+            ))}
           </div>
         </section>
       </aside>
