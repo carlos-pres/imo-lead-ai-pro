@@ -251,7 +251,7 @@ function createEmptyAdminPlanDraft(): AdminPlanDraft {
     publicName: "",
     recommendedFor: "",
     includedCountryCodes: "PT\nES",
-    leadLimit: "600",
+    leadLimit: "250",
     includedUsers: "7",
     allowsExtraUsers: true,
     extraUserMonthlyPrice: "17",
@@ -499,7 +499,7 @@ function getStageLabel(stage: PipelineStage) {
 
 function formatLeadLimit(limit: number) {
   if (limit >= 999999) {
-    return "Capacidade enterprise";
+    return "Capacidade personalizada / fair use";
   }
 
   return `Capacidade ate ${limit} leads/mes`;

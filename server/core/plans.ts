@@ -80,7 +80,7 @@ function formatPriceLabel(value: number) {
 
 function getLeadCapacityLabel(leadLimit: number) {
   return leadLimit >= 999999
-    ? "Capacidade enterprise para leads geridas e analisadas"
+    ? "Capacidade personalizada em regime fair use para leads geridas e analisadas"
     : `Capacidade ate ${leadLimit} leads geridas/analisadas por mes`;
 }
 
@@ -102,7 +102,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     recommendedFor: "Consultor individual ou pequena operacao local com trial inicial",
     trialDays: 15,
     includedCountryCodes: ["PT"],
-    leadLimit: 120,
+    leadLimit: 50,
     includedUsers: 1,
     allowsExtraUsers: false,
     extraUserMonthlyPrice: 0,
@@ -131,7 +131,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     ],
     features: [
       "15 dias de trial para validar a operacao sem friccao",
-      getLeadCapacityLabel(120),
+      getLeadCapacityLabel(50),
       "1 utilizador incluido e 1 loja",
       getExtraUsersLabel({
         allowsExtraUsers: false,
@@ -150,7 +150,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     recommendedFor: "Agencia em crescimento com multi-owner e foco Iberia",
     trialDays: 0,
     includedCountryCodes: ["PT", "ES"],
-    leadLimit: 600,
+    leadLimit: 250,
     includedUsers: 7,
     allowsExtraUsers: true,
     extraUserMonthlyPrice: 17,
@@ -180,7 +180,7 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     ],
     features: [
       "Upgrade natural apos o trial Starter",
-      getLeadCapacityLabel(600),
+      getLeadCapacityLabel(250),
       "7 utilizadores incluidos",
       getExtraUsersLabel({
         allowsExtraUsers: true,
