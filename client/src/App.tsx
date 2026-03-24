@@ -1,6 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
-import homeFullImg from "../../home_full.png";
 import "./App.css";
 import {
   clearSessionToken,
@@ -38,7 +37,14 @@ import {
 } from "./services/api";
 import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
 
-type ViewId = "dashboard" | "pipeline" | "teams" | "reports" | "pricing" | "admin";
+type ViewId =
+  | "dashboard"
+  | "automation"
+  | "pipeline"
+  | "teams"
+  | "reports"
+  | "pricing"
+  | "admin";
 type PublicPageId = "home" | "features" | "pricing" | "contact" | "login";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
@@ -128,6 +134,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     eyebrow: "Control tower",
     description: "Visao executiva da operacao e dos sinais do negocio.",
+  },
+  {
+    id: "automation",
+    label: "Automacao",
+    eyebrow: "Cadencia",
+    description: "Agente, comunicacao e follow-ups prontos para acao imediata.",
   },
   {
     id: "pipeline",
@@ -461,6 +473,10 @@ function toInputDateTime(value: string | null | undefined) {
   }
 
   return new Date(value).toISOString().slice(0, 16);
+}
+
+function createNextFollowUp(hoursFromNow: number) {
+  return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString().slice(0, 16);
 }
 
 function getBucketLabel(bucket: RoutingBucket) {
@@ -1256,6 +1272,29 @@ function App() {
     }
   }
 
+  function buildWorkflowDraftFromLead(lead: Lead): UpdateLeadWorkflowInput {
+    return {
+      pipelineStage: lead.pipelineStage,
+      assignedOwner: lead.assignedOwner,
+      nextStep: lead.nextStep,
+      followUpAt: toInputDateTime(lead.followUpAt),
+      lastContactAt: toInputDateTime(lead.lastContactAt),
+    };
+  }
+
+  function syncUpdatedLead(updatedLead: Lead) {
+    const nextLeads = leads.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead));
+
+    startTransition(() => {
+      setLeads(nextLeads);
+      setStats(deriveStats(nextLeads));
+      setWorkflowDrafts((current) => ({
+        ...current,
+        [updatedLead.id]: buildWorkflowDraftFromLead(updatedLead),
+      }));
+    });
+  }
+
   function handleWorkflowChange(leadId: string, patch: UpdateLeadWorkflowInput) {
     setWorkflowDrafts((current) => ({
       ...current,
@@ -1282,28 +1321,49 @@ function App() {
         followUpAt: draft.followUpAt || null,
         lastContactAt: draft.lastContactAt || null,
       });
-
-      const nextLeads = leads.map((lead) => (lead.id === leadId ? updatedLead : lead));
-
-      startTransition(() => {
-        setLeads(nextLeads);
-        setStats(deriveStats(nextLeads));
-        setWorkflowDrafts((current) => ({
-          ...current,
-          [leadId]: {
-            pipelineStage: updatedLead.pipelineStage,
-            assignedOwner: updatedLead.assignedOwner,
-            nextStep: updatedLead.nextStep,
-            followUpAt: toInputDateTime(updatedLead.followUpAt),
-            lastContactAt: toInputDateTime(updatedLead.lastContactAt),
-          },
-        }));
-      });
+      syncUpdatedLead(updatedLead);
     } catch (workflowError) {
       setError(
         workflowError instanceof Error
           ? workflowError.message
           : "Falha ao atualizar workflow"
+      );
+    } finally {
+      setSavingLeadId("");
+    }
+  }
+
+  async function handleQuickWorkflowAction(
+    lead: Lead,
+    patch: UpdateLeadWorkflowInput,
+    successMessage: string
+  ) {
+    const draft = workflowDrafts[lead.id] || buildWorkflowDraftFromLead(lead);
+    setSavingLeadId(lead.id);
+    setError("");
+
+    try {
+      const updatedLead = await updateLeadWorkflow(lead.id, {
+        pipelineStage: patch.pipelineStage ?? draft.pipelineStage ?? lead.pipelineStage,
+        assignedOwner: patch.assignedOwner ?? draft.assignedOwner ?? lead.assignedOwner,
+        nextStep: patch.nextStep ?? draft.nextStep ?? lead.nextStep,
+        followUpAt:
+          patch.followUpAt !== undefined
+            ? patch.followUpAt || null
+            : draft.followUpAt || toInputDateTime(lead.followUpAt) || null,
+        lastContactAt:
+          patch.lastContactAt !== undefined
+            ? patch.lastContactAt || null
+            : draft.lastContactAt || toInputDateTime(lead.lastContactAt) || null,
+      });
+
+      syncUpdatedLead(updatedLead);
+      publishWorkspaceFeedback(successMessage);
+    } catch (workflowError) {
+      setError(
+        workflowError instanceof Error
+          ? workflowError.message
+          : "Falha ao executar a automacao"
       );
     } finally {
       setSavingLeadId("");
@@ -1950,6 +2010,30 @@ function App() {
       ? `https://wa.me/${communicationPhone}?text=${encodeURIComponent(communicationWhatsAppBody)}`
       : "";
   const activeAgentCapabilities = (activePlan?.agentCapabilities || []).slice(0, 4);
+  const leadsWithEmailCount = leads.filter((lead) => Boolean(extractEmailFromContact(lead.contact))).length;
+  const leadsWithWhatsAppCount = leads.filter((lead) =>
+    Boolean(extractPhoneFromContact(lead.contact))
+  ).length;
+  const automationFocusLeads = [...leads]
+    .filter(
+      (lead) =>
+        Boolean(extractEmailFromContact(lead.contact)) ||
+        Boolean(extractPhoneFromContact(lead.contact)) ||
+        Boolean(lead.followUpAt)
+    )
+    .sort((left, right) => {
+      const leftDue = left.followUpAt ? new Date(left.followUpAt).getTime() : Number.MAX_SAFE_INTEGER;
+      const rightDue = right.followUpAt
+        ? new Date(right.followUpAt).getTime()
+        : Number.MAX_SAFE_INTEGER;
+
+      if (leftDue !== rightDue) {
+        return leftDue - rightDue;
+      }
+
+      return right.aiScore - left.aiScore;
+    })
+    .slice(0, 6);
   const radarHighlight = topMarket
     ? `${topMarket.market} lidera o radar com ${topMarket.totalLeads} leads, score medio ${topMarket.averageAiScore} e ${topMarket.overdueFollowUps} follow-ups atrasados.`
     : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.";
@@ -2398,31 +2482,31 @@ function App() {
             </div>
           </div>
 
-          <div className="hero-visual market-stage">
-            <img src={homeFullImg} alt="Painel enterprise ImoLead AI Pro" />
-            <div className="market-stage-grid">
-              <div className="insight-card spotlight-card">
-                <span>Radar do mercado</span>
-                <strong>
-                  {topMarket
-                    ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
-                    : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
-                </strong>
-              </div>
+          <div className="hero-visual command-surface">
+            <article className="command-surface-card command-surface-primary">
+              <span>Radar do mercado</span>
+              <strong>
+                {topMarket
+                  ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
+                  : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
+              </strong>
+              <p>{radarHighlight}</p>
+            </article>
 
-              <article className="floating-card metric-card">
+            <div className="command-surface-grid">
+              <article className="command-surface-card">
                 <span>Heat index</span>
                 <strong>{hotLeadRatio}%</strong>
-                <p>Da carteira atual esta em estado quente.</p>
+                <p>Carteira em estado quente e com urgencia comercial visivel.</p>
               </article>
 
-              <article className="floating-card metric-card">
+              <article className="command-surface-card">
                 <span>Fonte dominante</span>
                 <strong>{dominantSource}</strong>
-                <p>Canal com maior volume na operacao atual.</p>
+                <p>Origem mais forte a alimentar a operacao neste momento.</p>
               </article>
 
-              <article className="floating-card routing-card">
+              <article className="command-surface-card">
                 <span>Routing mix</span>
                 <div className="routing-mix">
                   {routingMix.map((item) => (
@@ -2432,6 +2516,16 @@ function App() {
                     </div>
                   ))}
                 </div>
+              </article>
+
+              <article className="command-surface-card">
+                <span>Agente ativo</span>
+                <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
+                <p>
+                  {activePlan
+                    ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cadencia operacional pronta.`
+                    : "Workspace pronto para ativar o agente comercial."}
+                </p>
               </article>
             </div>
           </div>
@@ -2463,8 +2557,8 @@ function App() {
                 <p className="eyebrow">Ataque prioritario</p>
                 <h3>Leads quentes a proteger</h3>
               </div>
-              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                Abrir pipeline
+              <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                Abrir automacao
               </button>
             </div>
 
@@ -2721,6 +2815,249 @@ function App() {
               </p>
             </article>
           </div>
+        </section>
+      </div>
+    );
+  }
+
+  function renderAutomationView() {
+    return (
+      <div className="page-stack">
+        <section className="hero-panel shell-panel command-panel">
+          <div className="hero-copy command-copy">
+            <p className="eyebrow">Automacao operacional</p>
+            <h2>Agente, radar e comunicacao prontos para disparar sem trabalho solto.</h2>
+            <p className="hero-text">
+              Esta camada mostra onde agir agora, que texto sai por email ou WhatsApp e que
+              follow-up fica agendado com um clique para a equipa nao perder ritmo.
+            </p>
+
+            <div className="hero-actions hero-actions-grid">
+              <div className="status-chip">{activePlan?.agentLabel || marketingAiLabel}</div>
+              <div className="status-chip muted">{leadsWithEmailCount} leads com email</div>
+              <div className="status-chip muted">{leadsWithWhatsAppCount} leads com WhatsApp</div>
+              <div className="status-chip muted">
+                {followUpQueue.length} follow-ups ativos · {dashboardStats.overdue_followups} em atraso
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual command-surface">
+            <article className="command-surface-card command-surface-primary">
+              <span>Agente em campo</span>
+              <strong>
+                {activePlan?.agentLabel || marketingAiLabel} com {activePlan?.publicName || "workspace"} ativo
+              </strong>
+              <p>
+                {activeAgentCapabilities.length > 0
+                  ? activeAgentCapabilities.join(" · ")
+                  : "Ativa um plano comercial para desbloquear guidance, outreach e radar completo."}
+              </p>
+            </article>
+
+            <div className="command-surface-grid">
+              <article className="command-surface-card">
+                <span>Fila pronta</span>
+                <strong>{automationFocusLeads.length} leads acionaveis</strong>
+                <p>Leads com contacto ou follow-up que podem sair da fila agora.</p>
+              </article>
+
+              <article className="command-surface-card">
+                <span>Radar dominante</span>
+                <strong>{topMarket?.market || "Portugal"}</strong>
+                <p>{topRadarSources}</p>
+              </article>
+
+              <article className="command-surface-card">
+                <span>Cadencia viva</span>
+                <strong>{dashboardStats.urgent_actions} acoes urgentes</strong>
+                <p>Follow-up e outreach concentrados na mesma mesa operacional.</p>
+              </article>
+
+              <article className="command-surface-card">
+                <span>Comunicacao</span>
+                <strong>Email + WhatsApp</strong>
+                <p>Mensagens do agente prontas para abrir, copiar e registar.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {workspaceFeedback ? <p className="feedback success">{workspaceFeedback}</p> : null}
+
+        <section className="dashboard-grid">
+          <article className="shell-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Fila de automacao</p>
+                <h3>Leads com proxima acao pronta</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
+                Abrir pipeline
+              </button>
+            </div>
+
+            <div className="automation-list">
+              {automationFocusLeads.length === 0 ? (
+                <p className="feedback">Ainda nao ha leads prontos para automacao.</p>
+              ) : null}
+
+              {automationFocusLeads.map((lead) => {
+                const email = extractEmailFromContact(lead.contact);
+                const phone = extractPhoneFromContact(lead.contact);
+                const mailto = email
+                  ? `mailto:${email}?subject=${encodeURIComponent(buildLeadEmailSubject(lead))}&body=${encodeURIComponent(buildLeadEmailBody(lead))}`
+                  : "";
+                const whatsappUrl = phone
+                  ? `https://wa.me/${phone}?text=${encodeURIComponent(buildLeadWhatsAppMessage(lead))}`
+                  : "";
+
+                return (
+                  <article className="automation-card" key={lead.id}>
+                    <div className="automation-card-head">
+                      <div>
+                        <strong>{lead.name}</strong>
+                        <p>
+                          {lead.location} · {lead.officeName} · {getStageLabel(lead.pipelineStage)}
+                        </p>
+                      </div>
+                      <div className="automation-meta">
+                        <span>AI {lead.aiScore}</span>
+                        <span>{getBucketLabel(lead.routingBucket)}</span>
+                        <span>{formatCurrency(lead.price, lead.currencyCode)}</span>
+                      </div>
+                    </div>
+
+                    <p className="automation-copy">{lead.recommendedAction}</p>
+
+                    <div className="automation-pill-row">
+                      <span>Email {email || "por validar"}</span>
+                      <span>WhatsApp {phone ? `+${phone}` : "sem numero"}</span>
+                      <span>
+                        Follow-up {lead.followUpAt ? formatDate(lead.followUpAt) : "nao agendado"}
+                      </span>
+                    </div>
+
+                    <div className="automation-action-row">
+                      <button
+                        className="primary-button"
+                        type="button"
+                        disabled={!email}
+                        onClick={() =>
+                          handleOpenExternal(mailto, "Este lead ainda nao tem email para abrir a mensagem.")
+                        }
+                      >
+                        Abrir email
+                      </button>
+                      <button
+                        className="primary-button"
+                        type="button"
+                        disabled={!phone}
+                        onClick={() =>
+                          handleOpenExternal(
+                            whatsappUrl,
+                            "Este lead ainda nao tem numero valido para WhatsApp."
+                          )
+                        }
+                      >
+                        Abrir WhatsApp
+                      </button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        onClick={() =>
+                          void handleCopyText(
+                            lead.outreachMessage || buildLeadWhatsAppMessage(lead),
+                            "Mensagem do agente copiada para a equipa."
+                          )
+                        }
+                      >
+                        Copiar script
+                      </button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={savingLeadId === lead.id}
+                        onClick={() =>
+                          void handleQuickWorkflowAction(
+                            lead,
+                            {
+                              nextStep: "Follow-up automatico agendado pelo cockpit",
+                              followUpAt: createNextFollowUp(24),
+                            },
+                            "Follow-up agendado para as proximas 24h."
+                          )
+                        }
+                      >
+                        Follow-up 24h
+                      </button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={savingLeadId === lead.id}
+                        onClick={() =>
+                          void handleQuickWorkflowAction(
+                            lead,
+                            {
+                              pipelineStage: "contactado",
+                              nextStep: "Validar resposta e preparar qualificacao",
+                              lastContactAt: new Date().toISOString(),
+                              followUpAt: createNextFollowUp(24),
+                            },
+                            "Lead marcado como contactado e follow-up preparado."
+                          )
+                        }
+                      >
+                        Marcar contactado
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </article>
+
+          <article className="shell-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Camada do agente</p>
+                <h3>Radar e comunicacao ligados ao plano ativo</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
+                Ver planos
+              </button>
+            </div>
+
+            <div className="signal-grid">
+              <article className="signal-card">
+                <span>Agente AI</span>
+                <strong>{activePlan?.agentLabel || marketingAiLabel}</strong>
+                <p>{activePlan?.reportsLabel || "Relatorios prontos para orientar a cadencia comercial."}</p>
+              </article>
+
+              <article className="signal-card">
+                <span>Radar</span>
+                <strong>{topMarket?.market || "Portugal"}</strong>
+                <p>{radarHighlight}</p>
+              </article>
+
+              <article className="signal-card">
+                <span>Comunicacao</span>
+                <strong>{communicationLead?.name || "Sem lead em foco"}</strong>
+                <p>
+                  {communicationLead
+                    ? `${communicationLead.outreachChannel} · ${communicationLead.recommendedAction}`
+                    : "Quando houver prioridade comercial, o cockpit abre o melhor canal e mensagem."}
+                </p>
+              </article>
+
+              <article className="signal-card">
+                <span>Automacao ativa</span>
+                <strong>{dashboardStats.urgent_actions} tarefas para atacar</strong>
+                <p>Email, WhatsApp e follow-up saem da mesma mesa e deixam rasto no workflow.</p>
+              </article>
+            </div>
+          </article>
         </section>
       </div>
     );
@@ -5726,6 +6063,40 @@ function App() {
           ))}
         </section>
 
+        <section className="marketing-section public-sales-grid">
+          <article className="public-sales-card public-sales-card-featured">
+            <span>Camada operacional</span>
+            <strong>{activePlan?.agentLabel || marketingAiLabel} a ler mercado, equipa e ritmo na mesma mesa.</strong>
+            <p>
+              A home passa a mostrar o que interessa logo na entrada: agente, radar, comunicacao
+              e automacao em vez de uma promessa vaga de software.
+            </p>
+            <div className="public-stage-pill-row">
+              <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+              <span>{coverageLabel}</span>
+              <span>{dashboardStats.urgent_actions} acoes urgentes</span>
+            </div>
+          </article>
+
+          <article className="public-sales-card">
+            <span>Radar do mercado</span>
+            <strong>{topMarket?.market || "Portugal"}</strong>
+            <p>{radarHighlight}</p>
+          </article>
+
+          <article className="public-sales-card">
+            <span>Comunicacao</span>
+            <strong>Email e WhatsApp no mesmo fluxo</strong>
+            <p>O agente prepara a mensagem e a equipa abre o canal certo sem sair do cockpit.</p>
+          </article>
+
+          <article className="public-sales-card">
+            <span>Automacao</span>
+            <strong>{followUpQueue.length} follow-ups ativos</strong>
+            <p>Cadencia comercial pronta com prioridade, owner e proxima melhor acao.</p>
+          </article>
+        </section>
+
         <section className="marketing-section">
           <div className="section-head">
             <div>
@@ -6149,6 +6520,10 @@ function App() {
   function renderActiveView() {
     if (activeView === "pipeline") {
       return renderPipelineView();
+    }
+
+    if (activeView === "automation") {
+      return renderAutomationView();
     }
 
     if (activeView === "teams") {
