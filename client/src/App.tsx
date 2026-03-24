@@ -5304,10 +5304,10 @@ function App() {
         <div className="public-login-intro-grid">
           <div className="public-login-copy">
             <p className="eyebrow">Acesso protegido</p>
-            <h1>Entra no workspace certo sem perder a forca comercial.</h1>
+            <h1>Acesso real para contas, trial protegido e demos assistidas.</h1>
             <p className="public-login-lead">
-              Esta entrada serve contas reais, trial protegido e demos assistidas. O objetivo aqui
-              e simples: mostrar um acesso serio, curto e coerente com o plano que estas a vender.
+              O cliente deve perceber logo o plano ativo, o nivel do agente e o passo seguinte
+              entre login, trial e demonstracao. Menos ruido, mais confianca comercial.
             </p>
             <p className="hero-text">
               A demonstração publica fica fechada. Esta entrada serve contas reais, trials
@@ -5318,28 +5318,16 @@ function App() {
               <button
                 className="primary-button"
                 type="button"
-                onClick={() =>
-                  openLandingPricing(
-                    activePlanId,
-                    "Comparacao orientada pelo plano selecionado",
-                    "Levamos-te para a oferta ja com o plano ativo, desconto anual e caminho natural de upgrade visiveis."
-                  )
-                }
+                onClick={() => navigatePublicPage("pricing")}
               >
                 Ver planos
               </button>
               <button
                 className="ghost-button"
                 type="button"
-                onClick={() =>
-                  openLandingLogin(
-                    activePlanId,
-                    "Demonstracao assistida preparada para a tua realidade",
-                    "Mantemos o plano ativo, ajustamos a guidance e abrimos o acesso de forma coerente com o teu contexto comercial."
-                  )
-                }
+                onClick={() => navigatePublicPage("contact")}
               >
-                Pedir demonstracao
+                Falar com a equipa
               </button>
             </div>
 
@@ -5354,31 +5342,42 @@ function App() {
 
           <div className="public-login-stage-panel">
             <article className="public-login-stage-card public-login-stage-card-wide">
-              <span>Workspace preparado</span>
-              <strong>{activePlan?.publicName || "ImoLead Pro"} pronto para mostrar valor real</strong>
+              <span>Contexto ativo</span>
+              <strong>{activePlan?.publicName || "ImoLead Pro"} com {featuredPlan?.agentLabel || marketingAiLabel}</strong>
               <p>
-                O login nao aparece solto. Ele entra no fluxo comercial com escopo, discurso e
-                governanca para a demonstracao parecer produto serio e nao uma area tecnica perdida.
+                O acesso fica ligado ao plano, ao agente e ao mercado certos. A entrada deixa de
+                parecer tecnica e passa a parecer parte da venda.
               </p>
+              <div className="mini-tags">
+                <span>{coverageLabel}</span>
+                {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : <span>Checkout imediato</span>}
+                <span>{featuredPlan?.agentLabel || marketingAiLabel}</span>
+              </div>
             </article>
 
             <div className="public-login-stage-grid">
               <article className="public-login-stage-card">
-                <span>Validacao do trial</span>
-                <strong>Email e telefone unicos protegem a oferta inicial</strong>
-                <p>Reduz abuso, filtra curiosos e empurra a conversa certa para o plano Pro.</p>
+                <span>Trial protegido</span>
+                <strong>Email e telefone unicos controlam a oferta inicial</strong>
+                <p>Reduz abuso, filtra curiosos e mantem o Starter credivel antes da subida para Pro.</p>
               </article>
 
               <article className="public-login-stage-card">
-                <span>Governanca comercial</span>
-                <strong>Perfis, lojas e desks entram com responsabilidade real</strong>
-                <p>Admin, manager e consultant acedem ao que lhes pertence sem desorganizar a demo.</p>
+                <span>Perfis e desks</span>
+                <strong>Admin, manager e consultant entram com escopo real</strong>
+                <p>O acesso respeita carteira, loja e equipa sem transformar a demonstracao em caos.</p>
               </article>
 
               <article className="public-login-stage-card">
-                <span>Cobertura operacional</span>
-                <strong>{coverageLabel}</strong>
+                <span>Proximo passo</span>
+                <strong>{landingGuidance.title}</strong>
                 <p>{landingGuidance.detail}</p>
+              </article>
+
+              <article className="public-login-stage-card">
+                <span>Contacto comercial</span>
+                <strong>carlospsantos19820@gmail.com</strong>
+                <p>Canal direto para demonstracao assistida, proposta e ativacao enterprise.</p>
               </article>
             </div>
           </div>
@@ -5407,16 +5406,14 @@ function App() {
         </div>
 
         <div className="auth-guidance-card">
-          <span>Contexto ativo</span>
+          <span>Plano ativo</span>
           <strong>{activePlan?.publicName || "ImoLead Pro"} selecionado para este acesso</strong>
-          <p>
-            Se precisares de demonstracao, usamos o plano e o perfil certos. Se ja tens conta,
-            entra abaixo e continua no teu workspace.
-          </p>
+          <p>{landingGuidance.detail}</p>
 
           <div className="mini-tags">
             <span>{activePlan?.publicName || "ImoLead Pro"}</span>
             {activePlanTrialDays > 0 ? <span>{activePlanTrialDays} dias trial</span> : null}
+            <span>{activePlan?.agentLabel || marketingAiLabel}</span>
             <span>{coverageLabel}</span>
           </div>
         </div>
@@ -5434,13 +5431,7 @@ function App() {
             <button
               className="secondary-button"
               type="button"
-              onClick={() =>
-                openLandingLogin(
-                  activePlanId,
-                  "Demo assistida recomendada",
-                  "A equipa prepara a demonstracao com o plano certo, sem expor credenciais demo na frente publica."
-                )
-              }
+              onClick={() => navigatePublicPage("contact")}
             >
               Pedir demo assistida
             </button>
@@ -5459,6 +5450,40 @@ function App() {
             Rever planos
           </button>
         </div>
+
+        <form className="lead-form auth-form" onSubmit={handleLogin}>
+          <label>
+            Email
+            <input
+              value={loginForm.email}
+              onChange={(event) =>
+                setLoginForm((current) => ({ ...current, email: event.target.value }))
+              }
+              placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt"}
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={loginForm.password}
+              onChange={(event) =>
+                setLoginForm((current) => ({ ...current, password: event.target.value }))
+              }
+              placeholder={PUBLIC_DEMO_ENABLED ? "Demo123!" : "Acesso seguro"}
+              required
+            />
+          </label>
+
+          {error ? <p className="feedback error">{error}</p> : null}
+          {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
+
+          <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
+            {authSubmitting ? "A entrar..." : "Entrar no workspace"}
+          </button>
+        </form>
 
         {activePlanTrialDays > 0 ? (
           <section className="trial-card">
@@ -5611,40 +5636,6 @@ function App() {
             </form>
           </section>
         ) : null}
-
-        <form className="lead-form auth-form" onSubmit={handleLogin}>
-          <label>
-            Email
-            <input
-              value={loginForm.email}
-              onChange={(event) =>
-                setLoginForm((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt"}
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              value={loginForm.password}
-              onChange={(event) =>
-                setLoginForm((current) => ({ ...current, password: event.target.value }))
-              }
-              placeholder={PUBLIC_DEMO_ENABLED ? "Demo123!" : "Acesso seguro"}
-              required
-            />
-          </label>
-
-          {error ? <p className="feedback error">{error}</p> : null}
-          {authBooting ? <p className="feedback">A validar sessao existente...</p> : null}
-
-          <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
-            {authSubmitting ? "A entrar..." : "Entrar no workspace"}
-          </button>
-        </form>
 
         {PUBLIC_DEMO_ENABLED ? (
           <div className="auth-demo-grid">
