@@ -1633,20 +1633,20 @@ function App() {
   const landingTestimonials = [
     {
       quote:
-        "O valor aqui nao e so CRM. E a sensacao de finalmente termos uma operacao comercial organizada por prioridade real.",
+        "Isto nao soa a CRM horizontal. Soa a operacao comercial com prioridade, routing e cadencia visiveis.",
       author: "Direcao Comercial",
       role: "Rede imobiliaria em piloto",
     },
     {
       quote:
-        "A plataforma parece ferramenta de direcao e nao apenas software de registo. Isso muda a forma como a equipa usa o sistema.",
+        "Quando a equipa ve agente, radar e follow-up no mesmo cockpit, a adesao deixa de depender de improviso.",
       author: "Gestao de Expansao",
-      role: "Desk Iberia",
+      role: "Mesa Iberia",
     },
     {
       quote:
-        "Quando a frente comercial parece forte e a area interna entrega controlo real, a reuniao muda de tom e a venda fica muito mais facil.",
-      author: "Founder / Operacao",
+        "A diferenca esta em mostrar o que a plataforma faz logo na demo, sem slides a compensar falta de produto.",
+      author: "Operacao / Produto",
       role: "ImoLead AI Pro",
     },
   ];
@@ -1682,17 +1682,17 @@ function App() {
     {
       question: "Isto e um CRM generico?",
       answer:
-        "Nao. O posicionamento certo e plataforma operacional para imobiliario, com foco em triagem, routing, mercado e follow-up.",
+        "Nao. E uma camada operacional para imobiliario com triagem, routing, radar de mercado e execucao comercial.",
     },
     {
       question: "Serve so para Portugal?",
       answer:
-        "Portugal e o mercado de entrada, mas a estrutura ja suporta desks, idiomas e expansao Iberia/Europa.",
+        "Portugal e o mercado de entrada. A estrutura ja nasce preparada para Iberia, idiomas e crescimento europeu.",
     },
     {
       question: "O agente AI muda por plano?",
       answer:
-        "Sim. O plano condiciona cobertura geografica, profundidade do agente e a capacidade operacional exposta ao cliente.",
+        "Sim. O plano define cobertura geografica, nivel do agente, relatorios e capacidade operacional entregue ao cliente.",
     },
   ];
   const visibleNavItems = canAccessAdmin
@@ -5521,12 +5521,30 @@ function App() {
         <article className="shell-panel marketing-story-card">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Prova social</p>
-              <h3>O discurso que queremos que o mercado repita</h3>
+              <p className="eyebrow">Sinais de valor</p>
+              <h3>O que um decisor entende em menos de um minuto</h3>
             </div>
           </div>
 
-          <div className="marketing-testimonial-list">
+          <div className="marketing-proof-signal-grid">
+            <article className="marketing-proof-signal-card">
+              <span>Radar do mercado</span>
+              <strong>{topMarket?.market || "Portugal"}</strong>
+              <p>{radarHighlight}</p>
+            </article>
+            <article className="marketing-proof-signal-card">
+              <span>Agente ativo</span>
+              <strong>{activePlan?.agentLabel || marketingAiLabel}</strong>
+              <p>{activePlan?.reportsLabel || "Relatorios e guidance operacional ligados ao plano ativo."}</p>
+            </article>
+            <article className="marketing-proof-signal-card">
+              <span>Cadencia comercial</span>
+              <strong>{dashboardStats.urgent_actions} acoes urgentes</strong>
+              <p>{followUpQueue.length} follow-ups ativos e prioridade organizada por desk e owner.</p>
+            </article>
+          </div>
+
+          <div className="marketing-testimonial-list compact">
             {landingTestimonials.map((item) => (
               <blockquote className="marketing-testimonial-card" key={item.author}>
                 <p>{item.quote}</p>
@@ -5542,8 +5560,8 @@ function App() {
         <article className="shell-panel marketing-story-card">
           <div className="section-head">
             <div>
-              <p className="eyebrow">FAQ</p>
-              <h3>Resposta curta para as duvidas que travam a venda</h3>
+              <p className="eyebrow">Objeções</p>
+              <h3>Respostas curtas para nao perder a conversa no detalhe</h3>
             </div>
           </div>
 
@@ -5591,13 +5609,19 @@ function App() {
   function renderFinalCtaSection() {
     return (
       <section className="shell-panel marketing-final-cta" id="landing-contact">
-        <div>
+        <div className="marketing-final-copy">
           <p className="eyebrow">Fecho comercial</p>
-          <h3>Vender isto deve parecer uma demonstracao, nao uma promessa vaga</h3>
+          <h3>O passo seguinte deve ser uma demo executiva, nao uma explicacao defensiva.</h3>
           <p className="hero-text">
-            O passo seguinte e simples: usar esta frente publica como venda e manter o cockpit para
-            utilizadores autenticados, com a mesma identidade de marca.
+            O objetivo desta pagina e simples: levar o cliente para uma demonstracao curta onde
+            agente, radar, pipeline e comunicacao aparecam como vantagem operacional imediata.
           </p>
+
+          <ul className="marketing-benefit-list">
+            <li>Mostrar o agente certo por plano, sem esconder limites nem promessas vagas.</li>
+            <li>Provar radar de mercado, desks e follow-up com contexto comercial real.</li>
+            <li>Fechar a conversa com proposta, contacto direto e compliance visivel.</li>
+          </ul>
 
           <div className="marketing-final-actions">
             <button
@@ -5606,12 +5630,12 @@ function App() {
               onClick={() =>
                 openLandingLogin(
                   "custom",
-                  "Demo enterprise preparada para impressionar decisores",
-                  "Abrimos a conta ADM para mostrares governance, planos, equipas e a leitura executiva do produto."
+                  "Demo enterprise preparada para decisores",
+                  "Abrimos a conta ADM para mostrares governance, automacao, planos e leitura executiva."
                 )
               }
             >
-              Abrir demo enterprise
+              Agendar demo executiva
             </button>
             <button
               className="ghost-button"
@@ -5619,31 +5643,36 @@ function App() {
               onClick={() =>
                 openLandingPricing(
                   "custom",
-                  "Oferta enterprise em foco",
+                  "Proposta enterprise em foco",
                   "A secao de planos abre com a camada enterprise destacada para conversa de valor e escala."
                 )
               }
             >
-              Rever proposta enterprise
+              Receber proposta
             </button>
           </div>
         </div>
 
         <div className="marketing-final-grid">
           <article className="marketing-final-card">
-            <span>Email ADM</span>
+            <span>Conta principal</span>
             <strong>carlospsantos19820@gmail.com</strong>
-            <p>Conta principal com controlo total do workspace e dos planos.</p>
+            <p>Canal direto para demonstracao, proposta e controlo comercial do workspace.</p>
+          </article>
+          <article className="marketing-final-card">
+            <span>Plano em foco</span>
+            <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
+            <p>{activePlan?.agentLabel || marketingAiLabel} com progressao clara para Enterprise.</p>
           </article>
           <article className="marketing-final-card">
             <span>Mercados</span>
             <strong>{coverageLabel}</strong>
-            <p>Base pronta para Portugal agora e Europa nas proximas fases.</p>
+            <p>Portugal como entrada, Iberia como expansao natural e Europa como proximo passo.</p>
           </article>
           <article className="marketing-final-card">
-            <span>Contacto RGPD</span>
+            <span>Compliance</span>
             <strong>{privacyContactEmail}</strong>
-            <p>Versao de politica ativa {policyVersion} com consentimento explicito no trial.</p>
+            <p>Politica {policyVersion} com trial protegido, consentimento explicito e contacto RGPD.</p>
           </article>
         </div>
       </section>

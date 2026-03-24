@@ -2607,10 +2607,49 @@
   gap: 12px;
 }
 
+.marketing-testimonial-list.compact {
+  margin-top: 18px;
+}
+
 .marketing-faq-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.marketing-proof-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.marketing-proof-signal-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 36%),
+    rgba(252, 249, 244, 0.88);
+}
+
+.marketing-proof-signal-card span {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7f6f5c;
+}
+
+.marketing-proof-signal-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #132237;
+}
+
+.marketing-proof-signal-card p {
+  margin: 10px 0 0;
+  color: #5c6b80;
+  line-height: 1.6;
 }
 
 .marketing-step-card {
@@ -2704,6 +2743,12 @@
   background:
     radial-gradient(circle at top left, rgba(201, 124, 68, 0.12), transparent 32%),
     linear-gradient(180deg, rgba(255, 250, 244, 0.9), rgba(248, 241, 232, 0.88));
+}
+
+.marketing-final-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .marketing-final-actions {
@@ -2890,6 +2935,7 @@
   .public-plan-summary-grid,
   .public-contact-grid,
   .marketing-metric-ribbon,
+  .marketing-proof-signal-grid,
   .marketing-proof-grid,
   .marketing-showcase-grid,
   .public-route-grid,
