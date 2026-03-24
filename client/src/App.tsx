@@ -181,6 +181,16 @@ const PUBLIC_PAGE_PATHS: Record<PublicPageId, string> = {
   login: "/entrar",
 };
 
+const INTERNAL_PAGE_PATHS: Record<ViewId, string> = {
+  dashboard: "/app/dashboard",
+  automation: "/app/automation",
+  pipeline: "/app/pipeline",
+  teams: "/app/equipas",
+  reports: "/app/mercado",
+  pricing: "/app/planos",
+  admin: "/app/admin",
+};
+
 const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
   {
     id: "home",
@@ -438,6 +448,15 @@ function getPublicPageFromPath(pathname: string): PublicPageId {
   return matched && isPublicPageId(matched) ? matched : "home";
 }
 
+function getViewFromPath(pathname: string): ViewId | null {
+  const normalizedPath = normalizePublicPath(pathname);
+  const matched = (Object.keys(INTERNAL_PAGE_PATHS) as ViewId[]).find(
+    (viewId) => INTERNAL_PAGE_PATHS[viewId] === normalizedPath
+  );
+
+  return matched && isViewId(matched) ? matched : null;
+}
+
 function getViewFromHash(): ViewId {
   if (typeof window === "undefined") {
     return "dashboard";
@@ -445,6 +464,14 @@ function getViewFromHash(): ViewId {
 
   const hash = window.location.hash.replace(/^#\/?/, "");
   return isViewId(hash) ? hash : "dashboard";
+}
+
+function getInitialView() {
+  if (typeof window === "undefined") {
+    return "dashboard";
+  }
+
+  return getViewFromPath(window.location.pathname) || getViewFromHash();
 }
 
 function formatCurrency(value: number, currencyCode = "EUR", withCents = false) {
@@ -764,7 +791,7 @@ function buildSourceMix(leads: Lead[]) {
 }
 
 function App() {
-  const [activeView, setActiveView] = useState<ViewId>(() => getViewFromHash());
+  const [activeView, setActiveView] = useState<ViewId>(() => getInitialView());
   const [publicPage, setPublicPage] = useState<PublicPageId>(() =>
     typeof window === "undefined" ? "home" : getPublicPageFromPath(window.location.pathname)
   );
@@ -840,19 +867,13 @@ function App() {
       return undefined;
     }
 
-    const handleHashChange = () => {
-      setActiveView(getViewFromHash());
-    };
-
     const handlePopState = () => {
       setPublicPage(getPublicPageFromPath(window.location.pathname));
-      setActiveView(getViewFromHash());
+      setActiveView(getViewFromPath(window.location.pathname) || getViewFromHash());
     };
 
-    window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("popstate", handlePopState);
     return () => {
-      window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
@@ -862,25 +883,24 @@ function App() {
       return;
     }
 
-    const nextHash = window.location.hash || "#dashboard";
-    const nextUrl = `${PUBLIC_PAGE_PATHS.home}${window.location.search}${nextHash}`;
+    const nextPath = INTERNAL_PAGE_PATHS[activeView] || INTERNAL_PAGE_PATHS.dashboard;
+    const nextUrl = `${nextPath}${window.location.search}`;
 
-    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== nextUrl) {
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
       window.history.replaceState(null, "", nextUrl);
     }
 
     setPublicPage("home");
-  }, [session]);
+  }, [activeView, session]);
 
   useEffect(() => {
     if (typeof window === "undefined" || authBooting || session) {
       return;
     }
 
-    const hash = window.location.hash.replace(/^#\/?/, "");
-
-    if (isViewId(hash)) {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    if (getViewFromPath(window.location.pathname)) {
+      window.history.replaceState(null, "", `${PUBLIC_PAGE_PATHS.login}${window.location.search}`);
+      setPublicPage("login");
     }
   }, [authBooting, session]);
 
@@ -1225,12 +1245,11 @@ function App() {
     setActiveView(view);
 
     if (typeof window !== "undefined") {
-      if (window.location.pathname !== PUBLIC_PAGE_PATHS.home) {
-        window.history.replaceState(null, "", `${PUBLIC_PAGE_PATHS.home}${window.location.search}`);
-      }
+      const nextPath = INTERNAL_PAGE_PATHS[view];
+      const nextUrl = `${nextPath}${window.location.search}`;
 
-      if (window.location.hash !== `#${view}`) {
-        window.location.hash = view;
+      if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+        window.history.pushState(null, "", nextUrl);
       }
     }
   }
