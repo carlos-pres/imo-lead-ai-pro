@@ -449,6 +449,52 @@ app.post("/api/payments/checkout-session", async (req: Request, res: Response) =
   }
 });
 
+app.post("/api/payments/customer-portal-session", async (req: Request, res: Response) => {
+  if (!hasStripeConfig) {
+    return res.status(400).json({
+      error: "Pagamentos Stripe ainda nao configurados. Falta STRIPE_SECRET_KEY.",
+    });
+  }
+
+  try {
+    const scope = await getRequestScope(req);
+    const user = await getWorkspaceUserById(scope.userId);
+
+    if (!user) {
+      return res.status(401).json({ error: "Sessao invalida ou expirada." });
+    }
+
+    if (!user.email) {
+      return res.status(400).json({
+        error: "Este utilizador nao tem email valido para abrir o portal de subscricao.",
+      });
+    }
+
+    const customer = await stripeService.findCustomerByEmail(user.email);
+
+    if (!customer) {
+      return res.status(404).json({
+        error:
+          "Ainda nao encontrámos uma subscricao Stripe para este email. Ativa um plano primeiro ou fala com a equipa.",
+      });
+    }
+
+    const baseUrl = getRequestBaseUrl(req);
+    const returnUrl = `${baseUrl}/precos?portal=return`;
+    const portalSession = await stripeService.createCustomerPortalSession(customer.id, returnUrl);
+
+    res.status(201).json({
+      ok: true,
+      provider: "stripe",
+      portalUrl: portalSession.url,
+      customerId: customer.id,
+    });
+  } catch (error) {
+    console.error("Erro ao criar portal Stripe", error);
+    sendRouteError(res, error, "Nao foi possivel abrir o portal da subscricao.");
+  }
+});
+
 app.post("/api/trial-requests", async (req: Request, res: Response) => {
   const {
     name,

@@ -5,6 +5,7 @@ import "./App.css";
 import {
   clearSessionToken,
   createAdminPlan,
+  createCustomerPortalSession,
   createPaymentCheckoutSession,
   createLead,
   createTrialRequest,
@@ -61,6 +62,7 @@ type CheckoutForm = {
   name: string;
   email: string;
 };
+type CheckoutFeedbackKind = "idle" | "success" | "cancel" | "portal" | "progress";
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
 
 type AdminPlanDraft = {
@@ -802,8 +804,13 @@ function App() {
   const [trialFeedback, setTrialFeedback] = useState("");
   const [trialFeedbackTone, setTrialFeedbackTone] = useState<"success" | "error">("success");
   const [checkoutSubmittingPlanId, setCheckoutSubmittingPlanId] = useState<PlanType | "">("");
+  const [portalSubmitting, setPortalSubmitting] = useState(false);
+  const [checkoutFeedbackTitle, setCheckoutFeedbackTitle] = useState("Checkout");
   const [checkoutFeedback, setCheckoutFeedback] = useState("");
-  const [checkoutFeedbackTone, setCheckoutFeedbackTone] = useState<"success" | "error">("success");
+  const [checkoutFeedbackTone, setCheckoutFeedbackTone] = useState<"success" | "error" | "info">(
+    "info"
+  );
+  const [checkoutFeedbackKind, setCheckoutFeedbackKind] = useState<CheckoutFeedbackKind>("idle");
   const [workspaceFeedback, setWorkspaceFeedback] = useState("");
 
   const deferredSearch = useDeferredValue(search);
@@ -868,24 +875,57 @@ function App() {
 
     const params = new URLSearchParams(window.location.search);
     const checkoutState = params.get("checkout");
+    const checkoutPlan = params.get("plan");
+    const checkoutBilling = params.get("billing");
+    const portalState = params.get("portal");
+
+    if (isPlanType(checkoutPlan)) {
+      setActivePlanId(checkoutPlan);
+    }
+
+    if (checkoutBilling === "month" || checkoutBilling === "year") {
+      setBillingMode(checkoutBilling);
+    }
 
     if (checkoutState === "success") {
+      setCheckoutFeedbackTitle("Subscricao ativada");
       setCheckoutFeedback(
-        "Checkout concluido com sucesso. Confirma no Stripe e volta ao workspace para continuar a ativacao."
+        "O checkout foi concluido e o plano ficou em ativacao. O passo seguinte e entrar no workspace, validar equipa e comecar a operar com o agente certo."
       );
       setCheckoutFeedbackTone("success");
+      setCheckoutFeedbackKind("success");
       startTransition(() => {
         setPublicPage("pricing");
       });
+      window.history.replaceState(null, "", PUBLIC_PAGE_PATHS.pricing);
       return;
     }
 
     if (checkoutState === "cancel") {
-      setCheckoutFeedback("Checkout cancelado. Podes rever o plano e voltar a tentar quando quiseres.");
+      setCheckoutFeedbackTitle("Checkout interrompido");
+      setCheckoutFeedback(
+        "A ativacao nao foi concluida. Podes rever o plano, manter os dados ja preenchidos e retomar o checkout quando quiseres."
+      );
       setCheckoutFeedbackTone("error");
+      setCheckoutFeedbackKind("cancel");
       startTransition(() => {
         setPublicPage("pricing");
       });
+      window.history.replaceState(null, "", PUBLIC_PAGE_PATHS.pricing);
+      return;
+    }
+
+    if (portalState === "return") {
+      setCheckoutFeedbackTitle("Subscricao em foco");
+      setCheckoutFeedback(
+        "Voltaste do portal de billing. Aqui podes rever o plano ativo, os utilizadores incluidos e decidir o passo comercial seguinte."
+      );
+      setCheckoutFeedbackTone("info");
+      setCheckoutFeedbackKind("portal");
+      startTransition(() => {
+        setPublicPage("pricing");
+      });
+      window.history.replaceState(null, "", PUBLIC_PAGE_PATHS.pricing);
     }
   }, []);
 
@@ -1681,19 +1721,26 @@ function App() {
     const normalizedEmail = checkoutForm.email.trim();
 
     if (normalizedName.length < 2) {
+      setCheckoutFeedbackTitle("Dados de ativacao");
       setCheckoutFeedback("Indica o nome da pessoa ou da equipa que vai ativar o plano.");
       setCheckoutFeedbackTone("error");
+      setCheckoutFeedbackKind("idle");
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
+      setCheckoutFeedbackTitle("Dados de ativacao");
       setCheckoutFeedback("Indica um email valido para abrir o checkout.");
       setCheckoutFeedbackTone("error");
+      setCheckoutFeedbackKind("idle");
       return;
     }
 
     setCheckoutSubmittingPlanId(plan.basePlanId);
+    setCheckoutFeedbackTitle("Checkout Stripe");
     setCheckoutFeedback("");
+    setCheckoutFeedbackKind("progress");
+    setCheckoutFeedbackTone("info");
 
     try {
       const result = await createPaymentCheckoutSession({
@@ -1703,21 +1750,54 @@ function App() {
         customerEmail: normalizedEmail,
       });
 
+      setCheckoutFeedbackTitle("Checkout pronto");
       setCheckoutFeedbackTone("success");
-      setCheckoutFeedback("Checkout preparado. Estamos a redirecionar para o Stripe.");
+      setCheckoutFeedback(
+        `O ${plan.publicName} ficou preparado para checkout no Stripe. Estamos a redirecionar para uma subscricao segura por cartao.`
+      );
+      setCheckoutFeedbackKind("progress");
 
       if (typeof window !== "undefined") {
         window.location.assign(result.checkoutUrl);
       }
     } catch (checkoutError) {
+      setCheckoutFeedbackTitle("Falha no checkout");
       setCheckoutFeedbackTone("error");
       setCheckoutFeedback(
         checkoutError instanceof Error
           ? checkoutError.message
           : "Nao foi possivel abrir o checkout neste momento."
       );
+      setCheckoutFeedbackKind("idle");
     } finally {
       setCheckoutSubmittingPlanId("");
+    }
+  }
+
+  async function handleOpenCustomerPortal() {
+    setPortalSubmitting(true);
+    setCheckoutFeedbackTitle("Portal de subscricao");
+    setCheckoutFeedbackTone("info");
+    setCheckoutFeedbackKind("portal");
+    setCheckoutFeedback("Estamos a preparar o portal seguro para veres faturas, pagamento e o plano ativo.");
+
+    try {
+      const result = await createCustomerPortalSession();
+
+      if (typeof window !== "undefined") {
+        window.location.assign(result.portalUrl);
+      }
+    } catch (portalError) {
+      setCheckoutFeedbackTitle("Portal indisponivel");
+      setCheckoutFeedbackTone("error");
+      setCheckoutFeedbackKind("portal");
+      setCheckoutFeedback(
+        portalError instanceof Error
+          ? portalError.message
+          : "Nao foi possivel abrir o portal de subscricao neste momento."
+      );
+    } finally {
+      setPortalSubmitting(false);
     }
   }
 
@@ -3131,6 +3211,60 @@ function App() {
             </div>
           </div>
 
+          <div className="billing-management-panel billing-management-panel-inline">
+            <div>
+              <p className="eyebrow">Billing e ativacao</p>
+              <h3>Checkout por cartao, trial controlado e gestao de subscricao no portal seguro</h3>
+              <p className="pricing-note">
+                O {activePlan?.publicName || "plano ativo"} usa checkout Stripe para ativacao e o
+                portal de billing para faturas, metodo de pagamento e gestao da subscricao.
+              </p>
+            </div>
+
+            <div className="billing-management-actions">
+              {session ? (
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled={portalSubmitting}
+                  onClick={() => void handleOpenCustomerPortal()}
+                >
+                  {portalSubmitting ? "A abrir portal..." : "Gerir subscricao"}
+                </button>
+              ) : (
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() =>
+                    openLandingLogin(
+                      activePlanId,
+                      "Entrada preparada para ativar o plano certo",
+                      "Abrimos a entrada protegida para validares o contexto comercial antes do checkout."
+                    )
+                  }
+                >
+                  Entrar para ativar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {checkoutFeedback ? (
+            <div
+              data-feedback-kind={checkoutFeedbackKind}
+              className={
+                checkoutFeedbackTone === "success"
+                  ? "form-helper success"
+                  : checkoutFeedbackTone === "info"
+                    ? "form-helper info"
+                    : "form-helper"
+              }
+            >
+              <strong>{checkoutFeedbackTitle}</strong>
+              <span>{checkoutFeedback}</span>
+            </div>
+          ) : null}
+
           <div className="pricing-grid">
             {plans.map((plan) => {
               const isFeatured = plan.basePlanId === "pro";
@@ -3469,7 +3603,7 @@ function App() {
             value={draft.features}
             onChange={(event) => onChange({ features: event.target.value })}
             placeholder={
-              "Capacidade ate 600 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17€/mes ou 163,20€/ano"
+              "Capacidade ate 250 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17€/mes ou 163,20€/ano"
             }
           />
         </label>
@@ -4865,9 +4999,42 @@ function App() {
             </div>
 
             {checkoutFeedback ? (
-              <div className={checkoutFeedbackTone === "success" ? "form-helper success" : "form-helper"}>
-                <strong>{checkoutFeedbackTone === "success" ? "Pagamento" : "Checkout"}</strong>
+              <div
+                data-feedback-kind={checkoutFeedbackKind}
+                className={
+                  checkoutFeedbackTone === "success"
+                    ? "form-helper success"
+                    : checkoutFeedbackTone === "info"
+                      ? "form-helper info"
+                      : "form-helper"
+                }
+              >
+                <strong>{checkoutFeedbackTitle}</strong>
                 <span>{checkoutFeedback}</span>
+              </div>
+            ) : null}
+
+            {session ? (
+              <div className="billing-management-panel">
+                <div>
+                  <p className="eyebrow">Subscricao ativa</p>
+                  <h3>Gerir pagamento, faturas e evolucao do plano sem sair da operacao</h3>
+                  <p className="pricing-note">
+                    O portal seguro da Stripe concentra metodo de pagamento, faturas e alteracoes
+                    de billing. Mantemos o cockpit focado na operacao e o billing no fluxo certo.
+                  </p>
+                </div>
+
+                <div className="billing-management-actions">
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    disabled={portalSubmitting}
+                    onClick={() => void handleOpenCustomerPortal()}
+                  >
+                    {portalSubmitting ? "A abrir portal..." : "Gerir subscricao"}
+                  </button>
+                </div>
               </div>
             ) : null}
           </article>

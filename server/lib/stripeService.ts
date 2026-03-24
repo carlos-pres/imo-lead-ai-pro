@@ -1,6 +1,7 @@
-import { getUncachableStripeClient } from './stripeClient.js';
-import { db } from '../db';
-import { sql } from 'drizzle-orm';
+import type Stripe from "stripe";
+import { getUncachableStripeClient } from "./stripeClient.js";
+import { db } from "../db";
+import { sql } from "drizzle-orm";
 
 export class StripeService {
   async createCustomer(email: string, name: string, metadata?: Record<string, string>) {
@@ -38,6 +39,25 @@ export class StripeService {
     }
 
     return await stripe.checkout.sessions.create(sessionConfig);
+  }
+
+  async findCustomerByEmail(email: string) {
+    const stripe = await getUncachableStripeClient();
+    const result = await stripe.customers.list({
+      email,
+      limit: 10,
+    });
+
+    return (
+      result.data.find(
+        (
+          customer
+        ): customer is Stripe.Customer =>
+          !("deleted" in customer) &&
+          typeof customer.email === "string" &&
+          customer.email.toLowerCase() === email.toLowerCase()
+      ) || null
+    );
   }
 
   async isPriceBasicPlan(priceId: string): Promise<boolean> {

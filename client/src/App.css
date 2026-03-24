@@ -360,6 +360,11 @@
   border-color: rgba(16, 185, 129, 0.22);
 }
 
+.form-helper.info {
+  background: rgba(23, 77, 187, 0.08);
+  border-color: rgba(23, 77, 187, 0.18);
+}
+
 .form-helper strong,
 .form-helper span {
   display: block;
@@ -1491,6 +1496,37 @@
   margin: 10px 0 0;
   color: #58677c;
   line-height: 1.6;
+}
+
+.billing-management-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.billing-management-panel-inline {
+  margin-bottom: 18px;
+}
+
+.billing-management-panel h3 {
+  margin: 0;
+  color: #132237;
+  font-size: 1.12rem;
+}
+
+.billing-management-panel .pricing-note {
+  margin-top: 10px;
+}
+
+.billing-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .select-plan-button {

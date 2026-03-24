@@ -132,6 +132,13 @@ export type PaymentCheckoutSession = {
   paymentMethods: string[];
 };
 
+export type PaymentPortalSession = {
+  ok: boolean;
+  provider: "stripe";
+  portalUrl: string;
+  customerId: string;
+};
+
 export type WorkspaceUser = {
   id: string;
   name: string;
@@ -379,6 +386,14 @@ export async function createPaymentCheckoutSession(data: PaymentCheckoutInput) {
   });
 
   return readJson<PaymentCheckoutSession>(response);
+}
+
+export async function createCustomerPortalSession() {
+  const response = await apiFetch("/api/payments/customer-portal-session", {
+    method: "POST",
+  });
+
+  return readJson<PaymentPortalSession>(response);
 }
 
 export async function getAdminPlans() {
