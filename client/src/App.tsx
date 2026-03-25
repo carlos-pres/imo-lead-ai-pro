@@ -2039,6 +2039,10 @@ function App() {
     focusPublicAnchor("landing-trial", "trial-name");
   }
 
+  function focusCheckoutField(inputId: string) {
+    focusPublicAnchor("landing-pricing", inputId);
+  }
+
   function handlePublicNavigation(event: MouseEvent<HTMLAnchorElement>, page: PublicPageId) {
     event.preventDefault();
 
@@ -2114,6 +2118,7 @@ function App() {
       setCheckoutFeedback("Indica o nome da pessoa ou da equipa que vai ativar o plano.");
       setCheckoutFeedbackTone("error");
       setCheckoutFeedbackKind("idle");
+      focusCheckoutField("checkout-name");
       return;
     }
 
@@ -2122,6 +2127,7 @@ function App() {
       setCheckoutFeedback("Indica um email valido para abrir o checkout.");
       setCheckoutFeedbackTone("error");
       setCheckoutFeedbackKind("idle");
+      focusCheckoutField("checkout-email");
       return;
     }
 
@@ -5920,6 +5926,7 @@ function App() {
               <label>
                 Nome
                 <input
+                  id="checkout-name"
                   type="text"
                   value={checkoutForm.name}
                   onChange={(event) =>
@@ -5935,6 +5942,7 @@ function App() {
               <label>
                 Email
                 <input
+                  id="checkout-email"
                   type="email"
                   value={checkoutForm.email}
                   onChange={(event) =>
