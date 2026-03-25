@@ -1994,8 +1994,59 @@ function App() {
     }
   }
 
+  function focusPublicAnchor(anchorId: string, inputId?: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const anchorElement = document.getElementById(anchorId);
+      anchorElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      if (inputId) {
+        window.setTimeout(() => {
+          const input = document.getElementById(inputId) as HTMLInputElement | null;
+          input?.focus();
+          input?.select?.();
+        }, 80);
+      }
+    }, 120);
+  }
+
+  function openDirectLogin(planId: PlanType = activePlanId) {
+    openLandingLogin(
+      planId,
+      "Entrada direta no workspace",
+      "Levamos-te diretamente ao formulario de autenticacao para entrar sem desvio.",
+      getSuggestedDemoEntry(planId)
+    );
+    focusPublicAnchor("landing-login", "login-email");
+  }
+
+  function openDirectTrial(planId: PlanType = "basic") {
+    setActivePlanId(planId);
+    updateLandingGuidance(
+      "Criacao de conta com trial protegido",
+      enrichGuidance(
+        "Levamos-te diretamente ao formulario do trial para ativares a entrada inicial sem navegar pela landing.",
+        planId
+      )
+    );
+    navigatePublicPage("login", "landing-trial");
+    focusPublicAnchor("landing-trial", "trial-name");
+  }
+
   function handlePublicNavigation(event: MouseEvent<HTMLAnchorElement>, page: PublicPageId) {
     event.preventDefault();
+
+    if (page === "login") {
+      openDirectLogin();
+      return;
+    }
+
     navigatePublicPage(page);
   }
 
@@ -2032,7 +2083,7 @@ function App() {
       });
     }
     updateLandingGuidance(title, enrichGuidance(detail, planId));
-    navigatePublicPage("login");
+    navigatePublicPage("login", "landing-login");
   }
 
   function selectDemoProfile(entry: DemoAccessEntry) {
@@ -5559,19 +5610,13 @@ function App() {
         </div>
 
         <div className="marketing-nav-actions">
-          <button className="ghost-button" type="button" onClick={() => navigatePublicPage("login")}>
+          <button className="ghost-button" type="button" onClick={() => openDirectLogin()}>
             Entrar
           </button>
           <button
             className="primary-button"
             type="button"
-            onClick={() =>
-              openLandingPricing(
-                "basic",
-                "Criacao de conta orientada para conversao",
-                "Levamos-te diretamente ao plano de entrada com trial protegido e caminho natural para Pro e Enterprise."
-              )
-            }
+            onClick={() => openDirectTrial("basic")}
           >
             Criar conta
           </button>
@@ -6423,6 +6468,7 @@ function App() {
           <label>
             Email
             <input
+              id="login-email"
               value={loginForm.email}
               onChange={(event) =>
                 setLoginForm((current) => ({ ...current, email: event.target.value }))
@@ -6454,7 +6500,7 @@ function App() {
         </form>
 
         {activePlanTrialDays > 0 ? (
-          <section className="trial-card">
+          <section className="trial-card" id="landing-trial">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Trial protegido</p>
@@ -6471,6 +6517,7 @@ function App() {
               <label>
                 Nome
                 <input
+                  id="trial-name"
                   value={trialForm.name}
                   onChange={(event) =>
                     setTrialForm((current) => ({ ...current, name: event.target.value }))
