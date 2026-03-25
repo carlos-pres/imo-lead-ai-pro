@@ -4,11 +4,15 @@ import "./App.css";
 import {
   clearSessionToken,
   createAdminPlan,
+  createAdminUser,
   createCustomerPortalSession,
   createPaymentCheckoutSession,
   createLead,
   createTrialRequest,
   deleteAdminPlan,
+  deleteAdminUser,
+  getAdminUsers,
+  getAdminSystemStatus,
   getAdminPlans,
   getCompliance,
   getCurrentSession,
@@ -20,10 +24,13 @@ import {
   login,
   logout,
   updateAdminPlan,
+  updateAdminUser,
   updateLeadWorkflow,
   type AuthSession,
+  type AdminSystemStatus,
   type ComplianceSummary,
   type CommercialPlanInput,
+  type CreateAdminUserInput,
   type CreateLeadInput,
   type Lead,
   type LeadStats,
@@ -33,6 +40,8 @@ import {
   type RoutingBucket,
   type TeamOverview,
   type UpdateLeadWorkflowInput,
+  type UpdateAdminUserInput,
+  type WorkspaceUser,
   type WorkspaceRole,
 } from "./services/api";
 import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
@@ -70,6 +79,7 @@ type CheckoutForm = {
 };
 type CheckoutFeedbackKind = "idle" | "success" | "cancel" | "portal" | "progress";
 type AdminPlanDraftMap = Record<string, AdminPlanDraft>;
+type AdminUserDraftMap = Record<string, AdminUserDraft>;
 
 type AdminPlanDraft = {
   id?: string;
@@ -101,6 +111,18 @@ type AdminPlanDraft = {
   isActive: boolean;
   isPublic: boolean;
   sortOrder: string;
+};
+
+type AdminUserDraft = {
+  name: string;
+  email: string;
+  password: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage: string;
+  planId: PlanType;
+  isActive: boolean;
 };
 
 type MarketInsight = {
@@ -366,6 +388,62 @@ function toCommercialPlanPayload(draft: AdminPlanDraft): CommercialPlanInput {
     isActive: draft.isActive,
     isPublic: draft.isPublic,
     sortOrder: Number(draft.sortOrder || 0),
+  };
+}
+
+function createEmptyAdminUserDraft(): AdminUserDraft {
+  return {
+    name: "",
+    email: "",
+    password: "",
+    role: "consultant",
+    officeName: "Lisboa HQ",
+    teamName: "Inside Sales Nurture",
+    preferredLanguage: "pt-PT",
+    planId: "basic",
+    isActive: true,
+  };
+}
+
+function buildAdminUserDraft(user: WorkspaceUser): AdminUserDraft {
+  return {
+    name: user.name,
+    email: user.email,
+    password: "",
+    role: user.role,
+    officeName: user.officeName,
+    teamName: user.teamName,
+    preferredLanguage: user.preferredLanguage,
+    planId: user.planId,
+    isActive: user.isActive,
+  };
+}
+
+function toAdminUserCreatePayload(draft: AdminUserDraft): CreateAdminUserInput {
+  return {
+    name: draft.name.trim(),
+    email: draft.email.trim(),
+    password: draft.password,
+    role: draft.role,
+    officeName: draft.officeName.trim(),
+    teamName: draft.teamName.trim(),
+    preferredLanguage: draft.preferredLanguage.trim(),
+    planId: draft.planId,
+    isActive: draft.isActive,
+  };
+}
+
+function toAdminUserUpdatePayload(draft: AdminUserDraft): UpdateAdminUserInput {
+  return {
+    name: draft.name.trim(),
+    email: draft.email.trim(),
+    password: draft.password.trim() ? draft.password : undefined,
+    role: draft.role,
+    officeName: draft.officeName.trim(),
+    teamName: draft.teamName.trim(),
+    preferredLanguage: draft.preferredLanguage.trim(),
+    planId: draft.planId,
+    isActive: draft.isActive,
   };
 }
 
@@ -820,11 +898,16 @@ function App() {
   const [adminPlans, setAdminPlans] = useState<PlanCatalogEntry[]>([]);
   const [adminDrafts, setAdminDrafts] = useState<AdminPlanDraftMap>({});
   const [newPlanDraft, setNewPlanDraft] = useState<AdminPlanDraft>(() => createEmptyAdminPlanDraft());
+  const [adminUsers, setAdminUsers] = useState<WorkspaceUser[]>([]);
+  const [adminUserDrafts, setAdminUserDrafts] = useState<AdminUserDraftMap>({});
+  const [newUserDraft, setNewUserDraft] = useState<AdminUserDraft>(() => createEmptyAdminUserDraft());
+  const [adminSystemStatus, setAdminSystemStatus] = useState<AdminSystemStatus | null>(null);
   const [workflowDrafts, setWorkflowDrafts] = useState<WorkflowDraftMap>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [savingLeadId, setSavingLeadId] = useState("");
   const [savingAdminPlanId, setSavingAdminPlanId] = useState("");
+  const [savingAdminUserId, setSavingAdminUserId] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
   const [error, setError] = useState("");
   const [apiState, setApiState] = useState("A preparar experiencia");
@@ -1046,6 +1129,10 @@ function App() {
     setAdminPlans([]);
     setAdminDrafts({});
     setNewPlanDraft(createEmptyAdminPlanDraft());
+    setAdminUsers([]);
+    setAdminUserDrafts({});
+    setNewUserDraft(createEmptyAdminUserDraft());
+    setAdminSystemStatus(null);
   }, [session]);
 
   async function bootstrap() {
@@ -1114,7 +1201,11 @@ function App() {
 
   async function loadAdminCatalog() {
     try {
-      const adminPlanData = await getAdminPlans();
+      const [adminPlanData, adminUserData, nextSystemStatus] = await Promise.all([
+        getAdminPlans(),
+        getAdminUsers(),
+        getAdminSystemStatus(),
+      ]);
       startTransition(() => {
         setAdminPlans(adminPlanData);
         setAdminDrafts(
@@ -1123,6 +1214,14 @@ function App() {
             return drafts;
           }, {})
         );
+        setAdminUsers(adminUserData);
+        setAdminUserDrafts(
+          adminUserData.reduce<AdminUserDraftMap>((drafts, user) => {
+            drafts[user.id] = buildAdminUserDraft(user);
+            return drafts;
+          }, {})
+        );
+        setAdminSystemStatus(nextSystemStatus);
       });
     } catch (adminError) {
       setError(
@@ -1517,6 +1616,93 @@ function App() {
     }
   }
 
+  function handleAdminUserDraftChange(userId: string, patch: Partial<AdminUserDraft>) {
+    setAdminUserDrafts((current) => ({
+      ...current,
+      [userId]: {
+        ...current[userId],
+        ...patch,
+      },
+    }));
+  }
+
+  async function handleAdminUserCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminBusy(true);
+    setError("");
+
+    try {
+      const created = await createAdminUser(toAdminUserCreatePayload(newUserDraft));
+      const nextUsers = [...adminUsers, created].sort((left, right) => left.name.localeCompare(right.name));
+
+      startTransition(() => {
+        setAdminUsers(nextUsers);
+        setAdminUserDrafts((current) => ({
+          ...current,
+          [created.id]: buildAdminUserDraft(created),
+        }));
+        setNewUserDraft(createEmptyAdminUserDraft());
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao criar utilizador");
+    } finally {
+      setAdminBusy(false);
+    }
+  }
+
+  async function handleAdminUserSave(userId: string) {
+    const draft = adminUserDrafts[userId];
+
+    if (!draft) {
+      return;
+    }
+
+    setSavingAdminUserId(userId);
+    setError("");
+
+    try {
+      const updated = await updateAdminUser(userId, toAdminUserUpdatePayload(draft));
+      const nextUsers = adminUsers
+        .map((user) => (user.id === userId ? updated : user))
+        .sort((left, right) => left.name.localeCompare(right.name));
+
+      startTransition(() => {
+        setAdminUsers(nextUsers);
+        setAdminUserDrafts((current) => ({
+          ...current,
+          [userId]: buildAdminUserDraft(updated),
+        }));
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao guardar utilizador");
+    } finally {
+      setSavingAdminUserId("");
+    }
+  }
+
+  async function handleAdminUserDelete(userId: string) {
+    setSavingAdminUserId(userId);
+    setError("");
+
+    try {
+      await deleteAdminUser(userId);
+      const nextUsers = adminUsers.filter((user) => user.id !== userId);
+
+      startTransition(() => {
+        setAdminUsers(nextUsers);
+        setAdminUserDrafts((current) => {
+          const nextDrafts = { ...current };
+          delete nextDrafts[userId];
+          return nextDrafts;
+        });
+      });
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Falha ao remover utilizador");
+    } finally {
+      setSavingAdminUserId("");
+    }
+  }
+
   const dashboardStats = stats || deriveStats(leads);
   const activePlan =
     plans.find((plan) => plan.basePlanId === activePlanId) ||
@@ -1532,12 +1718,26 @@ function App() {
   const members = teamOverview?.members || [];
   const markets = teamOverview?.markets || [];
   const languages = teamOverview?.languages || [];
+  const availableOfficeNames = Array.from(
+    new Set([
+      ...offices.map((office) => office.name),
+      ...adminUsers.map((user) => user.officeName),
+      ...members.map((member) => member.officeName),
+    ])
+  ).sort();
+  const availableTeamNames = Array.from(
+    new Set([
+      ...members.map((member) => member.teamName),
+      ...adminUsers.map((user) => user.teamName),
+    ])
+  ).sort();
   const marketInsights = buildMarketInsights(leads);
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
+  const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
   const currentWorkspacePlanId = session?.user.planId || activePlanId;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
@@ -4044,16 +4244,148 @@ function App() {
     );
   }
 
+  function renderAdminUserFields(
+    draft: AdminUserDraft,
+    onChange: (patch: Partial<AdminUserDraft>) => void,
+    options?: { includePassword?: boolean }
+  ) {
+    const includePassword = options?.includePassword !== false;
+
+    return (
+      <div className="admin-form-grid">
+        <label>
+          Nome
+          <input
+            value={draft.name}
+            onChange={(event) => onChange({ name: event.target.value })}
+            placeholder="Nome completo"
+          />
+        </label>
+
+        <label>
+          Email
+          <input
+            type="email"
+            value={draft.email}
+            onChange={(event) => onChange({ email: event.target.value })}
+            placeholder="equipa@agencia.pt"
+          />
+        </label>
+
+        {includePassword ? (
+          <label>
+            Password
+            <input
+              type="text"
+              value={draft.password}
+              onChange={(event) => onChange({ password: event.target.value })}
+              placeholder="Minimo 8 caracteres"
+            />
+          </label>
+        ) : (
+          <label>
+            Nova password
+            <input
+              type="text"
+              value={draft.password}
+              onChange={(event) => onChange({ password: event.target.value })}
+              placeholder="Deixa vazio para manter"
+            />
+          </label>
+        )}
+
+        <label>
+          Perfil
+          <select
+            value={draft.role}
+            onChange={(event) => onChange({ role: event.target.value as WorkspaceRole })}
+          >
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="consultant">Consultor</option>
+          </select>
+        </label>
+
+        <label>
+          Office
+          <select
+            value={draft.officeName}
+            onChange={(event) => onChange({ officeName: event.target.value })}
+          >
+            {availableOfficeNames.map((officeName) => (
+              <option key={officeName} value={officeName}>
+                {officeName}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Equipa
+          <select
+            value={draft.teamName}
+            onChange={(event) => onChange({ teamName: event.target.value })}
+          >
+            {availableTeamNames.map((teamName) => (
+              <option key={teamName} value={teamName}>
+                {teamName}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Idioma
+          <select
+            value={draft.preferredLanguage}
+            onChange={(event) => onChange({ preferredLanguage: event.target.value })}
+          >
+            {Array.from(new Set(["pt-PT", "es-ES", "fr-FR", "it-IT", ...languages])).map((language) => (
+              <option key={language} value={language}>
+                {language}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Plano
+          <select
+            value={draft.planId}
+            onChange={(event) => onChange({ planId: event.target.value as PlanType })}
+          >
+            {plans.map((plan) => (
+              <option key={plan.basePlanId} value={plan.basePlanId}>
+                {plan.publicName}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="admin-boolean-grid admin-span">
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={draft.isActive}
+              onChange={(event) => onChange({ isActive: event.target.checked })}
+            />
+            <span>{draft.isActive ? "Acesso ativo" : "Acesso bloqueado"}</span>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
   function renderAdminView() {
     return (
       <div className="page-stack">
         <section className="shell-panel admin-hero">
           <div>
             <p className="eyebrow">Painel ADM</p>
-            <h3>Controlo total do catalogo comercial</h3>
+            <h3>Controlo real de planos, acessos e cobranca</h3>
             <p className="hero-text">
-              O teu email fica como administrador principal e esta vista permite criar,
-              editar, ativar, ocultar e remover planos sem mexer diretamente no codigo.
+              Esta vista deixa de ser decorativa: aqui controlas membros, perfis, bloqueios,
+              planos e o caminho para billing sem depender de ajustes no codigo.
             </p>
           </div>
 
@@ -4067,6 +4399,33 @@ function App() {
               <span>Catalogo ativo</span>
               <strong>{adminPlans.filter((plan) => plan.isActive && plan.isPublic).length}</strong>
               <p>Planos visiveis neste momento no pricing publico.</p>
+            </article>
+            <article className="signal-card">
+              <span>Membros ativos</span>
+              <strong>{activeAdminUserCount}</strong>
+              <p>Acessos atualmente libertos para operar no workspace.</p>
+            </article>
+            <article className="signal-card">
+              <span>Billing</span>
+              <strong>{portalSubmitting ? "A abrir..." : "Stripe portal"}</strong>
+              <p>Metodo de pagamento, faturas e subscricao entram no portal seguro.</p>
+            </article>
+            <article className="signal-card">
+              <span>Integracoes</span>
+              <strong>
+                {[
+                  adminSystemStatus?.ai ? "AI" : null,
+                  adminSystemStatus?.stripe ? "Stripe" : null,
+                  adminSystemStatus?.whatsapp ? "WhatsApp" : null,
+                  adminSystemStatus?.googleCalendar ? "Calendar" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "A ligar"}
+              </strong>
+              <p>
+                Email {adminSystemStatus?.email ? "ativo" : "pendente"}, base{" "}
+                {adminSystemStatus?.database ? "ativa" : "pendente"}.
+              </p>
             </article>
           </div>
         </section>
@@ -4092,9 +4451,104 @@ function App() {
                 {adminBusy ? "A criar..." : "Criar plano"}
               </button>
             </form>
+
+            <div className="admin-plan-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={portalSubmitting}
+                onClick={() => void handleOpenCustomerPortal()}
+              >
+                {portalSubmitting ? "A abrir portal..." : "Gerir subscricao"}
+              </button>
+            </div>
           </article>
 
           <section className="admin-plan-stack">
+            <article className="shell-panel admin-plan-card">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Equipa e acessos</p>
+                  <h3>Criar novo membro</h3>
+                </div>
+              </div>
+
+              <form className="admin-plan-form" onSubmit={handleAdminUserCreate}>
+                {renderAdminUserFields(newUserDraft, (patch) =>
+                  setNewUserDraft((current) => ({
+                    ...current,
+                    ...patch,
+                  }))
+                )}
+
+                <button className="primary-button" type="submit" disabled={adminBusy}>
+                  {adminBusy ? "A criar..." : "Criar membro"}
+                </button>
+              </form>
+            </article>
+
+            {adminUsers.map((user) => {
+              const draft = adminUserDrafts[user.id] || buildAdminUserDraft(user);
+
+              return (
+                <article className="shell-panel admin-plan-card" key={user.id}>
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">{user.role.toUpperCase()}</p>
+                      <h3>{user.name}</h3>
+                    </div>
+
+                    <div className="mini-tags">
+                      <span>{user.officeName}</span>
+                      <span>{user.teamName}</span>
+                      <span>{user.isActive ? "Ativo" : "Bloqueado"}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-plan-form">
+                    {renderAdminUserFields(
+                      draft,
+                      (patch) => handleAdminUserDraftChange(user.id, patch),
+                      { includePassword: false }
+                    )}
+                  </div>
+
+                  <div className="admin-plan-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={savingAdminUserId === user.id}
+                      onClick={() => void handleAdminUserSave(user.id)}
+                    >
+                      {savingAdminUserId === user.id ? "A guardar..." : "Guardar membro"}
+                    </button>
+
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      disabled={savingAdminUserId === user.id}
+                      onClick={() =>
+                        handleAdminUserDraftChange(user.id, {
+                          isActive: !draft.isActive,
+                        })
+                      }
+                    >
+                      {draft.isActive ? "Preparar bloqueio" : "Preparar libertacao"}
+                    </button>
+
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      disabled={savingAdminUserId === user.id || user.id === session?.user.id}
+                      onClick={() => void handleAdminUserDelete(user.id)}
+                    >
+                      Remover membro
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+
             {adminPlans.map((plan) => {
               const draft = adminDrafts[plan.id] || buildAdminPlanDraft(plan);
 

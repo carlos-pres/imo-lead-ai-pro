@@ -13,7 +13,9 @@ import {
   createCommercialPlan,
   createLead,
   createTrialRequest,
+  createWorkspaceUser,
   deleteCommercialPlan,
+  deleteWorkspaceUser,
   getAllLeads,
   getLeadStats,
   getTeamOverview,
@@ -21,6 +23,7 @@ import {
   listCommercialPlans,
   listWorkspaceUsers,
   prepareStorage,
+  updateWorkspaceUser,
   updateCommercialPlan,
   updateLeadWorkflow,
   type WorkspaceScope,
@@ -46,6 +49,16 @@ const hasDatabaseConfig =
       process.env.PGDATABASE
   );
 const hasStripeConfig = Boolean(process.env.STRIPE_SECRET_KEY);
+const hasWhatsAppConfig = Boolean(
+  process.env.WHATSAPP_API_KEY && process.env.WHATSAPP_PHONE_NUMBER_ID
+);
+const hasEmailConfig = Boolean(
+  process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+);
+const hasGoogleCalendarConfig = Boolean(
+  (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) ||
+    process.env.REPLIT_CONNECTORS_HOSTNAME
+);
 
 const STRIPE_PRICE_ENV_MAP: Record<"basic" | "pro" | "custom", Record<"month" | "year", string>> = {
   basic: {
@@ -561,6 +574,72 @@ app.get("/api/admin/plans", async (req: Request, res: Response) => {
     res.json(plans);
   } catch (error) {
     sendRouteError(res, error, "Nao foi possivel carregar o catalogo admin.");
+  }
+});
+
+app.get("/api/admin/users", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const users = await listWorkspaceUsers(scope);
+    res.json(users);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel carregar os membros do workspace.");
+  }
+});
+
+app.get("/api/admin/system-status", async (req: Request, res: Response) => {
+  try {
+    await getAdminScope(req);
+    res.json({
+      ai: hasAiProvider,
+      stripe: hasStripeConfig,
+      googleCalendar: hasGoogleCalendarConfig,
+      whatsapp: hasWhatsAppConfig,
+      email: hasEmailConfig,
+      database: hasDatabaseConfig,
+    });
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel carregar o estado das integracoes.");
+  }
+});
+
+app.post("/api/admin/users", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const createdUser = await createWorkspaceUser(req.body, scope);
+    res.status(201).json(createdUser);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel criar o membro do workspace.");
+  }
+});
+
+app.patch("/api/admin/users/:id", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const updatedUser = await updateWorkspaceUser(req.params.id, req.body, scope);
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Utilizador nao encontrado." });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel atualizar o membro do workspace.");
+  }
+});
+
+app.delete("/api/admin/users/:id", async (req: Request, res: Response) => {
+  try {
+    const scope = await getAdminScope(req);
+    const removed = await deleteWorkspaceUser(req.params.id, scope);
+
+    if (!removed) {
+      return res.status(404).json({ error: "Utilizador nao encontrado." });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel remover o membro do workspace.");
   }
 });
 

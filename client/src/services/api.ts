@@ -149,6 +149,31 @@ export type WorkspaceUser = {
   preferredLanguage: string;
   planId: PlanType;
   planName: string;
+  isActive: boolean;
+};
+
+export type CreateAdminUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage?: string;
+  planId: PlanType;
+  isActive?: boolean;
+};
+
+export type UpdateAdminUserInput = {
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: WorkspaceRole;
+  officeName?: string;
+  teamName?: string;
+  preferredLanguage?: string;
+  planId?: PlanType;
+  isActive?: boolean;
 };
 
 export type AuthSession = {
@@ -168,6 +193,15 @@ export type ComplianceSummary = {
     explicitConsentRequired: boolean;
     policyVersion: string;
   };
+};
+
+export type AdminSystemStatus = {
+  ai: boolean;
+  stripe: boolean;
+  googleCalendar: boolean;
+  whatsapp: boolean;
+  email: boolean;
+  database: boolean;
 };
 
 export type Lead = {
@@ -401,6 +435,16 @@ export async function getAdminPlans() {
   return readJson<PlanCatalogEntry[]>(response);
 }
 
+export async function getAdminUsers() {
+  const response = await apiFetch("/api/admin/users");
+  return readJson<WorkspaceUser[]>(response);
+}
+
+export async function getAdminSystemStatus() {
+  const response = await apiFetch("/api/admin/system-status");
+  return readJson<AdminSystemStatus>(response);
+}
+
 export async function createAdminPlan(data: CommercialPlanInput) {
   const response = await apiFetch("/api/admin/plans", {
     method: "POST",
@@ -427,6 +471,40 @@ export async function updateAdminPlan(id: string, data: CommercialPlanInput) {
 
 export async function deleteAdminPlan(id: string) {
   const response = await apiFetch(`/api/admin/plans/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    await readJson(response);
+  }
+}
+
+export async function createAdminUser(data: CreateAdminUserInput) {
+  const response = await apiFetch("/api/admin/users", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<WorkspaceUser>(response);
+}
+
+export async function updateAdminUser(id: string, data: UpdateAdminUserInput) {
+  const response = await apiFetch(`/api/admin/users/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readJson<WorkspaceUser>(response);
+}
+
+export async function deleteAdminUser(id: string) {
+  const response = await apiFetch(`/api/admin/users/${id}`, {
     method: "DELETE",
   });
 

@@ -53,6 +53,7 @@ export type WorkspaceUser = {
   preferredLanguage: string;
   planId: PlanType;
   planName: string;
+  isActive: boolean;
 };
 
 type WorkspaceUserRecord = WorkspaceUser & {
@@ -67,6 +68,30 @@ export type WorkspaceScope = {
   teamName: string;
   preferredLanguage: string;
   planId: PlanType;
+};
+
+export type CreateWorkspaceUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: WorkspaceRole;
+  officeName: string;
+  teamName: string;
+  preferredLanguage?: string;
+  planId: PlanType;
+  isActive?: boolean;
+};
+
+export type UpdateWorkspaceUserInput = {
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: WorkspaceRole;
+  officeName?: string;
+  teamName?: string;
+  preferredLanguage?: string;
+  planId?: PlanType;
+  isActive?: boolean;
 };
 
 export type LeadStatus = "quente" | "morno" | "frio";
@@ -269,6 +294,7 @@ function sanitizeWorkspaceUser(user: WorkspaceUserRecord): WorkspaceUser {
     preferredLanguage: user.preferredLanguage,
     planId: user.planId,
     planName: user.planName,
+    isActive: user.isActive,
   };
 }
 
@@ -392,6 +418,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     preferredLanguage: "pt-PT",
     planId: "custom",
     planName: getPlanConfig("custom").publicName,
+    isActive: true,
     passwordHash: createPasswordHash(PRIMARY_ADMIN_PASSWORD),
   },
   {
@@ -404,6 +431,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     preferredLanguage: "es-ES",
     planId: "pro",
     planName: getPlanConfig("pro").publicName,
+    isActive: true,
     passwordHash: createPasswordHash("Demo123!"),
   },
   {
@@ -416,6 +444,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     preferredLanguage: "pt-PT",
     planId: "basic",
     planName: getPlanConfig("basic").publicName,
+    isActive: true,
     passwordHash: createPasswordHash("Demo123!"),
   },
 ];
@@ -1238,9 +1267,9 @@ async function seedWorkspaceUsers(activePool: Pool) {
       `
         INSERT INTO workspace_users (
           id, name, email, password_hash, role, office_name, team_name,
-          preferred_language, plan_id, plan_name
+          preferred_language, plan_id, plan_name, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (id) DO UPDATE
         SET
           name = EXCLUDED.name,
@@ -1251,7 +1280,8 @@ async function seedWorkspaceUsers(activePool: Pool) {
           team_name = EXCLUDED.team_name,
           preferred_language = EXCLUDED.preferred_language,
           plan_id = EXCLUDED.plan_id,
-          plan_name = EXCLUDED.plan_name
+          plan_name = EXCLUDED.plan_name,
+          is_active = EXCLUDED.is_active
       `,
       [
         user.id,
@@ -1264,6 +1294,7 @@ async function seedWorkspaceUsers(activePool: Pool) {
         user.preferredLanguage,
         user.planId,
         user.planName,
+        user.isActive,
       ]
     );
   }
@@ -1496,8 +1527,14 @@ async function initializeDatabase() {
         preferred_language TEXT NOT NULL DEFAULT 'pt-PT',
         plan_id TEXT NOT NULL DEFAULT 'pro',
         plan_name TEXT NOT NULL DEFAULT 'ImoLead Pro',
+        is_active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+
+    await activePool.query(`
+      ALTER TABLE workspace_users
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true
     `);
 
     await activePool.query(`
@@ -1915,6 +1952,7 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
     preferredLanguage: String(row.preferred_language || "pt-PT"),
     planId,
     planName: String(row.plan_name || getPlanConfig(planId).publicName),
+    isActive: row.is_active === undefined ? true : Boolean(row.is_active),
     passwordHash: String(row.password_hash),
   };
 }
@@ -2063,7 +2101,7 @@ export async function getWorkspaceUserById(id: string) {
       const result = await activePool.query(
         `
           SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name
+                 preferred_language, plan_id, plan_name, is_active
           FROM workspace_users
           WHERE id = $1
           LIMIT 1
@@ -2087,7 +2125,7 @@ export async function listWorkspaceUsers(scope?: WorkspaceScope) {
       const result = await activePool.query(
         `
           SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name
+                 preferred_language, plan_id, plan_name, is_active
           FROM workspace_users
           ORDER BY name ASC
         `
@@ -2109,6 +2147,284 @@ export async function listWorkspaceUsers(scope?: WorkspaceScope) {
   );
 }
 
+export async function createWorkspaceUser(
+  input: CreateWorkspaceUserInput,
+  scope?: WorkspaceScope | null
+) {
+  assertAdminScope(scope);
+
+  const normalizedEmail = normalizeEmailAddress(String(input.email || ""));
+  const name = String(input.name || "").trim();
+  const password = String(input.password || "").trim();
+  const role = input.role;
+  const officeName = String(input.officeName || "").trim();
+  const teamName = String(input.teamName || "").trim();
+  const preferredLanguage = normalizeOptionalString(input.preferredLanguage) || "pt-PT";
+  const planId = resolvePlanId(input.planId || "pro");
+  const planName = getPlanConfig(planId).publicName;
+  const isActive = input.isActive !== false;
+
+  if (!name || name.length < 2) {
+    throw new Error("Nome invalido para criar utilizador.");
+  }
+
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new Error("Email invalido para criar utilizador.");
+  }
+
+  if (!password || password.length < 8) {
+    throw new Error("Password invalida. Usa pelo menos 8 caracteres.");
+  }
+
+  if (!role || !["admin", "manager", "consultant"].includes(role)) {
+    throw new Error("Perfil invalido para criar utilizador.");
+  }
+
+  if (!officeName || !teamName) {
+    throw new Error("Office e equipa sao obrigatorios para criar utilizador.");
+  }
+
+  const nextUser: WorkspaceUserRecord = {
+    id: randomUUID(),
+    name,
+    email: normalizedEmail,
+    role,
+    officeName,
+    teamName,
+    preferredLanguage,
+    planId,
+    planName,
+    isActive,
+    passwordHash: createPasswordHash(password),
+  };
+
+  return useDatabase(
+    async (activePool) => {
+      const duplicate = await activePool.query(
+        `SELECT id FROM workspace_users WHERE LOWER(email) = $1 LIMIT 1`,
+        [normalizedEmail]
+      );
+
+      if (duplicate.rows[0]) {
+        throw new Error("Ja existe um utilizador com este email.");
+      }
+
+      const result = await activePool.query(
+        `
+          INSERT INTO workspace_users (
+            id, name, email, password_hash, role, office_name, team_name,
+            preferred_language, plan_id, plan_name, is_active
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          RETURNING id, name, email, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active
+        `,
+        [
+          nextUser.id,
+          nextUser.name,
+          nextUser.email,
+          nextUser.passwordHash,
+          nextUser.role,
+          nextUser.officeName,
+          nextUser.teamName,
+          nextUser.preferredLanguage,
+          nextUser.planId,
+          nextUser.planName,
+          nextUser.isActive,
+        ]
+      );
+
+      return sanitizeWorkspaceUser(mapWorkspaceUserRow(result.rows[0]));
+    },
+    async () => {
+      const duplicate = fallbackWorkspaceUsers.find(
+        (user) => user.email.toLowerCase() === normalizedEmail
+      );
+
+      if (duplicate) {
+        throw new Error("Ja existe um utilizador com este email.");
+      }
+
+      fallbackWorkspaceUsers.push(nextUser);
+      return sanitizeWorkspaceUser(nextUser);
+    }
+  );
+}
+
+export async function updateWorkspaceUser(
+  id: string,
+  input: UpdateWorkspaceUserInput,
+  scope?: WorkspaceScope | null
+) {
+  assertAdminScope(scope);
+
+  return useDatabase(
+    async (activePool) => {
+      const currentResult = await activePool.query(
+        `
+          SELECT id, name, email, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active
+          FROM workspace_users
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [id]
+      );
+
+      const currentRow = currentResult.rows[0];
+
+      if (!currentRow) {
+        return null;
+      }
+
+      const current = mapWorkspaceUserRow(currentRow);
+      const nextEmail = input.email
+        ? normalizeEmailAddress(String(input.email))
+        : current.email.toLowerCase();
+
+      if (nextEmail !== current.email.toLowerCase()) {
+        const duplicate = await activePool.query(
+          `SELECT id FROM workspace_users WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`,
+          [nextEmail, id]
+        );
+
+        if (duplicate.rows[0]) {
+          throw new Error("Ja existe um utilizador com este email.");
+        }
+      }
+
+      const nextPlanId = input.planId ? resolvePlanId(input.planId) : current.planId;
+      const nextPassword =
+        input.password !== undefined ? String(input.password).trim() : "";
+
+      if (input.password !== undefined && nextPassword.length < 8) {
+        throw new Error("Password invalida. Usa pelo menos 8 caracteres.");
+      }
+
+      const nextUser: WorkspaceUserRecord = {
+        ...current,
+        name: normalizeOptionalString(input.name) || current.name,
+        email: nextEmail,
+        role: input.role || current.role,
+        officeName: normalizeOptionalString(input.officeName) || current.officeName,
+        teamName: normalizeOptionalString(input.teamName) || current.teamName,
+        preferredLanguage:
+          normalizeOptionalString(input.preferredLanguage) || current.preferredLanguage,
+        planId: nextPlanId,
+        planName: getPlanConfig(nextPlanId).publicName,
+        isActive: input.isActive === undefined ? current.isActive : Boolean(input.isActive),
+        passwordHash: nextPassword
+          ? createPasswordHash(nextPassword)
+          : current.passwordHash,
+      };
+
+      const result = await activePool.query(
+        `
+          UPDATE workspace_users
+          SET
+            name = $2,
+            email = $3,
+            password_hash = $4,
+            role = $5,
+            office_name = $6,
+            team_name = $7,
+            preferred_language = $8,
+            plan_id = $9,
+            plan_name = $10,
+            is_active = $11
+          WHERE id = $1
+          RETURNING id, name, email, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active
+        `,
+        [
+          id,
+          nextUser.name,
+          nextUser.email,
+          nextUser.passwordHash,
+          nextUser.role,
+          nextUser.officeName,
+          nextUser.teamName,
+          nextUser.preferredLanguage,
+          nextUser.planId,
+          nextUser.planName,
+          nextUser.isActive,
+        ]
+      );
+
+      return result.rows[0] ? sanitizeWorkspaceUser(mapWorkspaceUserRow(result.rows[0])) : null;
+    },
+    async () => {
+      const currentIndex = fallbackWorkspaceUsers.findIndex((user) => user.id === id);
+
+      if (currentIndex < 0) {
+        return null;
+      }
+
+      const current = fallbackWorkspaceUsers[currentIndex];
+      const nextEmail = input.email
+        ? normalizeEmailAddress(String(input.email))
+        : current.email.toLowerCase();
+
+      const duplicate = fallbackWorkspaceUsers.find(
+        (user) => user.id !== id && user.email.toLowerCase() === nextEmail
+      );
+
+      if (duplicate) {
+        throw new Error("Ja existe um utilizador com este email.");
+      }
+
+      const nextPlanId = input.planId ? resolvePlanId(input.planId) : current.planId;
+      const nextPassword =
+        input.password !== undefined ? String(input.password).trim() : "";
+
+      if (input.password !== undefined && nextPassword.length < 8) {
+        throw new Error("Password invalida. Usa pelo menos 8 caracteres.");
+      }
+
+      const nextUser: WorkspaceUserRecord = {
+        ...current,
+        name: normalizeOptionalString(input.name) || current.name,
+        email: nextEmail,
+        role: input.role || current.role,
+        officeName: normalizeOptionalString(input.officeName) || current.officeName,
+        teamName: normalizeOptionalString(input.teamName) || current.teamName,
+        preferredLanguage:
+          normalizeOptionalString(input.preferredLanguage) || current.preferredLanguage,
+        planId: nextPlanId,
+        planName: getPlanConfig(nextPlanId).publicName,
+        isActive: input.isActive === undefined ? current.isActive : Boolean(input.isActive),
+        passwordHash: nextPassword
+          ? createPasswordHash(nextPassword)
+          : current.passwordHash,
+      };
+
+      fallbackWorkspaceUsers[currentIndex] = nextUser;
+      return sanitizeWorkspaceUser(nextUser);
+    }
+  );
+}
+
+export async function deleteWorkspaceUser(id: string, scope?: WorkspaceScope | null) {
+  assertAdminScope(scope);
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(`DELETE FROM workspace_users WHERE id = $1`, [id]);
+      return result.rowCount > 0;
+    },
+    async () => {
+      const currentIndex = fallbackWorkspaceUsers.findIndex((user) => user.id === id);
+
+      if (currentIndex < 0) {
+        return false;
+      }
+
+      fallbackWorkspaceUsers.splice(currentIndex, 1);
+      return true;
+    }
+  );
+}
+
 export async function authenticateWorkspaceUser(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -2117,7 +2433,7 @@ export async function authenticateWorkspaceUser(email: string, password: string)
       const result = await activePool.query(
         `
           SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name
+                 preferred_language, plan_id, plan_name, is_active
           FROM workspace_users
           WHERE LOWER(email) = $1
           LIMIT 1
@@ -2133,6 +2449,10 @@ export async function authenticateWorkspaceUser(email: string, password: string)
   );
 
   if (!record) {
+    return null;
+  }
+
+  if (!record.isActive) {
     return null;
   }
 
