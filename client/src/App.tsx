@@ -18,6 +18,7 @@ import {
   getCurrentSession,
   getHealth,
   getLeads,
+  getMarketStrategistRadar,
   getPlans,
   getStats,
   getTeams,
@@ -34,6 +35,7 @@ import {
   type CreateLeadInput,
   type Lead,
   type LeadStats,
+  type MarketStrategistRadar,
   type PipelineStage,
   type PlanCatalogEntry,
   type PlanType,
@@ -894,6 +896,7 @@ function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
+  const [strategistRadar, setStrategistRadar] = useState<MarketStrategistRadar | null>(null);
   const [plans, setPlans] = useState<PlanCatalogEntry[]>([]);
   const [adminPlans, setAdminPlans] = useState<PlanCatalogEntry[]>([]);
   const [adminDrafts, setAdminDrafts] = useState<AdminPlanDraftMap>({});
@@ -1237,16 +1240,29 @@ function App() {
       setLoading(true);
       setError("");
 
-      const [leadData, statsData, teamData] = await Promise.all([
+      const [leadResult, statsResult, teamResult, strategistResult] = await Promise.allSettled([
         getLeads(),
         getStats(),
         getTeams(),
+        getMarketStrategistRadar(),
       ]);
+
+      if (leadResult.status !== "fulfilled") {
+        throw leadResult.reason;
+      }
+
+      const leadData = leadResult.value;
+      const statsData =
+        statsResult.status === "fulfilled" ? statsResult.value : deriveStats(leadData);
+      const teamData = teamResult.status === "fulfilled" ? teamResult.value : null;
+      const nextStrategistRadar =
+        strategistResult.status === "fulfilled" ? strategistResult.value : null;
 
       startTransition(() => {
         setLeads(leadData);
         setStats(statsData);
         setTeamOverview(teamData);
+        setStrategistRadar(nextStrategistRadar);
         setWorkflowDrafts(buildWorkflowDrafts(leadData));
       });
     } catch (loadError) {
@@ -1342,6 +1358,7 @@ function App() {
       setLeads([]);
       setStats(null);
       setTeamOverview(null);
+      setStrategistRadar(null);
       setWorkflowDrafts({});
       setLoading(false);
       setActiveView("dashboard");
@@ -1732,8 +1749,10 @@ function App() {
     ])
   ).sort();
   const marketInsights = buildMarketInsights(leads);
+  const strategistOpportunities = strategistRadar?.opportunities || [];
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
+  const topStrategistOpportunity = strategistOpportunities[0] || null;
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
@@ -1757,13 +1776,37 @@ function App() {
   ];
   const dominantDeskLabel =
     routingMix.slice().sort((left, right) => right.value - left.value)[0]?.label || "Growth";
+  const strategistModeLabel =
+    strategistRadar?.mode === "hybrid" ? "Estrategista AI ativo" : "Estrategista heuristico";
+  const strategistHeadline =
+    strategistRadar?.headline ||
+    (topStrategistOpportunity
+      ? `${topStrategistOpportunity.location} lidera o radar com score ${topStrategistOpportunity.opportunityScore}.`
+      : topMarket
+        ? `${topMarket.market} lidera o radar atual.`
+        : "Sem mercado lider neste momento.");
+  const strategistSummary =
+    strategistRadar?.summary ||
+    (topStrategistOpportunity
+      ? `${topStrategistOpportunity.location} concentra ${topStrategistOpportunity.totalLeads} leads, ${topStrategistOpportunity.hotLeadCount} quentes e fontes ${topStrategistOpportunity.topSources.slice(0, 2).join(" e ") || "principais"}.`
+      : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.");
+  const strategistActions =
+    strategistRadar?.strategicActions?.length
+      ? strategistRadar.strategicActions
+      : [
+          "Proteger follow-ups e owners na frente com mais urgencia.",
+          "Reforcar a captacao nas fontes com melhor rendimento.",
+          "Escalar a mesa certa consoante o plano ativo.",
+        ];
   const commandSignals = [
     {
       label: "Mercado em foco",
-      value: topMarket?.market || "Sem destaque",
-      detail: topMarket
-        ? `${topMarket.totalLeads} leads ativos com score medio ${topMarket.averageAiScore}`
-        : "Carteira a aguardar novo sinal comercial",
+      value: topStrategistOpportunity?.location || topMarket?.market || "Sem destaque",
+      detail: topStrategistOpportunity
+        ? `${topStrategistOpportunity.totalLeads} leads ativas com score ${topStrategistOpportunity.opportunityScore}`
+        : topMarket
+          ? `${topMarket.totalLeads} leads ativos com score medio ${topMarket.averageAiScore}`
+          : "Carteira a aguardar novo sinal comercial",
     },
     {
       label: "Desk dominante",
@@ -1773,7 +1816,9 @@ function App() {
     {
       label: "Cobertura atual",
       value: coverageLabel,
-      detail: `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
+      detail: topStrategistOpportunity
+        ? `Fontes ${topStrategistOpportunity.topSources.slice(0, 2).join(" e ") || dominantSource} com ${topStrategistOpportunity.officeCount} lojas em cobertura`
+        : `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
     },
   ];
   const agentTierLadder = plans
@@ -2271,6 +2316,14 @@ function App() {
       return right.aiScore - left.aiScore;
     })
     .slice(0, 6);
+  const strategistRadarHighlight =
+    strategistRadar?.summary ||
+    (topMarket
+      ? `${topMarket.market} lidera o radar com ${topMarket.totalLeads} leads, score medio ${topMarket.averageAiScore} e ${topMarket.overdueFollowUps} follow-ups atrasados.`
+      : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.");
+  const strategistRadarSources =
+    topStrategistOpportunity?.topSources?.slice(0, 3).join(" · ") ||
+    dominantSource;
   const radarHighlight = topMarket
     ? `${topMarket.market} lidera o radar com ${topMarket.totalLeads} leads, score medio ${topMarket.averageAiScore} e ${topMarket.overdueFollowUps} follow-ups atrasados.`
     : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.";
@@ -2498,26 +2551,22 @@ function App() {
 
           <div className="hero-visual command-surface">
             <article className="command-surface-card command-surface-primary">
-              <span>Radar do mercado</span>
-              <strong>
-                {topMarket
-                  ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
-                  : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
-              </strong>
-              <p>{radarHighlight}</p>
+              <span>Radar estrategista</span>
+              <strong>{strategistHeadline}</strong>
+              <p>{strategistSummary}</p>
             </article>
 
             <div className="command-surface-grid">
               <article className="command-surface-card">
-                <span>Heat index</span>
-                <strong>{hotLeadRatio}%</strong>
-                <p>Carteira em estado quente e com urgencia comercial visivel.</p>
+                <span>Estrategista</span>
+                <strong>{strategistModeLabel}</strong>
+                <p>{strategistActions[0] || "Sem acao sugerida nesta fase."}</p>
               </article>
 
               <article className="command-surface-card">
                 <span>Fonte dominante</span>
-                <strong>{dominantSource}</strong>
-                <p>Origem mais forte a alimentar a operacao neste momento.</p>
+                <strong>{strategistRadarSources}</strong>
+                <p>Fontes que mais alimentam a frente comercial priorizada agora.</p>
               </article>
 
               <article className="command-surface-card">
@@ -2536,9 +2585,10 @@ function App() {
                 <span>Agente ativo</span>
                 <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
                 <p>
-                  {activePlan
-                    ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cadencia operacional pronta.`
-                    : "Workspace pronto para ativar o agente comercial."}
+                  {strategistActions[1] ||
+                    (activePlan
+                      ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cadencia operacional pronta.`
+                      : "Workspace pronto para ativar o agente comercial.")}
                 </p>
               </article>
             </div>
@@ -2828,16 +2878,39 @@ function App() {
             </div>
 
             <div className="signal-grid">
-              {marketInsights.slice(0, 4).map((market) => (
-                <article className="signal-card" key={market.market}>
-                  <span>{market.market}</span>
-                  <strong>{market.totalLeads} leads</strong>
-                  <p>Score medio {market.averageAiScore} - ticket medio {formatCurrency(market.averagePrice)}</p>
-                  <p>
-                    Fontes {market.topSources.slice(0, 2).join(" / ") || "Manual"} - {market.officeCount} lojas
-                  </p>
-                </article>
-              ))}
+              {strategistOpportunities.length > 0
+                ? strategistOpportunities.slice(0, 4).map((opportunity) => (
+                    <article className="signal-card" key={`${opportunity.market}-${opportunity.location}`}>
+                      <span>{opportunity.location}</span>
+                      <strong>Score {opportunity.opportunityScore}</strong>
+                      <p>
+                        {opportunity.totalLeads} leads - ticket medio{" "}
+                        {formatCurrency(opportunity.averagePrice)}
+                      </p>
+                      <p>
+                        {opportunity.demandLevel === "high"
+                          ? "Procura alta"
+                          : opportunity.demandLevel === "medium"
+                            ? "Procura media"
+                            : "Procura baixa"}{" "}
+                        - {opportunity.topSources.slice(0, 2).join(" / ") || "Manual"}
+                      </p>
+                    </article>
+                  ))
+                : marketInsights.slice(0, 4).map((market) => (
+                    <article className="signal-card" key={market.market}>
+                      <span>{market.market}</span>
+                      <strong>{market.totalLeads} leads</strong>
+                      <p>
+                        Score medio {market.averageAiScore} - ticket medio{" "}
+                        {formatCurrency(market.averagePrice)}
+                      </p>
+                      <p>
+                        Fontes {market.topSources.slice(0, 2).join(" / ") || "Manual"} -{" "}
+                        {market.officeCount} lojas
+                      </p>
+                    </article>
+                  ))}
             </div>
           </article>
         </section>
@@ -3032,13 +3105,13 @@ function App() {
           <div className="agenda-radar-grid">
             <article className="signal-card">
               <span>Radar atual</span>
-              <strong>{topMarket?.market || "Portugal"}</strong>
-              <p>{radarHighlight}</p>
+              <strong>{topStrategistOpportunity?.location || topMarket?.market || "Portugal"}</strong>
+              <p>{strategistRadarHighlight}</p>
             </article>
 
             <article className="signal-card">
               <span>Fontes quentes</span>
-              <strong>{topRadarSources}</strong>
+              <strong>{strategistRadarSources}</strong>
               <p>Origens que mais alimentam a operacao e merecem cadencia imediata.</p>
             </article>
 
@@ -3672,54 +3745,74 @@ function App() {
         <section className="shell-panel report-hero">
           <div>
             <p className="eyebrow">Market radar</p>
-            <h3>
-              {topMarket
-                ? `${topMarket.market} lidera o radar atual.`
-                : "Sem mercado lider neste momento."}
-            </h3>
+            <h3>{strategistHeadline}</h3>
             <p className="hero-text">
-              Esta pagina concentra o pulso do mercado, combinando carteira ativa,
-              score AI, backlog comercial e cadencia de relatorios por plano.
+              {strategistSummary}
             </p>
           </div>
 
           <div className="signal-grid">
             <article className="signal-card">
-              <span>Ticket medio</span>
+              <span>Foco imediato</span>
               <strong>
-                {topMarket ? formatCurrency(topMarket.averagePrice) : formatCurrency(0)}
+                {topStrategistOpportunity?.location || topMarket?.market || "Sem foco"}
               </strong>
-              <p>Na geografia com maior volume operacional.</p>
+              <p>{strategistActions[0] || "Sem acao prioritaria neste momento."}</p>
             </article>
             <article className="signal-card">
-              <span>Hot leads</span>
-              <strong>{topMarket ? topMarket.hotLeads : 0}</strong>
-              <p>Leads com maior urgencia de protecao comercial.</p>
+              <span>Estrategista</span>
+              <strong>{strategistModeLabel}</strong>
+              <p>{strategistActions[1] || "A aguardar sinais mais fortes da carteira."}</p>
             </article>
             <article className="signal-card">
               <span>Fonte lider</span>
-              <strong>{sourceMix[0]?.[0] || "Sem dados"}</strong>
-              <p>Canal dominante na carteira atual.</p>
+              <strong>{strategistRadarSources || "Sem dados"}</strong>
+              <p>{strategistActions[2] || "Canal dominante na carteira atual."}</p>
             </article>
           </div>
         </section>
 
         <section className="report-grid">
-          {marketInsights.map((insight) => (
-            <article className="report-card" key={insight.market}>
-              <span>{insight.market}</span>
-              <strong>{insight.totalLeads} leads</strong>
-              <p>Score medio {insight.averageAiScore}</p>
-              <p>Ticket medio {formatCurrency(insight.averagePrice)}</p>
-              <p>{insight.officeCount} desks com cobertura</p>
-              <p>{insight.overdueFollowUps} follow-ups em risco</p>
-              <div className="mini-tags">
-                {insight.topSources.map((source) => (
-                  <span key={source}>{source}</span>
-                ))}
-              </div>
-            </article>
-          ))}
+          {strategistOpportunities.length > 0
+            ? strategistOpportunities.map((opportunity) => (
+                <article className="report-card" key={`${opportunity.market}-${opportunity.location}`}>
+                  <span>{opportunity.location}</span>
+                  <strong>Score {opportunity.opportunityScore}</strong>
+                  <p>{opportunity.totalLeads} leads na frente atual</p>
+                  <p>Ticket medio {formatCurrency(opportunity.averagePrice)}</p>
+                  <p>{opportunity.officeCount} lojas com cobertura</p>
+                  <p>{opportunity.hotLeadCount} leads quentes em prioridade</p>
+                  <p>{opportunity.recommendation}</p>
+                  <div className="mini-tags">
+                    <span>{opportunity.market}</span>
+                    <span>
+                      {opportunity.demandLevel === "high"
+                        ? "Procura alta"
+                        : opportunity.demandLevel === "medium"
+                          ? "Procura media"
+                          : "Procura baixa"}
+                    </span>
+                    {opportunity.topSources.map((source) => (
+                      <span key={source}>{source}</span>
+                    ))}
+                  </div>
+                </article>
+              ))
+            : marketInsights.map((insight) => (
+                <article className="report-card" key={insight.market}>
+                  <span>{insight.market}</span>
+                  <strong>{insight.totalLeads} leads</strong>
+                  <p>Score medio {insight.averageAiScore}</p>
+                  <p>Ticket medio {formatCurrency(insight.averagePrice)}</p>
+                  <p>{insight.officeCount} desks com cobertura</p>
+                  <p>{insight.overdueFollowUps} follow-ups em risco</p>
+                  <div className="mini-tags">
+                    {insight.topSources.map((source) => (
+                      <span key={source}>{source}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
         </section>
 
         <section className="shell-panel">

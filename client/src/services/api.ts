@@ -204,6 +204,29 @@ export type AdminSystemStatus = {
   database: boolean;
 };
 
+export type StrategistOpportunity = {
+  location: string;
+  market: string;
+  propertyType: string;
+  averagePrice: number;
+  totalLeads: number;
+  opportunityScore: number;
+  demandLevel: "high" | "medium" | "low";
+  recommendation: string;
+  topSources: string[];
+  hotLeadCount: number;
+  officeCount: number;
+};
+
+export type MarketStrategistRadar = {
+  generatedAt: string;
+  mode: "hybrid" | "heuristic";
+  headline: string;
+  summary: string;
+  strategicActions: string[];
+  opportunities: StrategistOpportunity[];
+};
+
 export type Lead = {
   id: string;
   name: string;
@@ -387,6 +410,11 @@ export async function getStats() {
 export async function getTeams() {
   const response = await apiFetch("/api/teams");
   return readJson<TeamOverview>(response);
+}
+
+export async function getMarketStrategistRadar() {
+  const response = await apiFetch("/api/market-radar/strategist");
+  return readJson<MarketStrategistRadar>(response);
 }
 
 export async function getPlans() {

@@ -8,6 +8,7 @@ import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
 import { sanitizeInputs } from "./middleware/sanitize.js";
 import { PLAN_CONFIG, getDefaultPlanId, getPlanConfig } from "./core/plans.js";
 import { stripeService } from "./lib/stripeService.js";
+import { analyzeMarketOpportunities } from "./ai/marketStrategistAgent.js";
 import {
   authenticateWorkspaceUser,
   createCommercialPlan,
@@ -373,6 +374,16 @@ app.get("/api/teams", async (req: Request, res: Response) => {
     res.json(teams);
   } catch (error) {
     sendRouteError(res, error, "Nao foi possivel carregar as equipas.");
+  }
+});
+
+app.get("/api/market-radar/strategist", async (req: Request, res: Response) => {
+  try {
+    const scope = await getRequestScope(req);
+    const strategistSnapshot = await analyzeMarketOpportunities(scope);
+    res.json(strategistSnapshot);
+  } catch (error) {
+    sendRouteError(res, error, "Nao foi possivel carregar o radar estrategista.");
   }
 });
 

@@ -56,7 +56,9 @@ const cities = [
 
   /* ANALISAR MERCADO PRIMEIRO */
 
- await analyzeMarketOpportunities() 
+ const strategistSnapshot = await analyzeMarketOpportunities()
+
+ console.log("[Scheduler] strategist headline:", strategistSnapshot.headline)
 
   /* DESCOBRIR LEADS */
 

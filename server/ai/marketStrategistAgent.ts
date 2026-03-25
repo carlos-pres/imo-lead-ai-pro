@@ -1,20 +1,36 @@
 import OpenAI from "openai";
-import { storage } from "../storage";
+import { getAllLeads, type WorkspaceScope } from "../storage.js";
 import { getOpenAIDefaultModel } from "../lib/aiModelConfig.js";
-type Lead = any;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+type Lead = Awaited<ReturnType<typeof getAllLeads>>[number];
+
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface MarketOpportunity {
   location: string;
+  market: string;
   propertyType: string;
   averagePrice: number;
   totalLeads: number;
   opportunityScore: number;
   demandLevel: "high" | "medium" | "low";
   recommendation: string;
+  topSources: string[];
+  hotLeadCount: number;
+  officeCount: number;
+}
+
+export interface MarketStrategistSnapshot {
+  generatedAt: string;
+  mode: "hybrid" | "heuristic";
+  headline: string;
+  summary: string;
+  strategicActions: string[];
+  opportunities: MarketOpportunity[];
 }
 
 function groupLeadsByLocation(leads: Lead[]) {
@@ -61,16 +77,121 @@ function determineDemandLevel(total: number): "high" | "medium" | "low" {
   return "low";
 }
 
-export async function analyzeMarketOpportunities(): Promise<MarketOpportunity[]> {
-  try {
+function buildOpportunityRecommendation(
+  demand: "high" | "medium" | "low",
+  avgPrice: number,
+  topSource: string
+) {
+  if (demand === "high") {
+    return `Alta procura. Proteger follow-up e reforcar captacao nas fontes ${topSource}.`;
+  }
 
+  if (demand === "medium") {
+    return avgPrice >= 300000
+      ? `Mercado equilibrado com ticket relevante. Priorizar owners de growth e cadencia de visita.`
+      : `Mercado equilibrado. Trabalhar qualificacao, resposta rapida e fontes ${topSource}.`;
+  }
+
+  return `Procura baixa. Usar abordagem de investidor e nutricao comercial antes de escalar outreach.`;
+}
+
+function buildHeuristicSnapshot(opportunities: MarketOpportunity[]): MarketStrategistSnapshot {
+  const generatedAt = new Date().toISOString();
+
+  if (opportunities.length === 0) {
+    return {
+      generatedAt,
+      mode: "heuristic",
+      headline: "Sem sinais suficientes para o estrategista nesta fase.",
+      summary:
+        "O radar estrategista fica ativo assim que a carteira ganhar localizacao, preco e prioridade suficientes.",
+      strategicActions: [
+        "Aumentar o volume de leads com localizacao e preco completos.",
+        "Garantir follow-ups e owners atribuidos para o radar ficar operacional.",
+      ],
+      opportunities: [],
+    };
+  }
+
+  const topOpportunity = opportunities[0];
+  const secondaryOpportunity = opportunities[1] || null;
+
+  return {
+    generatedAt,
+    mode: "heuristic",
+    headline: `${topOpportunity.location} lidera o radar com score ${topOpportunity.opportunityScore} e ${topOpportunity.totalLeads} leads ativas.`,
+    summary: `${topOpportunity.location} concentra a melhor combinacao de volume, ticket medio e urgencia comercial. ${secondaryOpportunity ? `${secondaryOpportunity.location} aparece como segunda frente para protecao e expansao.` : "O foco imediato esta concentrado numa unica frente comercial."}`,
+    strategicActions: [
+      `Proteger a resposta comercial em ${topOpportunity.location} nas proximas ${Math.max(4, topOpportunity.hotLeadCount || 4)} oportunidades quentes.`,
+      `Reforcar captacao e outreach nas fontes ${topOpportunity.topSources.slice(0, 2).join(" e ") || "lideres"} em ${topOpportunity.location}.`,
+      secondaryOpportunity
+        ? `Preparar mesa ${secondaryOpportunity.demandLevel === "high" ? "flagship" : "growth"} para ${secondaryOpportunity.location}.`
+        : "Consolidar ownership e follow-up antes de abrir uma segunda frente geografica.",
+    ],
+    opportunities,
+  };
+}
+
+async function buildAiNarrative(opportunities: MarketOpportunity[]) {
+  if (!openai || opportunities.length === 0) {
+    return null;
+  }
+
+  const response = await openai.chat.completions.create({
+    model: getOpenAIDefaultModel(),
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a European real estate strategist AI. Return strict JSON with keys headline, summary and strategicActions. strategicActions must be an array with exactly 3 short Portuguese strings.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          instruction:
+            "Analisa as oportunidades de mercado e responde em portugues europeu com foco comercial, sem markdown.",
+          opportunities,
+        }),
+      },
+    ],
+    response_format: { type: "json_object" },
+  });
+
+  const content = response.choices[0]?.message?.content || "";
+  const parsed = JSON.parse(content) as {
+    headline?: string;
+    summary?: string;
+    strategicActions?: string[];
+  };
+
+  if (
+    !parsed.headline ||
+    !parsed.summary ||
+    !Array.isArray(parsed.strategicActions) ||
+    parsed.strategicActions.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    headline: parsed.headline,
+    summary: parsed.summary,
+    strategicActions: parsed.strategicActions.slice(0, 3),
+  };
+}
+
+export async function analyzeMarketOpportunities(
+  scope?: WorkspaceScope
+): Promise<MarketStrategistSnapshot> {
+  try {
     console.log("[MarketStrategist] Starting market analysis");
 
-    const leads = await storage.getAllLeads();
+    const leads = await getAllLeads(scope);
 
     if (!leads || leads.length === 0) {
       console.log("[MarketStrategist] No leads found");
-      return [];
+      return buildHeuristicSnapshot([]);
     }
 
     const grouped = groupLeadsByLocation(leads);
@@ -87,52 +208,69 @@ export async function analyzeMarketOpportunities(): Promise<MarketOpportunity[]>
 
       const demand = determineDemandLevel(leadsInLocation.length);
 
+      const sourceCounter = new Map<string, number>();
+      const officeNames = new Set<string>();
+
+      leadsInLocation.forEach((lead) => {
+        sourceCounter.set(lead.source, (sourceCounter.get(lead.source) || 0) + 1);
+        officeNames.add(lead.officeName);
+      });
+
+      const topSources = Array.from(sourceCounter.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 3)
+        .map(([source]) => source);
+
       opportunities.push({
         location: location,
-        propertyType: leadsInLocation[0].propertyType,
+        market: leadsInLocation[0].market,
+        propertyType: leadsInLocation[0].property || "Imovel residencial",
         averagePrice: avgPrice,
         totalLeads: leadsInLocation.length,
         opportunityScore: score,
         demandLevel: demand,
-        recommendation:
-          demand === "high"
-            ? "High demand area. Focus on acquiring listings."
-            : demand === "medium"
-            ? "Balanced market. Monitor price trends."
-            : "Low demand area. Consider investor targeting."
+        recommendation: buildOpportunityRecommendation(
+          demand,
+          avgPrice,
+          topSources[0] || "principais"
+        ),
+        topSources,
+        hotLeadCount: leadsInLocation.filter((lead) => lead.status === "quente").length,
+        officeCount: officeNames.size,
       });
     }
 
-    const aiResponse = await openai.chat.completions.create({
-      model: getOpenAIDefaultModel(),
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a European real estate strategist AI. " +
-            "Analyze property markets and detect investment opportunities."
-        },
-        {
-          role: "user",
-          content:
-            "Analyze these property opportunities: " +
-            JSON.stringify(opportunities)
-        }
-      ]
+    opportunities.sort((left, right) => {
+      if (right.opportunityScore !== left.opportunityScore) {
+        return right.opportunityScore - left.opportunityScore;
+      }
+
+      return right.totalLeads - left.totalLeads;
     });
 
-    const insights = aiResponse.choices[0].message.content;
+    const heuristicSnapshot = buildHeuristicSnapshot(opportunities);
 
-    console.log("[MarketStrategist] AI insights:");
-    console.log(insights);
+    try {
+      const aiNarrative = await buildAiNarrative(opportunities);
 
-    return opportunities;
+      if (!aiNarrative) {
+        return heuristicSnapshot;
+      }
+
+      return {
+        ...heuristicSnapshot,
+        mode: "hybrid",
+        headline: aiNarrative.headline,
+        summary: aiNarrative.summary,
+        strategicActions: aiNarrative.strategicActions,
+      };
+    } catch (aiError) {
+      console.error("[MarketStrategist] AI narrative fallback:", aiError);
+      return heuristicSnapshot;
+    }
 
   } catch (error) {
-
     console.error("[MarketStrategist] Error during analysis:", error);
-
-    return [];
+    return buildHeuristicSnapshot([]);
   }
 }
