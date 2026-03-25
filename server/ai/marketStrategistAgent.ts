@@ -115,17 +115,24 @@ function buildHeuristicSnapshot(opportunities: MarketOpportunity[]): MarketStrat
 
   const topOpportunity = opportunities[0];
   const secondaryOpportunity = opportunities[1] || null;
+  const topSourcesLabel = topOpportunity.topSources.slice(0, 2).join(" e ") || "fontes lideres";
+  const recommendedDesk =
+    topOpportunity.demandLevel === "high"
+      ? "flagship"
+      : topOpportunity.averagePrice >= 300000
+        ? "growth"
+        : "nurture";
 
   return {
     generatedAt,
     mode: "heuristic",
-    headline: `${topOpportunity.location} lidera o radar com score ${topOpportunity.opportunityScore} e ${topOpportunity.totalLeads} leads ativas.`,
-    summary: `${topOpportunity.location} concentra a melhor combinacao de volume, ticket medio e urgencia comercial. ${secondaryOpportunity ? `${secondaryOpportunity.location} aparece como segunda frente para protecao e expansao.` : "O foco imediato esta concentrado numa unica frente comercial."}`,
+    headline: `${topOpportunity.location} lidera o radar com score ${topOpportunity.opportunityScore}, ${topOpportunity.totalLeads} leads ativas e prioridade para a mesa ${recommendedDesk}.`,
+    summary: `${topOpportunity.location} concentra a frente mais forte da carteira, com ticket medio de ${topOpportunity.averagePrice} EUR, ${topOpportunity.hotLeadCount} leads quentes e fontes ${topSourcesLabel}. ${secondaryOpportunity ? `${secondaryOpportunity.location} aparece como segunda frente para protecao e expansao.` : "O foco imediato continua concentrado numa unica frente comercial."}`,
     strategicActions: [
-      `Proteger a resposta comercial em ${topOpportunity.location} nas proximas ${Math.max(4, topOpportunity.hotLeadCount || 4)} oportunidades quentes.`,
-      `Reforcar captacao e outreach nas fontes ${topOpportunity.topSources.slice(0, 2).join(" e ") || "lideres"} em ${topOpportunity.location}.`,
+      `Acionar a mesa ${recommendedDesk} para ${topOpportunity.location} e proteger as proximas ${Math.max(3, topOpportunity.hotLeadCount || 1)} oportunidades com resposta em menos de 24h.`,
+      `Reforcar captacao e outreach nas fontes ${topSourcesLabel} em ${topOpportunity.location}.`,
       secondaryOpportunity
-        ? `Preparar mesa ${secondaryOpportunity.demandLevel === "high" ? "flagship" : "growth"} para ${secondaryOpportunity.location}.`
+        ? `Preparar a segunda frente em ${secondaryOpportunity.location} com mesa ${secondaryOpportunity.demandLevel === "high" ? "flagship" : "growth"} e leitura semanal dedicada.`
         : "Consolidar ownership e follow-up antes de abrir uma segunda frente geografica.",
     ],
     opportunities,
@@ -144,13 +151,13 @@ async function buildAiNarrative(opportunities: MarketOpportunity[]) {
       {
         role: "system",
         content:
-          "You are a European real estate strategist AI. Return strict JSON with keys headline, summary and strategicActions. strategicActions must be an array with exactly 3 short Portuguese strings.",
+          "You are a European real estate strategist AI for an enterprise real estate cockpit. Return strict JSON with keys headline, summary and strategicActions. strategicActions must be an array with exactly 3 short Portuguese strings. Be concrete, commercial and market-specific. Mention the strongest location explicitly. Avoid generic wording like 'oportunidades limitadas' or vague consultant language.",
       },
       {
         role: "user",
         content: JSON.stringify({
           instruction:
-            "Analisa as oportunidades de mercado e responde em portugues europeu com foco comercial, sem markdown.",
+            "Analisa as oportunidades de mercado e responde em portugues europeu com foco comercial, sem markdown. A headline deve citar a melhor localizacao. O summary deve citar o ticket medio, a procura e as fontes mais fortes. As acoes devem soar a operacao comercial e nao a consultoria generica.",
           opportunities,
         }),
       },
@@ -179,6 +186,28 @@ async function buildAiNarrative(opportunities: MarketOpportunity[]) {
     summary: parsed.summary,
     strategicActions: parsed.strategicActions.slice(0, 3),
   };
+}
+
+function isSpecificNarrative(
+  narrative: { headline: string; summary: string; strategicActions: string[] },
+  topOpportunity: MarketOpportunity
+) {
+  const combinedText = [
+    narrative.headline,
+    narrative.summary,
+    ...narrative.strategicActions,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const mentionsLocation = combinedText.includes(topOpportunity.location.toLowerCase());
+  const mentionsSource = topOpportunity.topSources.some((source) =>
+    combinedText.includes(source.toLowerCase())
+  );
+  const hasActionVerb =
+    /proteger|reforcar|acionar|priorizar|abrir|consolidar|captar|executar/.test(combinedText);
+
+  return mentionsLocation && hasActionVerb && (mentionsSource || combinedText.includes("fonte"));
 }
 
 export async function analyzeMarketOpportunities(
@@ -254,6 +283,11 @@ export async function analyzeMarketOpportunities(
       const aiNarrative = await buildAiNarrative(opportunities);
 
       if (!aiNarrative) {
+        return heuristicSnapshot;
+      }
+
+      if (!isSpecificNarrative(aiNarrative, opportunities[0])) {
+        console.warn("[MarketStrategist] AI narrative too generic, using heuristic snapshot.");
         return heuristicSnapshot;
       }
 
