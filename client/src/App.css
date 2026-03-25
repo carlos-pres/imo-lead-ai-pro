@@ -420,6 +420,23 @@
   cursor: progress;
 }
 
+.whatsapp-button {
+  border: 0;
+  border-radius: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #157347, #1f9d62);
+  color: #f7fff8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 16px 30px rgba(21, 115, 71, 0.18);
+}
+
+.whatsapp-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .search-input {
   max-width: 320px;
 }
@@ -2214,7 +2231,7 @@
 }
 
 .public-contact-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .marketing-scenario-grid,
@@ -2494,7 +2511,7 @@
 .marketing-feature-grid,
 .marketing-final-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
 }
 

@@ -390,6 +390,10 @@ const DEMO_ACCESS = [
   },
 ] as const;
 
+const SALES_CONTACT_EMAIL = "carlospsantos19820@gmail.com";
+const SALES_WHATSAPP_LABEL = "+351 927 627 844";
+const SALES_WHATSAPP_DIGITS = "351927627844";
+
 const PUBLIC_DEMO_ENABLED =
   import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_DEMO === "true";
 
@@ -417,6 +421,10 @@ function getPlanForDemoEntry(entry: DemoAccessEntry): PlanType {
   }
 
   return "pro";
+}
+
+function buildSalesWhatsAppUrl(message: string) {
+  return `https://wa.me/${SALES_WHATSAPP_DIGITS}?text=${encodeURIComponent(message)}`;
 }
 
 function isViewId(value: string): value is ViewId {
@@ -1534,6 +1542,12 @@ function App() {
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
+  const salesWhatsAppDemoUrl = buildSalesWhatsAppUrl(
+    "Ola, quero agendar uma demonstracao do ImoLead AI Pro e perceber o plano mais indicado para a minha operacao."
+  );
+  const salesWhatsAppProposalUrl = buildSalesWhatsAppUrl(
+    "Ola, quero receber uma proposta comercial do ImoLead AI Pro para a minha operacao."
+  );
   const hotLeadRatio =
     dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
   const routingMix = [
@@ -1942,8 +1956,12 @@ function App() {
           "Levamos a demonstracao para a leitura executiva certa, com foco em governance, equipas e escala.",
           DEMO_ACCESS[0]
         ),
-      secondaryLabel: "Falar com a equipa",
-      secondaryAction: () => navigatePublicPage("contact"),
+      secondaryLabel: "WhatsApp comercial",
+      secondaryAction: () =>
+        handleOpenExternal(
+          salesWhatsAppProposalUrl,
+          "Nao foi possivel abrir o WhatsApp comercial neste momento."
+        ),
     },
   ];
 
@@ -5404,7 +5422,11 @@ function App() {
             const featured = plan.basePlanId === "pro";
             const secondaryAction =
               plan.basePlanId === "custom"
-                ? () => navigatePublicPage("contact")
+                ? () =>
+                    handleOpenExternal(
+                      salesWhatsAppProposalUrl,
+                      "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                    )
                 : plan.basePlanId === "basic"
                   ? () =>
                       openLandingPricing(
@@ -5421,7 +5443,7 @@ function App() {
                       );
             const secondaryLabel =
               plan.basePlanId === "custom"
-                ? "Falar com a equipa"
+                ? "WhatsApp comercial"
                 : plan.basePlanId === "basic"
                   ? "Ver salto para Pro"
                   : "Abrir leitura Enterprise";
@@ -5625,6 +5647,18 @@ function App() {
 
           <div className="marketing-final-actions">
             <button
+              className="whatsapp-button"
+              type="button"
+              onClick={() =>
+                handleOpenExternal(
+                  salesWhatsAppDemoUrl,
+                  "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                )
+              }
+            >
+              Falar no WhatsApp
+            </button>
+            <button
               className="primary-button"
               type="button"
               onClick={() =>
@@ -5635,29 +5669,21 @@ function App() {
                 )
               }
             >
-              Agendar demo executiva
-            </button>
-            <button
-              className="ghost-button"
-              type="button"
-              onClick={() =>
-                openLandingPricing(
-                  "custom",
-                  "Proposta enterprise em foco",
-                  "A secao de planos abre com a camada enterprise destacada para conversa de valor e escala."
-                )
-              }
-            >
-              Receber proposta
+              Abrir demo executiva
             </button>
           </div>
         </div>
 
         <div className="marketing-final-grid">
           <article className="marketing-final-card">
-            <span>Conta principal</span>
-            <strong>carlospsantos19820@gmail.com</strong>
-            <p>Canal direto para demonstracao, proposta e controlo comercial do workspace.</p>
+            <span>WhatsApp comercial</span>
+            <strong>{SALES_WHATSAPP_LABEL}</strong>
+            <p>Canal mais rapido para demo, proposta e alinhamento comercial sem atrito.</p>
+          </article>
+          <article className="marketing-final-card">
+            <span>Contacto comercial</span>
+            <strong>{SALES_CONTACT_EMAIL}</strong>
+            <p>Canal direto para demonstracao executiva, proposta e configuracao enterprise.</p>
           </article>
           <article className="marketing-final-card">
             <span>Plano em foco</span>
@@ -5708,11 +5734,16 @@ function App() {
                 Ver planos
               </button>
               <button
-                className="ghost-button"
+                className="whatsapp-button"
                 type="button"
-                onClick={() => navigatePublicPage("contact")}
+                onClick={() =>
+                  handleOpenExternal(
+                    salesWhatsAppDemoUrl,
+                    "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                  )
+                }
               >
-                Falar com a equipa
+                Falar no WhatsApp
               </button>
             </div>
 
@@ -5761,8 +5792,8 @@ function App() {
 
               <article className="public-login-stage-card">
                 <span>Contacto comercial</span>
-                <strong>carlospsantos19820@gmail.com</strong>
-                <p>Canal direto para demonstracao assistida, proposta e ativacao enterprise.</p>
+                <strong>{SALES_WHATSAPP_LABEL}</strong>
+                <p>{SALES_CONTACT_EMAIL} para proposta, demonstracao assistida e ativacao enterprise.</p>
               </article>
             </div>
           </div>
@@ -5814,11 +5845,16 @@ function App() {
             </button>
           ) : (
             <button
-              className="secondary-button"
+              className="whatsapp-button"
               type="button"
-              onClick={() => navigatePublicPage("contact")}
+              onClick={() =>
+                handleOpenExternal(
+                  salesWhatsAppDemoUrl,
+                  "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                )
+              }
             >
-              Pedir demo assistida
+              Falar no WhatsApp
             </button>
           )}
           <button
@@ -6285,8 +6321,17 @@ function App() {
               <button className="ghost-button" type="button" onClick={() => navigatePublicPage("pricing")}>
                 Rever oferta
               </button>
-              <button className="ghost-button" type="button" onClick={() => navigatePublicPage("contact")}>
-                Falar com a equipa
+              <button
+                className="whatsapp-button"
+                type="button"
+                onClick={() =>
+                  handleOpenExternal(
+                    salesWhatsAppDemoUrl,
+                    "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                  )
+                }
+              >
+                WhatsApp comercial
               </button>
             </div>
           </article>
@@ -6465,14 +6510,18 @@ function App() {
             "A pagina de precos passa a ter autonomia propria, com trial, utilizadores incluidos, extra users e progressao natural entre planos.",
           stage: "pricing",
           primaryLabel: "Entrar com este plano",
-          secondaryLabel: "Falar com a equipa",
+          secondaryLabel: "WhatsApp comercial",
           onPrimaryClick: () =>
             openLandingLogin(
               activePlanId,
               "Plano atual pronto para demonstracao",
               "Abrimos a pagina de entrada com o plano selecionado e a guidance certa."
             ),
-          onSecondaryClick: () => navigatePublicPage("contact"),
+          onSecondaryClick: () =>
+            handleOpenExternal(
+              salesWhatsAppProposalUrl,
+              "Nao foi possivel abrir o WhatsApp comercial neste momento."
+            ),
         })}
         {renderPricingCardsSection({ enableCheckout: true })}
         <section className="marketing-section public-plan-summary-grid">
@@ -6504,20 +6553,29 @@ function App() {
           text:
             "Esta pagina concentra fecho comercial, contacto RGPD, oferta enterprise e os documentos que sustentam a operacao publica.",
           stage: "contact",
-          primaryLabel: "Abrir demo enterprise",
-          secondaryLabel: "Ver login protegido",
+          primaryLabel: "Falar no WhatsApp",
+          secondaryLabel: "Abrir demo enterprise",
           onPrimaryClick: () =>
+            handleOpenExternal(
+              salesWhatsAppDemoUrl,
+              "Nao foi possivel abrir o WhatsApp comercial neste momento."
+            ),
+          onSecondaryClick: () =>
             openLandingLogin(
               "custom",
               "Demo enterprise preparada para impressionar decisores",
               "Mostramos governance, planos, equipas e leitura executiva com a conta ADM."
             ),
-          onSecondaryClick: () => navigatePublicPage("login"),
         })}
         <section className="marketing-section public-contact-grid">
+          <article className="public-contact-card public-contact-card-featured">
+            <span>WhatsApp comercial</span>
+            <strong>{SALES_WHATSAPP_LABEL}</strong>
+            <p>Canal rapido para marcar demo, alinhar proposta e acelerar a conversa comercial.</p>
+          </article>
           <article className="public-contact-card">
             <span>Contacto comercial</span>
-            <strong>carlospsantos19820@gmail.com</strong>
+            <strong>{SALES_CONTACT_EMAIL}</strong>
             <p>Canal direto para proposta, demonstracao orientada e configuracao enterprise.</p>
           </article>
           <article className="public-contact-card">
