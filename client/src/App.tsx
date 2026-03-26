@@ -2788,400 +2788,416 @@ function App() {
   void renderDashboardView;
 
   function renderOperationalDashboardView() {
+    const marketRadarCards =
+      strategistOpportunities.length > 0
+        ? strategistOpportunities.slice(0, 3).map((opportunity) => ({
+            id: `${opportunity.market}-${opportunity.location}`,
+            title: opportunity.location,
+            value: `Score ${opportunity.opportunityScore}`,
+            detail: `${opportunity.totalLeads} leads · ticket medio ${formatCurrency(opportunity.averagePrice)}`,
+            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} · ${opportunity.demandLevel}`,
+          }))
+        : marketInsights.slice(0, 3).map((market) => ({
+            id: market.market,
+            title: market.market,
+            value: `${market.totalLeads} leads`,
+            detail: `Score medio ${market.averageAiScore} · ticket medio ${formatCurrency(market.averagePrice)}`,
+            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} · ${market.officeCount} lojas`,
+          }));
+
+    const communicationMailtoFallback = `mailto:${SALES_CONTACT_EMAIL}?subject=${encodeURIComponent(
+      communicationLead
+        ? `Apoio operacional para ${communicationLead.name}`
+        : "Apoio operacional ImoLead AI Pro"
+    )}&body=${encodeURIComponent(
+      communicationLead
+        ? `Precisamos validar o melhor canal para ${communicationLead.name} em ${communicationLead.location}. Acao sugerida: ${communicationLead.recommendedAction}.`
+        : "Preciso de apoio da equipa ImoLead AI Pro para operacionalizar a proxima acao comercial."
+    )}`;
+
+    const communicationWhatsAppFallback = buildSalesWhatsAppUrl(
+      communicationLead
+        ? `Ola, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Acao sugerida: ${communicationLead.recommendedAction}.`
+        : "Ola, preciso de apoio para operacionalizar o proximo passo comercial no cockpit."
+    );
+
+    const communicationEmailLaunchUrl = communicationEmail
+      ? communicationMailto
+      : communicationMailtoFallback;
+    const communicationWhatsAppLaunchUrl = communicationPhone
+      ? communicationWhatsAppUrl
+      : communicationWhatsAppFallback;
+
     return (
-      <div className="page-stack">
-        <section className="hero-panel shell-panel command-panel">
-          <div className="hero-copy command-copy">
-            <p className="eyebrow">ImoLead AI Pro Enterprise</p>
-            <h2>Agente AI, radar de mercado e comunicacao prontos no mesmo cockpit.</h2>
-            <p className="hero-text">
-              O workspace passa a mostrar quem o agente vai atacar, onde o radar esta a aquecer
-              e que mensagem sai por email ou WhatsApp para a equipa agir no momento certo.
-            </p>
-
-            <div className="hero-actions hero-actions-grid">
-              <div className="status-chip">{apiState}</div>
-              <div className="status-chip muted">
-                AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}
-              </div>
-              <div className="status-chip muted">
-                {dashboardStats.average_ai_score} score medio AI
-              </div>
-              <div className="status-chip muted">
-                {dashboardStats.active_offices} lojas ativas
-              </div>
-              <div className="status-chip muted">
-                DB {databaseConfigured ? "configurada" : "fallback local"}
-              </div>
+      <div className="page-stack dashboard-page-stack">
+        <section className="shell-panel dashboard-overview-panel">
+          <div className="section-head dashboard-overview-head">
+            <div>
+              <p className="eyebrow">Control deck</p>
+              <h3>{strategistHeadline}</h3>
+              <p className="dashboard-overview-copy">{strategistSummary}</p>
             </div>
 
-            <div className="command-strips">
-              {commandSignals.map((signal) => (
-                <article className="command-strip" key={signal.label}>
-                  <span>{signal.label}</span>
-                  <strong>{signal.value}</strong>
-                  <p>{signal.detail}</p>
-                </article>
-              ))}
+            <div className="dashboard-inline-actions">
+              <button className="primary-button" type="button" onClick={() => navigateTo("automation")}>
+                Abrir automacao
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
+                Abrir pipeline
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
+                Ver radar
+              </button>
+              {canAccessAdmin ? (
+                <button className="ghost-button" type="button" onClick={() => navigateTo("admin")}>
+                  Abrir ADM
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <div className="hero-visual command-surface">
-            <article className="command-surface-card command-surface-primary">
-              <span>Radar do mercado</span>
-              <strong>
-                {topMarket
-                  ? `${topMarket.market} lidera com ${topMarket.totalLeads} leads e score medio ${topMarket.averageAiScore}.`
-                  : `${dashboardStats.overdue_followups} follow-ups estao em atraso.`}
-              </strong>
-              <p>{radarHighlight}</p>
+          {workspaceFeedback ? <p className="feedback success">{workspaceFeedback}</p> : null}
+          {error ? <p className="feedback error">{error}</p> : null}
+
+          <div className="dashboard-glance-grid">
+            <article className="dashboard-glance-card active">
+              <span>Plano</span>
+              <strong>{session?.user.planName || activePlan?.publicName || "Workspace"}</strong>
+              <p>{activePlan?.agentLabel || marketingAiLabel}</p>
             </article>
+            <article className="dashboard-glance-card">
+              <span>Estado AI</span>
+              <strong>{aiMode === "hybrid" ? "Hybrid" : "Heuristico"}</strong>
+              <p>{dashboardStats.average_ai_score} score medio</p>
+            </article>
+            <article className="dashboard-glance-card">
+              <span>Pipeline</span>
+              <strong>{dashboardStats.total} leads</strong>
+              <p>{dashboardStats.overdue_followups} follow-ups em atraso</p>
+            </article>
+            <article className="dashboard-glance-card">
+              <span>Radar</span>
+              <strong>{topStrategistOpportunity?.location || topMarket?.market || "Portugal"}</strong>
+              <p>{strategistModeLabel}</p>
+            </article>
+            <article className="dashboard-glance-card">
+              <span>Desk dominante</span>
+              <strong>{dominantDeskLabel}</strong>
+              <p>{dashboardStats.active_offices} lojas ativas</p>
+            </article>
+          </div>
 
-            <div className="command-surface-grid">
-              <article className="command-surface-card">
-                <span>Heat index</span>
-                <strong>{hotLeadRatio}%</strong>
-                <p>Carteira em estado quente e com urgencia comercial visivel.</p>
+          <div className="dashboard-playbook-grid">
+            {strategistActions.slice(0, 3).map((action, index) => (
+              <article className="dashboard-playbook-card" key={action}>
+                <span>Acao {index + 1}</span>
+                <strong>{action}</strong>
               </article>
-
-              <article className="command-surface-card">
-                <span>Fonte dominante</span>
-                <strong>{dominantSource}</strong>
-                <p>Origem mais forte a alimentar a operacao neste momento.</p>
-              </article>
-
-              <article className="command-surface-card">
-                <span>Routing mix</span>
-                <div className="routing-mix">
-                  {routingMix.map((item) => (
-                    <div className={`routing-row ${item.tone}`} key={item.label}>
-                      <small>{item.label}</small>
-                      <strong>{item.value}</strong>
-                    </div>
-                  ))}
-                </div>
-              </article>
-
-              <article className="command-surface-card">
-                <span>Agente ativo</span>
-                <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
-                <p>
-                  {activePlan
-                    ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cadencia operacional pronta.`
-                    : "Workspace pronto para ativar o agente comercial."}
-                </p>
-              </article>
-            </div>
+            ))}
           </div>
         </section>
 
-        <section className="summary-grid">
-          <article className="summary-card">
-            <span>Total de leads</span>
-            <strong>{dashboardStats.total}</strong>
-          </article>
-          <article className="summary-card warm">
-            <span>Follow-ups em atraso</span>
-            <strong>{dashboardStats.overdue_followups}</strong>
-          </article>
-          <article className="summary-card cold">
-            <span>Mercados ativos</span>
-            <strong>{dashboardStats.european_markets}</strong>
-          </article>
-          <article className="summary-card hot">
-            <span>Desk flagship</span>
-            <strong>{dashboardStats.flagship_queue}</strong>
-          </article>
-        </section>
-
-        <section className="dashboard-grid">
-          <article className="shell-panel">
+        <section className="dashboard-compact-grid dashboard-compact-grid-primary">
+          <article className="shell-panel dashboard-priority-panel">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Ataque prioritario</p>
-                <h3>Leads quentes a proteger</h3>
+                <h3>Quem merece acao ja</h3>
               </div>
-              <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
-                Abrir automacao
-              </button>
+              <span className="status-chip muted">{topHotLeads.length} leads quentes</span>
             </div>
 
-            <div className="stack-list">
-              {topHotLeads.length === 0 ? <p className="feedback">Sem leads quentes nesta fase.</p> : null}
-              {topHotLeads.map((lead) => (
-                <article className="stack-item" key={lead.id}>
+            {communicationLead ? (
+              <article className="dashboard-priority-hero">
+                <span>Lead em foco</span>
+                <strong>{communicationLead.name}</strong>
+                <p>
+                  {communicationLead.location} · {communicationLead.officeName} · AI {communicationLead.aiScore}
+                </p>
+                <p>{communicationLead.recommendedAction}</p>
+              </article>
+            ) : (
+              <p className="feedback">Sem lead prioritario nesta fase.</p>
+            )}
+
+            <div className="dashboard-lead-list">
+              {topHotLeads.slice(0, 3).map((lead) => (
+                <article className="dashboard-list-card" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>{lead.location} - {lead.officeName}</p>
+                    <p>{lead.location} · {lead.assignedOwner}</p>
                   </div>
-                  <div className="stack-meta">
+                  <div className="dashboard-list-meta">
                     <span>AI {lead.aiScore}</span>
                     <span>{formatCurrency(lead.price, lead.currencyCode)}</span>
                   </div>
                 </article>
               ))}
             </div>
+
+            {communicationLead ? (
+              <div className="dashboard-action-row">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    handleOpenExternal(
+                      communicationEmailLaunchUrl,
+                      "Nao foi possivel abrir o email neste momento."
+                    )
+                  }
+                >
+                  {communicationEmail ? "Abrir email" : "Email da equipa"}
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    handleOpenExternal(
+                      communicationWhatsAppLaunchUrl,
+                      "Nao foi possivel abrir o WhatsApp neste momento."
+                    )
+                  }
+                >
+                  {communicationPhone ? "Abrir WhatsApp" : "WhatsApp da equipa"}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() =>
+                    void handleQuickWorkflowAction(
+                      communicationLead,
+                      {
+                        pipelineStage: "contactado",
+                        nextStep: "Validar resposta e preparar qualificacao",
+                        lastContactAt: new Date().toISOString(),
+                        followUpAt: createNextFollowUp(24),
+                      },
+                      "Lead marcado como contactado e follow-up preparado."
+                    )
+                  }
+                >
+                  Marcar contactado
+                </button>
+              </div>
+            ) : null}
           </article>
 
-          <article className="shell-panel">
+          <article className="shell-panel dashboard-radar-panel">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Radar do mercado</p>
-                <h3>Mercado, origem e desk em leitura unica</h3>
+                <h3>Leitura curta e comercial</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
-                Abrir radar
+                Ver mercado
               </button>
             </div>
 
-            <div className="signal-grid">
-              {strategistOpportunities.length > 0
-                ? strategistOpportunities.slice(0, 4).map((opportunity) => (
-                    <article className="signal-card" key={`${opportunity.market}-${opportunity.location}`}>
-                      <span>{opportunity.location}</span>
-                      <strong>Score {opportunity.opportunityScore}</strong>
-                      <p>
-                        {opportunity.totalLeads} leads - ticket medio{" "}
-                        {formatCurrency(opportunity.averagePrice)}
-                      </p>
-                      <p>
-                        {opportunity.demandLevel === "high"
-                          ? "Procura alta"
-                          : opportunity.demandLevel === "medium"
-                            ? "Procura media"
-                            : "Procura baixa"}{" "}
-                        - {opportunity.topSources.slice(0, 2).join(" / ") || "Manual"}
-                      </p>
-                    </article>
-                  ))
-                : marketInsights.slice(0, 4).map((market) => (
-                    <article className="signal-card" key={market.market}>
-                      <span>{market.market}</span>
-                      <strong>{market.totalLeads} leads</strong>
-                      <p>
-                        Score medio {market.averageAiScore} - ticket medio{" "}
-                        {formatCurrency(market.averagePrice)}
-                      </p>
-                      <p>
-                        Fontes {market.topSources.slice(0, 2).join(" / ") || "Manual"} -{" "}
-                        {market.officeCount} lojas
-                      </p>
-                    </article>
-                  ))}
+            <div className="dashboard-radar-list">
+              {marketRadarCards.map((card) => (
+                <article className="dashboard-list-card" key={card.id}>
+                  <div>
+                    <span>{card.title}</span>
+                    <strong>{card.value}</strong>
+                    <p>{card.detail}</p>
+                  </div>
+                  <small>{card.extra}</small>
+                </article>
+              ))}
             </div>
+
+            <article className="dashboard-note-card accent">
+              <span>Radar em foco</span>
+              <strong>{strategistRadarSources}</strong>
+              <p>{strategistRadarHighlight}</p>
+            </article>
+          </article>
+
+          <article className="shell-panel dashboard-ops-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Cadencia</p>
+                <h3>Operacao do workspace</h3>
+              </div>
+            </div>
+
+            <div className="dashboard-mini-stat-grid">
+              <article className="dashboard-mini-stat">
+                <span>Heat</span>
+                <strong>{hotLeadRatio}%</strong>
+              </article>
+              <article className="dashboard-mini-stat">
+                <span>Fonte</span>
+                <strong>{dominantSource}</strong>
+              </article>
+              <article className="dashboard-mini-stat">
+                <span>DB</span>
+                <strong>{databaseConfigured ? "Online" : "Fallback"}</strong>
+              </article>
+            </div>
+
+            <div className="routing-mix dashboard-routing-compact">
+              {routingMix.map((item) => (
+                <div className={`routing-row ${item.tone}`} key={item.label}>
+                  <small>{item.label}</small>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+
+            <article className="dashboard-note-card">
+              <span>Agente ativo</span>
+              <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
+              <p>
+                {activePlan
+                  ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cobertura ${coverageLabel}.`
+                  : "Plano ativo por definir para desbloquear a camada completa do agente."}
+              </p>
+            </article>
           </article>
         </section>
 
-        <section className="dashboard-grid dashboard-grid-bottom">
-          <article className="shell-panel">
+        <section className="dashboard-compact-grid dashboard-compact-grid-secondary">
+          <article className="shell-panel dashboard-communication-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Centro de comunicacao</p>
+                <h3>Mensagens prontas a sair</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                Abrir automacao
+              </button>
+            </div>
+
+            {communicationLead ? (
+              <div className="dashboard-communication-grid">
+                <article className="dashboard-note-card">
+                  <span>Email pronto</span>
+                  <strong>{communicationEmail || SALES_CONTACT_EMAIL}</strong>
+                  <p>{communicationEmailBody}</p>
+                  <div className="dashboard-action-row">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() =>
+                        handleOpenExternal(
+                          communicationEmailLaunchUrl,
+                          "Nao foi possivel abrir o email neste momento."
+                        )
+                      }
+                    >
+                      {communicationEmail ? "Abrir email" : "Email da equipa"}
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        void handleCopyText(
+                          communicationEmailBody,
+                          "Texto de email copiado para a equipa."
+                        )
+                      }
+                    >
+                      Copiar email
+                    </button>
+                  </div>
+                </article>
+
+                <article className="dashboard-note-card">
+                  <span>WhatsApp pronto</span>
+                  <strong>{communicationPhone ? `+${communicationPhone}` : SALES_WHATSAPP_LABEL}</strong>
+                  <p>{communicationWhatsAppBody}</p>
+                  <div className="dashboard-action-row">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() =>
+                        handleOpenExternal(
+                          communicationWhatsAppLaunchUrl,
+                          "Nao foi possivel abrir o WhatsApp neste momento."
+                        )
+                      }
+                    >
+                      {communicationPhone ? "Abrir WhatsApp" : "WhatsApp da equipa"}
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        void handleCopyText(
+                          communicationWhatsAppBody,
+                          "Texto de WhatsApp copiado para a equipa."
+                        )
+                      }
+                    >
+                      Copiar WhatsApp
+                    </button>
+                  </div>
+                </article>
+              </div>
+            ) : (
+              <p className="feedback">Sem leads para gerar comunicacao nesta fase.</p>
+            )}
+          </article>
+
+          <article className="shell-panel dashboard-followup-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Agenda comercial</p>
+                <h3>Proximos follow-ups</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
+                Abrir pipeline
+              </button>
+            </div>
+
+            <div className="dashboard-followup-list">
+              {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
+              {followUpQueue.slice(0, 4).map((lead) => (
+                <article className="dashboard-list-card" key={lead.id}>
+                  <div>
+                    <strong>{lead.name}</strong>
+                    <p>{lead.nextStep}</p>
+                  </div>
+                  <div className="dashboard-list-meta">
+                    <span>{lead.assignedOwner}</span>
+                    <span>{formatDate(lead.followUpAt)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="shell-panel dashboard-agent-panel">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Agente AI</p>
-                <h3>Motor operacional em comando</h3>
+                <h3>Capacidades ativas</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
                 Ver planos
               </button>
             </div>
 
-            <article className="agent-command-card">
-              <div className="agent-command-head">
-                <div>
-                  <span className="eyebrow">Agente ativo</span>
-                  <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
-                </div>
-                <div className="agent-status-group">
-                  <span className="status-chip muted">{session?.user.planName || activePlan?.publicName || "Workspace"}</span>
-                  <span className="status-chip muted">
-                    {aiMode === "hybrid" ? "IA externa com heuristica" : "Heuristica orientada por regras"}
-                  </span>
-                </div>
-              </div>
-
-              <p className="agent-command-copy">{radarHighlight}</p>
-
-              <div className="agent-capability-grid">
-                {activeAgentCapabilities.length === 0 ? (
-                  <article className="signal-card">
-                    <span>Capacidade</span>
-                    <strong>Agente em preparacao</strong>
-                    <p>Ativa um plano comercial para desbloquear guidance, radar e outreach.</p>
-                  </article>
-                ) : null}
-                {activeAgentCapabilities.map((capability) => (
-                  <article className="signal-card" key={capability}>
+            <div className="dashboard-capability-list">
+              {activeAgentCapabilities.length === 0 ? (
+                <article className="dashboard-note-card">
+                  <span>Capacidade</span>
+                  <strong>Agente em preparacao</strong>
+                  <p>Ativa um plano comercial para desbloquear guidance, radar e outreach.</p>
+                </article>
+              ) : (
+                activeAgentCapabilities.map((capability) => (
+                  <article className="dashboard-note-card" key={capability}>
                     <span>Capacidade</span>
                     <strong>{capability}</strong>
                     <p>Ligado ao plano ativo e a leitura comercial do workspace.</p>
                   </article>
-                ))}
-              </div>
-
-              {communicationLead ? (
-                <div className="agent-priority-box">
-                  <span>Lead prioritario agora</span>
-                  <strong>{communicationLead.name}</strong>
-                  <p>
-                    {communicationLead.location} - {communicationLead.officeName} - Desk{" "}
-                    {getBucketLabel(communicationLead.routingBucket)}
-                  </p>
-                  <p>{communicationLead.recommendedAction}</p>
-                </div>
-              ) : null}
-            </article>
-          </article>
-
-          <article className="shell-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Centro de comunicacao</p>
-                <h3>Email e WhatsApp prontos a sair</h3>
-              </div>
-              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                Ver leads
-              </button>
+                ))
+              )}
             </div>
-
-            {workspaceFeedback ? <p className="feedback success">{workspaceFeedback}</p> : null}
-
-            {communicationLead ? (
-              <article className="communication-card">
-                <div className="communication-head">
-                  <div>
-                    <span className="eyebrow">Lead em foco</span>
-                    <strong>{communicationLead.name}</strong>
-                    <p>
-                      {communicationLead.location} - {communicationLead.market} - AI {communicationLead.aiScore}
-                    </p>
-                  </div>
-                  <div className="communication-contact-stack">
-                    <span className="contact-pill">Email {communicationEmail || "por validar"}</span>
-                    <span className="contact-pill">
-                      WhatsApp {communicationPhone ? `+${communicationPhone}` : "sem numero"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="communication-channel-grid">
-                  <div className="outreach-box">
-                    <span>Email pronto</span>
-                    <p>{communicationEmailBody}</p>
-                    <div className="communication-actions">
-                      <button
-                        className="primary-button"
-                        type="button"
-                        disabled={!communicationEmail}
-                        onClick={() =>
-                          handleOpenExternal(
-                            communicationMailto,
-                            "Este lead ainda nao tem email para abrir a mensagem."
-                          )
-                        }
-                      >
-                        Abrir email
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        onClick={() =>
-                          void handleCopyText(
-                            communicationEmailBody,
-                            "Texto de email copiado para a equipa."
-                          )
-                        }
-                      >
-                        Copiar email
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="outreach-box">
-                    <span>WhatsApp pronto</span>
-                    <p>{communicationWhatsAppBody}</p>
-                    <div className="communication-actions">
-                      <button
-                        className="primary-button"
-                        type="button"
-                        disabled={!communicationPhone}
-                        onClick={() =>
-                          handleOpenExternal(
-                            communicationWhatsAppUrl,
-                            "Este lead ainda nao tem numero valido para WhatsApp."
-                          )
-                        }
-                      >
-                        Abrir WhatsApp
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        onClick={() =>
-                          void handleCopyText(
-                            communicationWhatsAppBody,
-                            "Texto de WhatsApp copiado para a equipa."
-                          )
-                        }
-                      >
-                        Copiar WhatsApp
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ) : (
-              <p className="feedback">Sem leads para gerar comunicacao nesta fase.</p>
-            )}
           </article>
-        </section>
-
-        <section className="shell-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Agenda comercial</p>
-              <h3>Proximos follow-ups e radar operacional</h3>
-            </div>
-            <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-              Abrir pipeline
-            </button>
-          </div>
-
-          <div className="timeline-list">
-            {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
-            {followUpQueue.map((lead) => (
-              <article className="timeline-item" key={lead.id}>
-                <div className="timeline-dot" />
-                <div>
-                  <strong>{lead.name}</strong>
-                  <p>{lead.nextStep} - {lead.assignedOwner}</p>
-                </div>
-                <span>{formatDate(lead.followUpAt)}</span>
-              </article>
-            ))}
-          </div>
-
-          <div className="agenda-radar-grid">
-            <article className="signal-card">
-              <span>Radar atual</span>
-              <strong>{topStrategistOpportunity?.location || topMarket?.market || "Portugal"}</strong>
-              <p>{strategistRadarHighlight}</p>
-            </article>
-
-            <article className="signal-card">
-              <span>Fontes quentes</span>
-              <strong>{strategistRadarSources}</strong>
-              <p>Origens que mais alimentam a operacao e merecem cadencia imediata.</p>
-            </article>
-
-            <article className="signal-card">
-              <span>Agente em campo</span>
-              <strong>{activePlan?.agentLabel || marketingAiLabel}</strong>
-              <p>
-                {activePlan
-                  ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e guidance comercial ativo.`
-                  : "Plano ativo por definir para desbloquear a camada completa do agente."}
-              </p>
-            </article>
-          </div>
         </section>
       </div>
     );
