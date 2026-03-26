@@ -1,6 +1,7 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
 import "./App.css";
+import { DashboardPage } from "./components/DashboardPage";
 import {
   clearSessionToken,
   createAdminPlan,
@@ -3273,8 +3274,10 @@ function App() {
     );
   }
 
+  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   void renderOperationalDashboardView;
 
+  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   function renderDecisionDashboardView() {
     const marketRadarCards =
       strategistOpportunities.length > 0
@@ -7743,6 +7746,10 @@ function App() {
   }
 
   function renderActiveView() {
+    if (activeView === "dashboard") {
+      return <DashboardPage />;
+    }
+
     if (activeView === "pipeline") {
       return renderPipelineView();
     }
@@ -7767,7 +7774,7 @@ function App() {
       return renderAdminView();
     }
 
-    return renderDecisionDashboardView();
+    return <DashboardPage />;
   }
 
   if (!session) {
