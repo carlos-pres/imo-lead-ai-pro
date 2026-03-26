@@ -155,9 +155,9 @@ type PublicNavItem = {
 const NAV_ITEMS: NavItem[] = [
   {
     id: "dashboard",
-    label: "Dashboard",
-    eyebrow: "Control tower",
-    description: "Visao executiva da operacao e dos sinais do negocio.",
+    label: "Cockpit AI",
+    eyebrow: "Agente",
+    description: "Decisao, prioridade comercial e proxima acao no mesmo cockpit.",
   },
   {
     id: "automation",
@@ -167,9 +167,9 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "pipeline",
-    label: "Pipeline",
-    eyebrow: "Execucao",
-    description: "Entrada, distribuicao e follow-up com board comercial.",
+    label: "Leads",
+    eyebrow: "Conversao",
+    description: "Leads priorizadas, probabilidade, contexto e proxima acao.",
   },
   {
     id: "teams",
@@ -179,9 +179,9 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "reports",
-    label: "Mercado",
-    eyebrow: "Insights",
-    description: "Relatorios de mercado e pulso operacional por geografias.",
+    label: "Radar",
+    eyebrow: "Mercado",
+    description: "Leitura estrategica de zonas, procura e oportunidades.",
   },
   {
     id: "pricing",
@@ -193,7 +193,7 @@ const NAV_ITEMS: NavItem[] = [
     id: "admin",
     label: "ADM",
     eyebrow: "Governance",
-    description: "Controlo total do catalogo comercial e do pricing.",
+    description: "Acessos, membros, planos, cobranca e controlo do workspace.",
   },
 ];
 
@@ -507,6 +507,10 @@ function buildSalesWhatsAppUrl(message: string) {
   return `https://wa.me/${SALES_WHATSAPP_DIGITS}?text=${encodeURIComponent(message)}`;
 }
 
+function buildSalesSupportMailto(email: string, subject: string, body: string) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function isViewId(value: string): value is ViewId {
   return NAV_ITEMS.some((item) => item.id === value);
 }
@@ -592,6 +596,14 @@ function toInputDateTime(value: string | null | undefined) {
 
 function createNextFollowUp(hoursFromNow: number) {
   return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
 function getBucketLabel(bucket: RoutingBucket) {
@@ -2679,7 +2691,7 @@ function App() {
                 <h3>Leads quentes a proteger</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                Abrir pipeline
+                Abrir leads
               </button>
             </div>
 
@@ -2899,7 +2911,7 @@ function App() {
                 Abrir automacao
               </button>
               <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                Abrir pipeline
+                Abrir leads
               </button>
               <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
                 Ver radar
@@ -2983,7 +2995,7 @@ function App() {
                     <strong>{lead.name}</strong>
                     <p>{lead.location} · {lead.assignedOwner}</p>
                   </div>
-                  <div className="dashboard-list-meta">
+                  <div className="dashboard-list-meta dashboard-compact-meta">
                     <span>AI {lead.aiScore}</span>
                     <span>{formatCurrency(lead.price, lead.currencyCode)}</span>
                   </div>
@@ -3058,7 +3070,9 @@ function App() {
                     <strong>{card.value}</strong>
                     <p>{card.detail}</p>
                   </div>
-                  <small>{card.extra}</small>
+                  <div className="dashboard-compact-meta">
+                    <span>{card.extra}</span>
+                  </div>
                 </article>
               ))}
             </div>
@@ -3128,7 +3142,7 @@ function App() {
 
             {communicationLead ? (
               <div className="dashboard-communication-grid">
-                <article className="dashboard-note-card">
+                <article className="dashboard-note-card dashboard-compact-note-card">
                   <span>Email pronto</span>
                   <strong>{communicationEmail || SALES_CONTACT_EMAIL}</strong>
                   <p>{communicationEmailBody}</p>
@@ -3160,7 +3174,7 @@ function App() {
                   </div>
                 </article>
 
-                <article className="dashboard-note-card">
+                <article className="dashboard-note-card dashboard-compact-note-card">
                   <span>WhatsApp pronto</span>
                   <strong>{communicationPhone ? `+${communicationPhone}` : SALES_WHATSAPP_LABEL}</strong>
                   <p>{communicationWhatsAppBody}</p>
@@ -3216,7 +3230,7 @@ function App() {
                     <strong>{lead.name}</strong>
                     <p>{lead.nextStep}</p>
                   </div>
-                  <div className="dashboard-list-meta">
+                  <div className="dashboard-list-meta dashboard-compact-meta">
                     <span>{lead.assignedOwner}</span>
                     <span>{formatDate(lead.followUpAt)}</span>
                   </div>
@@ -3349,10 +3363,17 @@ function App() {
       activePlan?.agentLabel || marketingAiLabel,
       strategistModeLabel,
     ];
+    const compactLeadQueue = executionQueue.slice(0, 3);
+    const compactFollowUps = followUpQueue.slice(0, 3);
+    const emailPreview = truncateText(communicationEmailBody.replace(/\s+/g, " ").trim(), 160);
+    const whatsappPreview = truncateText(
+      communicationWhatsAppBody.replace(/\s+/g, " ").trim(),
+      144
+    );
 
     return (
       <div className="page-stack dashboard-page-stack">
-        <section className="shell-panel dashboard-ai-surface">
+        <section className="shell-panel dashboard-ai-surface dashboard-hero-shell">
           <div className="dashboard-ai-grid">
             <article className="dashboard-ai-core">
               <div className="dashboard-ai-head">
@@ -3407,17 +3428,17 @@ function App() {
                       )
                     }
                   >
-                    Executar acao recomendada
+                    Executar agora
                   </button>
                 ) : null}
                 <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
-                  Gerar mensagem com IA
+                  Centro de comunicacao
                 </button>
                 <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
                   Abrir radar
                 </button>
                 <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                  Abrir pipeline
+                  Abrir leads
                 </button>
                 {canAccessAdmin ? (
                   <button className="ghost-button" type="button" onClick={() => navigateTo("admin")}>
@@ -3467,20 +3488,20 @@ function App() {
           </div>
         </section>
 
-        <section className="dashboard-command-grid">
+        <section className="dashboard-command-grid dashboard-executive-grid">
           <article className="shell-panel dashboard-panel-compact">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Pipeline inteligente</p>
-                <h3>Fila curta para agir ja</h3>
+                <p className="eyebrow">Leads em comando</p>
+                <h3>Prioridade, contexto e proxima acao</h3>
               </div>
-              <span className="status-chip muted">{executionQueue.length} leads em fila curta</span>
+              <span className="status-chip muted">{compactLeadQueue.length} leads em foco</span>
             </div>
 
             <div className="dashboard-lead-list">
-              {executionQueue.length === 0 ? <p className="feedback">Sem leads em fila curta nesta fase.</p> : null}
-              {executionQueue.map((lead) => (
-                <article className="dashboard-list-card" key={lead.id}>
+              {compactLeadQueue.length === 0 ? <p className="feedback">Sem leads em foco nesta fase.</p> : null}
+              {compactLeadQueue.map((lead) => (
+                <article className="dashboard-list-card dashboard-compact-item" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
                     <p>{lead.location} · {lead.assignedOwner} · {getStageLabel(lead.pipelineStage)}</p>
@@ -3495,7 +3516,7 @@ function App() {
 
             <div className="dashboard-inline-actions">
               <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-                Ver board completo
+                Ver todas as leads
               </button>
             </div>
           </article>
@@ -3504,7 +3525,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Radar do mercado</p>
-                <h3>Oportunidades em leitura unica</h3>
+                <h3>Zonas quentes e oportunidade pratica</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
                 Ver mercado
@@ -3513,7 +3534,7 @@ function App() {
 
             <div className="dashboard-radar-list">
               {marketRadarCards.map((card) => (
-                <article className="dashboard-list-card" key={card.id}>
+                <article className="dashboard-list-card dashboard-compact-item" key={card.id}>
                   <div>
                     <span>{card.title}</span>
                     <strong>{card.value}</strong>
@@ -3535,7 +3556,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Centro de comunicacao</p>
-                <h3>Mensagens prontas a sair</h3>
+                <h3>Email e WhatsApp sem sair do cockpit</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
                 Abrir automacao
@@ -3547,7 +3568,7 @@ function App() {
                 <article className="dashboard-note-card">
                   <span>Email pronto</span>
                   <strong>{communicationEmail || SALES_CONTACT_EMAIL}</strong>
-                  <p>{communicationEmailBody}</p>
+                  <p>{emailPreview}</p>
                   <div className="dashboard-action-row">
                     <button
                       className="primary-button"
@@ -3579,7 +3600,7 @@ function App() {
                 <article className="dashboard-note-card">
                   <span>WhatsApp pronto</span>
                   <strong>{communicationPhone ? `+${communicationPhone}` : SALES_WHATSAPP_LABEL}</strong>
-                  <p>{communicationWhatsAppBody}</p>
+                  <p>{whatsappPreview}</p>
                   <div className="dashboard-action-row">
                     <button
                       className="primary-button"
@@ -3617,7 +3638,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Cadencia e governanca</p>
-                <h3>Ritmo operacional do workspace</h3>
+                <h3>Follow-up, desks e ritmo comercial</h3>
               </div>
             </div>
 
@@ -3646,9 +3667,9 @@ function App() {
             </div>
 
             <div className="dashboard-followup-list">
-              {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
-              {followUpQueue.slice(0, 3).map((lead) => (
-                <article className="dashboard-list-card" key={lead.id}>
+              {compactFollowUps.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
+              {compactFollowUps.map((lead) => (
+                <article className="dashboard-list-card dashboard-compact-item" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
                     <p>{lead.nextStep}</p>
@@ -3763,10 +3784,16 @@ function App() {
                 const phone = extractPhoneFromContact(lead.contact);
                 const mailto = email
                   ? `mailto:${email}?subject=${encodeURIComponent(buildLeadEmailSubject(lead))}&body=${encodeURIComponent(buildLeadEmailBody(lead))}`
-                  : "";
+                  : buildSalesSupportMailto(
+                      SALES_CONTACT_EMAIL,
+                      `Apoio operacional para ${lead.name}`,
+                      `Precisamos operacionalizar ${lead.name} em ${lead.location}. Acao sugerida: ${lead.recommendedAction}.`
+                    );
                 const whatsappUrl = phone
                   ? `https://wa.me/${phone}?text=${encodeURIComponent(buildLeadWhatsAppMessage(lead))}`
-                  : "";
+                  : buildSalesWhatsAppUrl(
+                      `Ola, preciso de apoio para operacionalizar ${lead.name} em ${lead.location}. Acao sugerida: ${lead.recommendedAction}.`
+                    );
 
                 return (
                   <article className="automation-card" key={lead.id}>
@@ -3798,25 +3825,26 @@ function App() {
                       <button
                         className="primary-button"
                         type="button"
-                        disabled={!email}
                         onClick={() =>
-                          handleOpenExternal(mailto, "Este lead ainda nao tem email para abrir a mensagem.")
+                          handleOpenExternal(
+                            mailto,
+                            "Nao foi possivel abrir o email neste momento."
+                          )
                         }
                       >
-                        Abrir email
+                        {email ? "Abrir email" : "Email da equipa"}
                       </button>
                       <button
                         className="primary-button"
                         type="button"
-                        disabled={!phone}
                         onClick={() =>
                           handleOpenExternal(
                             whatsappUrl,
-                            "Este lead ainda nao tem numero valido para WhatsApp."
+                            "Nao foi possivel abrir o WhatsApp neste momento."
                           )
                         }
                       >
-                        Abrir WhatsApp
+                        {phone ? "Abrir WhatsApp" : "WhatsApp da equipa"}
                       </button>
                       <button
                         className="ghost-button"
@@ -7881,7 +7909,7 @@ function App() {
 
           <div className="header-actions">
             <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-              Abrir pipeline
+              Abrir leads
             </button>
             <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
               Ver mercado
