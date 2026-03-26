@@ -160,8 +160,8 @@ export const Dashboard: React.FC = () => {
                   {metric.change !== undefined && (
                     <span className={`text-sm font-semibold ${
                       metric.trend === 'up' 
-                        ? 'text-green-400' 
-                        : 'text-red-400'
+                        ? 'text-gold-400' 
+                        : 'text-slate-400'
                     }`}>
                       {metric.trend === 'up' ? '+' : ''}{metric.change}%
                     </span>
@@ -220,31 +220,31 @@ export const Dashboard: React.FC = () => {
           {/* Quick Stats */}
           <div className="space-y-4">
             {/* Próximas ações */}
-            <div className="rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6">
+            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Target className="w-5 h-5 text-purple-400" />
+                <Target className="w-5 h-5 text-gold-400" />
                 <h3 className="font-bold text-white">Próximas Ações</h3>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-500/10 border border-gold-500/20">
                   <span className="text-sm text-white">Contactar leads quentes</span>
-                  <span className="text-xs font-bold text-purple-400">5</span>
+                  <span className="text-xs font-bold text-gold-400">5</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-400/10 border border-gold-400/20">
                   <span className="text-sm text-white">Follow-ups pendentes</span>
-                  <span className="text-xs font-bold text-blue-400">8</span>
+                  <span className="text-xs font-bold text-gold-300">8</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-600/10 border border-gold-600/20">
                   <span className="text-sm text-white">Propostas para enviar</span>
-                  <span className="text-xs font-bold text-green-400">3</span>
+                  <span className="text-xs font-bold text-gold-500">3</span>
                 </div>
               </div>
             </div>
 
             {/* Próximas reuniões */}
-            <div className="rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6">
+            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-blue-400" />
+                <Calendar className="w-5 h-5 text-gold-400" />
                 <h3 className="font-bold text-white">Agendadas</h3>
               </div>
               <div className="space-y-3">
@@ -267,10 +267,10 @@ export const Dashboard: React.FC = () => {
           <h2 className="text-xl font-bold text-white mb-6">Performance Mensal</h2>
           
           {/* Simplified chart placeholder */}
-          <div className="h-64 flex items-end justify-around gap-4 p-4 bg-slate-900/30 rounded-lg">
+          <div className="h-64 flex items-end justify-around gap-4 p-4 bg-black-900/30 rounded-lg">
             {[65, 75, 70, 85, 80, 90, 95].map((height, idx) => (
               <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                <div className="w-full bg-gradient-to-t from-purple-500 to-blue-500 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/50" 
+                <div className="w-full bg-gradient-to-t from-gold-500 to-gold-400 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/50" 
                      style={{ height: `${height}%` }} 
                 />
                 <span className="text-xs text-slate-400">
