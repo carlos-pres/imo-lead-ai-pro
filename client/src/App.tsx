@@ -2827,6 +2827,62 @@ function App() {
     const communicationWhatsAppLaunchUrl = communicationPhone
       ? communicationWhatsAppUrl
       : communicationWhatsAppFallback;
+    const agentExecutionMessage =
+      communicationLead?.recommendedAction ||
+      strategistActions[0] ||
+      "Priorizar o primeiro contacto no canal com maior probabilidade de resposta.";
+    const agentExecutionWindow = communicationLead
+      ? `Executar nas proximas ${communicationLead.slaHours}h para aproveitar a janela de conversao.`
+      : "Executar no proximo ciclo comercial para manter a cadencia do workspace.";
+    const aiConversionScore = communicationLead
+      ? Math.max(communicationLead.aiScore, 42)
+      : Math.max(dashboardStats.average_ai_score, 38);
+    const nextActionLeadCount = automationFocusLeads.length;
+    const agentDecisionSignals = [
+      {
+        label: "Conversao prevista",
+        value: `${aiConversionScore}%`,
+        detail: communicationLead
+          ? `${communicationLead.name} e a melhor aposta para acelerar hoje.`
+          : "A IA esta a priorizar os primeiros movimentos comerciais.",
+      },
+      {
+        label: "Janela de contacto",
+        value: communicationLead ? `${communicationLead.slaHours}h` : "Hoje",
+        detail: communicationLead
+          ? communicationLead.outreachChannel
+          : "Ajustada por mercado, owner e urgencia operacional.",
+      },
+      {
+        label: "Acoes prontas",
+        value: `${nextActionLeadCount}`,
+        detail: `${leadsWithEmailCount} emails e ${leadsWithWhatsAppCount} WhatsApp preparados para disparo.`,
+      },
+      {
+        label: "Cobertura ativa",
+        value: coverageLabel,
+        detail: `${dashboardStats.active_offices} lojas ativas com radar e cadencia ligados.`,
+      },
+    ];
+    const executionQueue = Array.from(
+      new Map(
+        [...topHotLeads.slice(0, 3), ...followUpQueue.slice(0, 3)].map((lead) => [lead.id, lead])
+      ).values()
+    ).slice(0, 4);
+    const agentPlaybooks = strategistActions.slice(0, 4);
+    const agentInsightBadges = [
+      activePlan?.publicName || session?.user.planName || "Workspace",
+      activePlan?.agentLabel || marketingAiLabel,
+      strategistModeLabel,
+    ];
+    void [
+      agentExecutionMessage,
+      agentExecutionWindow,
+      agentDecisionSignals,
+      executionQueue,
+      agentPlaybooks,
+      agentInsightBadges,
+    ];
 
     return (
       <div className="page-stack dashboard-page-stack">
@@ -3197,6 +3253,423 @@ function App() {
                 ))
               )}
             </div>
+          </article>
+        </section>
+      </div>
+    );
+  }
+
+  void renderOperationalDashboardView;
+
+  function renderDecisionDashboardView() {
+    const marketRadarCards =
+      strategistOpportunities.length > 0
+        ? strategistOpportunities.slice(0, 3).map((opportunity) => ({
+            id: `${opportunity.market}-${opportunity.location}`,
+            title: opportunity.location,
+            value: `Score ${opportunity.opportunityScore}`,
+            detail: `${opportunity.totalLeads} leads · ticket medio ${formatCurrency(opportunity.averagePrice)}`,
+            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} · ${opportunity.demandLevel}`,
+          }))
+        : marketInsights.slice(0, 3).map((market) => ({
+            id: market.market,
+            title: market.market,
+            value: `${market.totalLeads} leads`,
+            detail: `Score medio ${market.averageAiScore} · ticket medio ${formatCurrency(market.averagePrice)}`,
+            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} · ${market.officeCount} lojas`,
+          }));
+
+    const communicationMailtoFallback = `mailto:${SALES_CONTACT_EMAIL}?subject=${encodeURIComponent(
+      communicationLead
+        ? `Apoio operacional para ${communicationLead.name}`
+        : "Apoio operacional ImoLead AI Pro"
+    )}&body=${encodeURIComponent(
+      communicationLead
+        ? `Precisamos validar o melhor canal para ${communicationLead.name} em ${communicationLead.location}. Acao sugerida: ${communicationLead.recommendedAction}.`
+        : "Preciso de apoio da equipa ImoLead AI Pro para operacionalizar a proxima acao comercial."
+    )}`;
+
+    const communicationWhatsAppFallback = buildSalesWhatsAppUrl(
+      communicationLead
+        ? `Ola, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Acao sugerida: ${communicationLead.recommendedAction}.`
+        : "Ola, preciso de apoio para operacionalizar o proximo passo comercial no cockpit."
+    );
+
+    const communicationEmailLaunchUrl = communicationEmail
+      ? communicationMailto
+      : communicationMailtoFallback;
+    const communicationWhatsAppLaunchUrl = communicationPhone
+      ? communicationWhatsAppUrl
+      : communicationWhatsAppFallback;
+    const agentExecutionMessage =
+      communicationLead?.recommendedAction ||
+      strategistActions[0] ||
+      "Priorizar o primeiro contacto no canal com maior probabilidade de resposta.";
+    const agentExecutionWindow = communicationLead
+      ? `Executar nas proximas ${communicationLead.slaHours}h para aproveitar a janela de conversao.`
+      : "Executar no proximo ciclo comercial para manter a cadencia do workspace.";
+    const aiConversionScore = communicationLead
+      ? Math.max(communicationLead.aiScore, 42)
+      : Math.max(dashboardStats.average_ai_score, 38);
+    const nextActionLeadCount = automationFocusLeads.length;
+    const agentDecisionSignals = [
+      {
+        label: "Conversao prevista",
+        value: `${aiConversionScore}%`,
+        detail: communicationLead
+          ? `${communicationLead.name} e a melhor aposta para acelerar hoje.`
+          : "A IA esta a priorizar os primeiros movimentos comerciais.",
+      },
+      {
+        label: "Janela de contacto",
+        value: communicationLead ? `${communicationLead.slaHours}h` : "Hoje",
+        detail: communicationLead
+          ? communicationLead.outreachChannel
+          : "Ajustada por mercado, owner e urgencia operacional.",
+      },
+      {
+        label: "Acoes prontas",
+        value: `${nextActionLeadCount}`,
+        detail: `${leadsWithEmailCount} emails e ${leadsWithWhatsAppCount} WhatsApp preparados para disparo.`,
+      },
+      {
+        label: "Cobertura ativa",
+        value: coverageLabel,
+        detail: `${dashboardStats.active_offices} lojas ativas com radar e cadencia ligados.`,
+      },
+    ];
+    const executionQueue = Array.from(
+      new Map(
+        [...topHotLeads.slice(0, 3), ...followUpQueue.slice(0, 3)].map((lead) => [lead.id, lead])
+      ).values()
+    ).slice(0, 4);
+    const agentPlaybooks = strategistActions.slice(0, 4);
+    const agentInsightBadges = [
+      activePlan?.publicName || session?.user.planName || "Workspace",
+      activePlan?.agentLabel || marketingAiLabel,
+      strategistModeLabel,
+    ];
+
+    return (
+      <div className="page-stack dashboard-page-stack">
+        <section className="shell-panel dashboard-ai-surface">
+          <div className="dashboard-ai-grid">
+            <article className="dashboard-ai-core">
+              <div className="dashboard-ai-head">
+                <div>
+                  <p className="eyebrow">Agente imobiliario inteligente</p>
+                  <h3>{strategistHeadline}</h3>
+                  <p className="dashboard-overview-copy">{strategistSummary}</p>
+                </div>
+                <div className="dashboard-badge-row">
+                  {agentInsightBadges.map((badge) => (
+                    <span className="dashboard-glow-chip" key={badge}>
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {workspaceFeedback ? <p className="feedback success">{workspaceFeedback}</p> : null}
+              {error ? <p className="feedback error">{error}</p> : null}
+
+              <article className="dashboard-ai-command-card">
+                <span>Recomendacao em tempo real</span>
+                <strong>{agentExecutionMessage}</strong>
+                <p>{agentExecutionWindow}</p>
+              </article>
+
+              <div className="dashboard-ai-signal-grid">
+                {agentDecisionSignals.map((signal) => (
+                  <article className="dashboard-ai-signal-card" key={signal.label}>
+                    <span>{signal.label}</span>
+                    <strong>{signal.value}</strong>
+                    <p>{signal.detail}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="dashboard-inline-actions">
+                {communicationLead ? (
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() =>
+                      void handleQuickWorkflowAction(
+                        communicationLead,
+                        {
+                          pipelineStage: "contactado",
+                          nextStep: "Validar resposta e preparar qualificacao assistida",
+                          lastContactAt: new Date().toISOString(),
+                          followUpAt: createNextFollowUp(24),
+                        },
+                        "Acao recomendada executada com follow-up preparado."
+                      )
+                    }
+                  >
+                    Executar acao recomendada
+                  </button>
+                ) : null}
+                <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                  Gerar mensagem com IA
+                </button>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
+                  Abrir radar
+                </button>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
+                  Abrir pipeline
+                </button>
+                {canAccessAdmin ? (
+                  <button className="ghost-button" type="button" onClick={() => navigateTo("admin")}>
+                    Abrir ADM
+                  </button>
+                ) : null}
+              </div>
+            </article>
+
+            <aside className="dashboard-ai-rail">
+              <article className="dashboard-rail-card dashboard-rail-card-focus">
+                <span>Lead prioritaria agora</span>
+                <strong>{communicationLead?.name || "Sem lead em foco"}</strong>
+                <p>
+                  {communicationLead
+                    ? `${communicationLead.location} · ${communicationLead.officeName} · ${communicationLead.outreachChannel}`
+                    : "A carteira ainda esta a aquecer e o agente assume o primeiro lote util assim que entra."}
+                </p>
+                <div className="dashboard-rail-metrics">
+                  <div>
+                    <small>AI</small>
+                    <strong>{communicationLead?.aiScore || dashboardStats.average_ai_score}</strong>
+                  </div>
+                  <div>
+                    <small>SLA</small>
+                    <strong>{communicationLead ? `${communicationLead.slaHours}h` : "n/a"}</strong>
+                  </div>
+                  <div>
+                    <small>Desk</small>
+                    <strong>{communicationLead?.routingBucket || dominantDeskLabel}</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article className="dashboard-rail-card">
+                <span>Playbook do agente</span>
+                <div className="dashboard-playbook-stack">
+                  {agentPlaybooks.map((action, index) => (
+                    <article className="dashboard-playbook-card" key={action}>
+                      <small>Acao {index + 1}</small>
+                      <strong>{action}</strong>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <section className="dashboard-command-grid">
+          <article className="shell-panel dashboard-panel-compact">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Pipeline inteligente</p>
+                <h3>Fila curta para agir ja</h3>
+              </div>
+              <span className="status-chip muted">{executionQueue.length} leads em fila curta</span>
+            </div>
+
+            <div className="dashboard-lead-list">
+              {executionQueue.length === 0 ? <p className="feedback">Sem leads em fila curta nesta fase.</p> : null}
+              {executionQueue.map((lead) => (
+                <article className="dashboard-list-card" key={lead.id}>
+                  <div>
+                    <strong>{lead.name}</strong>
+                    <p>{lead.location} · {lead.assignedOwner} · {getStageLabel(lead.pipelineStage)}</p>
+                  </div>
+                  <div className="dashboard-list-meta">
+                    <span>AI {lead.aiScore}</span>
+                    <span>{lead.slaHours}h</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="dashboard-inline-actions">
+              <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
+                Ver board completo
+              </button>
+            </div>
+          </article>
+
+          <article className="shell-panel dashboard-panel-compact">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Radar do mercado</p>
+                <h3>Oportunidades em leitura unica</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
+                Ver mercado
+              </button>
+            </div>
+
+            <div className="dashboard-radar-list">
+              {marketRadarCards.map((card) => (
+                <article className="dashboard-list-card" key={card.id}>
+                  <div>
+                    <span>{card.title}</span>
+                    <strong>{card.value}</strong>
+                    <p>{card.detail}</p>
+                  </div>
+                  <small>{card.extra}</small>
+                </article>
+              ))}
+            </div>
+
+            <article className="dashboard-note-card accent">
+              <span>Radar em foco</span>
+              <strong>{strategistRadarSources}</strong>
+              <p>{strategistRadarHighlight}</p>
+            </article>
+          </article>
+
+          <article className="shell-panel dashboard-panel-compact">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Centro de comunicacao</p>
+                <h3>Mensagens prontas a sair</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                Abrir automacao
+              </button>
+            </div>
+
+            {communicationLead ? (
+              <div className="dashboard-communication-grid">
+                <article className="dashboard-note-card">
+                  <span>Email pronto</span>
+                  <strong>{communicationEmail || SALES_CONTACT_EMAIL}</strong>
+                  <p>{communicationEmailBody}</p>
+                  <div className="dashboard-action-row">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() =>
+                        handleOpenExternal(
+                          communicationEmailLaunchUrl,
+                          "Nao foi possivel abrir o email neste momento."
+                        )
+                      }
+                    >
+                      {communicationEmail ? "Abrir email" : "Email da equipa"}
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        void handleCopyText(
+                          communicationEmailBody,
+                          "Texto de email copiado para a equipa."
+                        )
+                      }
+                    >
+                      Copiar email
+                    </button>
+                  </div>
+                </article>
+
+                <article className="dashboard-note-card">
+                  <span>WhatsApp pronto</span>
+                  <strong>{communicationPhone ? `+${communicationPhone}` : SALES_WHATSAPP_LABEL}</strong>
+                  <p>{communicationWhatsAppBody}</p>
+                  <div className="dashboard-action-row">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() =>
+                        handleOpenExternal(
+                          communicationWhatsAppLaunchUrl,
+                          "Nao foi possivel abrir o WhatsApp neste momento."
+                        )
+                      }
+                    >
+                      {communicationPhone ? "Abrir WhatsApp" : "WhatsApp da equipa"}
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        void handleCopyText(
+                          communicationWhatsAppBody,
+                          "Texto de WhatsApp copiado para a equipa."
+                        )
+                      }
+                    >
+                      Copiar WhatsApp
+                    </button>
+                  </div>
+                </article>
+              </div>
+            ) : (
+              <p className="feedback">Sem leads para gerar comunicacao nesta fase.</p>
+            )}
+          </article>
+
+          <article className="shell-panel dashboard-panel-compact">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Cadencia e governanca</p>
+                <h3>Ritmo operacional do workspace</h3>
+              </div>
+            </div>
+
+            <div className="dashboard-mini-stat-grid">
+              <article className="dashboard-mini-stat">
+                <span>Heat</span>
+                <strong>{hotLeadRatio}%</strong>
+              </article>
+              <article className="dashboard-mini-stat">
+                <span>Fonte</span>
+                <strong>{dominantSource}</strong>
+              </article>
+              <article className="dashboard-mini-stat">
+                <span>DB</span>
+                <strong>{databaseConfigured ? "Online" : "Fallback"}</strong>
+              </article>
+            </div>
+
+            <div className="routing-mix dashboard-routing-compact">
+              {routingMix.map((item) => (
+                <div className={`routing-row ${item.tone}`} key={item.label}>
+                  <small>{item.label}</small>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+
+            <div className="dashboard-followup-list">
+              {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
+              {followUpQueue.slice(0, 3).map((lead) => (
+                <article className="dashboard-list-card" key={lead.id}>
+                  <div>
+                    <strong>{lead.name}</strong>
+                    <p>{lead.nextStep}</p>
+                  </div>
+                  <div className="dashboard-list-meta">
+                    <span>{lead.assignedOwner}</span>
+                    <span>{formatDate(lead.followUpAt)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <article className="dashboard-note-card">
+              <span>Agente ativo</span>
+              <strong>{activePlan?.agentLabel || communicationLead?.agentLabel || marketingAiLabel}</strong>
+              <p>
+                {activePlan
+                  ? `${activePlan.publicName} com ${activePlan.reportsLabel.toLowerCase()} e cobertura ${coverageLabel}.`
+                  : "Plano ativo por definir para desbloquear a camada completa do agente."}
+              </p>
+            </article>
           </article>
         </section>
       </div>
@@ -7266,7 +7739,7 @@ function App() {
       return renderAdminView();
     }
 
-    return renderOperationalDashboardView();
+    return renderDecisionDashboardView();
   }
 
   if (!session) {
