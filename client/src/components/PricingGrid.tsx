@@ -39,14 +39,14 @@ export const PricingGrid: React.FC<PricingGridProps> = ({
               key={idx}
               className={`relative group rounded-2xl overflow-hidden transition-all duration-300 ${
                 card.isPopular
-                  ? 'md:scale-105 bg-gradient-to-br from-purple-600/20 to-blue-600/20 border-2 border-purple-500/50 shadow-2xl shadow-purple-500/20'
-                  : 'bg-slate-900/50 border border-slate-800/50 hover:border-purple-500/30'
+                  ? 'md:scale-105 bg-gradient-to-br from-gold-500/15 to-gold-600/15 border-2 border-gold-500/50 shadow-2xl shadow-gold-500/20'
+                  : 'bg-black-900/50 border border-gold-500/20 hover:border-gold-500/40'
               }`}
             >
               {/* Popular Badge */}
               {card.isPopular && (
                 <div className="absolute top-6 left-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-600/80 text-white text-xs font-bold">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/90 text-black-900 text-xs font-bold">
                     <Zap className="w-3.5 h-3.5" />
                     MAIS VENDIDO
                   </div>
@@ -73,8 +73,8 @@ export const PricingGrid: React.FC<PricingGridProps> = ({
                   onClick={card.onButtonClick}
                   className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 mb-8 ${
                     card.isPopular
-                      ? 'bg-gradient-agent text-white hover:shadow-lg hover:shadow-purple-500/30'
-                      : 'bg-slate-800/50 text-white border border-slate-700/50 hover:bg-slate-800'
+                      ? 'bg-gradient-gold text-black-900 hover:shadow-lg hover:shadow-gold-500/30'
+                      : 'bg-gold-500/20 text-gold-400 border border-gold-500/30 hover:bg-gold-500/30'
                   }`}
                 >
                   {card.buttonLabel}
@@ -84,7 +84,7 @@ export const PricingGrid: React.FC<PricingGridProps> = ({
                 <div className="space-y-4">
                   {card.features.map((feature, featureIdx) => (
                     <div key={featureIdx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                      <Check className="w-5 h-5 text-gold-400 flex-shrink-0 mt-0.5" />
                       <span className="text-slate-300 text-sm">{feature}</span>
                     </div>
                   ))}
@@ -93,7 +93,7 @@ export const PricingGrid: React.FC<PricingGridProps> = ({
 
               {/* Hover effect */}
               {!card.isPopular && (
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-gold-500 to-gold-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               )}
             </div>
           ))}

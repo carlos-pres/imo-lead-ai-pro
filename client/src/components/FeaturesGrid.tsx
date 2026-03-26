@@ -19,7 +19,7 @@ export const FeaturesGrid: React.FC<FeaturesGridProps> = ({
   features,
 }) => {
   return (
-    <section className="py-20 px-6 bg-slate-950">
+    <section className="py-20 px-6 bg-black-950">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -32,11 +32,11 @@ export const FeaturesGrid: React.FC<FeaturesGridProps> = ({
           {features.map((feature, idx) => (
             <div
               key={idx}
-              className="group p-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800/50 hover:border-purple-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
+              className="group p-8 rounded-2xl bg-gradient-to-br from-black-900 to-black-950 border border-gold-500/20 hover:border-gold-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/15"
             >
               {/* Icon Container */}
-              <div className="mb-6 inline-flex items-center justify-center p-3 rounded-xl bg-gradient-agent">
-                <div className="text-white">{feature.icon}</div>
+              <div className="mb-6 inline-flex items-center justify-center p-3 rounded-xl bg-gradient-gold">
+                <div className="text-black-900">{feature.icon}</div>
               </div>
 
               {/* Content */}
@@ -44,13 +44,13 @@ export const FeaturesGrid: React.FC<FeaturesGridProps> = ({
               <p className="text-slate-400 mb-4 leading-relaxed">{feature.description}</p>
 
               {feature.highlight && (
-                <div className="pt-4 border-t border-slate-800/50">
-                  <p className="text-sm text-purple-400 font-semibold">{feature.highlight}</p>
+                <div className="pt-4 border-t border-gold-500/20">
+                  <p className="text-sm text-gold-400 font-semibold">{feature.highlight}</p>
                 </div>
               )}
 
               {/* Hover effect line */}
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-gold-500 to-gold-400 rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           ))}
         </div>

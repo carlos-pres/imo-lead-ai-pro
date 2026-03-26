@@ -1,21 +1,13 @@
 import React from 'react';
-import { Dashboard } from './Dashboard';
+import { DashboardCockpit } from './DashboardCockpit';
 
 /**
  * DashboardPage
  * 
- * Esta é a página principal do dashboard integrado.
- * Pode ser usada em seu roteamento principal.
- * 
- * Exemplo de uso em App.tsx:
- * 
- * import { DashboardPage } from './pages/DashboardPage';
- * 
- * // Na sua lógica de roteamento:
- * case 'dashboard':
- *   return <DashboardPage />;
+ * Wrapper page para o novo Cockpit minimalista e claro.
+ * Conecta aos dados reais da aplicação via props.
  */
 
 export const DashboardPage: React.FC = () => {
-  return <Dashboard />;
+  return <DashboardCockpit />;
 };

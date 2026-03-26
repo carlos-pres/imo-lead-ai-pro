@@ -20,19 +20,19 @@ interface SocialProofProps {
 
 export const SocialProof: React.FC<SocialProofProps> = ({ metrics, testimonials }) => {
   return (
-    <section className="py-20 px-6 bg-slate-950">
+    <section className="py-20 px-6 bg-black-950">
       <div className="max-w-6xl mx-auto">
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
           {metrics.map((metric, idx) => (
             <div
               key={idx}
-              className="text-center p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800/50 hover:border-purple-500/30 transition-all"
+              className="text-center p-6 rounded-2xl bg-gradient-to-br from-black-900 to-black-950 border border-gold-500/20 hover:border-gold-500/40 transition-all"
             >
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-agent mb-4">
-                <div className="text-white">{metric.icon}</div>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-gold mb-4">
+                <div className="text-black-900">{metric.icon}</div>
               </div>
-              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-2">
+              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-300 mb-2">
                 {metric.value}
               </div>
               <div className="text-white font-semibold mb-1">{metric.label}</div>
@@ -52,12 +52,12 @@ export const SocialProof: React.FC<SocialProofProps> = ({ metrics, testimonials 
               {testimonials.map((testimonial, idx) => (
                 <div
                   key={idx}
-                  className="p-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800/50"
+                  className="p-8 rounded-2xl bg-gradient-to-br from-black-900 to-black-950 border border-gold-500/20"
                 >
                   {/* Stars */}
                   <div className="flex gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="w-5 h-5 fill-gold-500 text-gold-500" />
                     ))}
                   </div>
 

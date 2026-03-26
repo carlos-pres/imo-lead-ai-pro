@@ -91,10 +91,10 @@ const mockActivity: ActivityItem[] = [
 
 const getActivityTypeStyles = (type: string) => {
   const styles = {
-    success: 'bg-green-500/10 border-green-500/30 text-green-400',
-    lead: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
-    alert: 'bg-red-500/10 border-red-500/30 text-red-400',
-    action: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+    success: 'bg-gold-500/10 border-gold-500/30 text-gold-400',
+    lead: 'bg-gold-400/10 border-gold-400/30 text-gold-300',
+    alert: 'bg-gold-600/10 border-gold-600/30 text-gold-500',
+    action: 'bg-slate-600/10 border-slate-600/30 text-slate-400',
   };
   return styles[type as keyof typeof styles];
 };
@@ -127,8 +127,8 @@ export const Dashboard: React.FC = () => {
 
         {/* Agent Panel - Featured */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl blur-xl opacity-50" />
-          <div className="relative bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 rounded-2xl p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-gold-500/20 to-gold-600/20 rounded-2xl blur-xl opacity-50" />
+          <div className="relative bg-black-950/50 backdrop-blur-sm border border-gold-500/20 rounded-2xl p-6 md:p-8">
             <AgentPanel />
           </div>
         </div>
@@ -138,15 +138,15 @@ export const Dashboard: React.FC = () => {
           {mockMetrics.map((metric, idx) => (
             <div
               key={idx}
-              className="group relative overflow-hidden rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6 hover:border-purple-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
+              className="group relative overflow-hidden rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6 hover:border-gold-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/15"
             >
               {/* Gradient background on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-purple-600/5 to-blue-600/5 transition-opacity duration-300" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-gold-500/5 to-gold-600/5 transition-opacity duration-300" />
 
               <div className="relative z-10">
                 {/* Icon */}
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-agent mb-4">
-                  <div className="text-white">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-gold mb-4">
+                  <div className="text-black-900">
                     {metric.icon}
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Bottom accent */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-gold-500 to-gold-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             </div>
           ))}
@@ -180,10 +180,10 @@ export const Dashboard: React.FC = () => {
           
           {/* Recent Activity */}
           <div className="lg:col-span-2">
-            <div className="rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6">
+            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Atividade Recente</h2>
-                <button className="text-purple-400 hover:text-purple-300 transition-colors text-sm font-semibold">
+                <button className="text-gold-400 hover:text-gold-300 transition-colors text-sm font-semibold">
                   Ver tudo
                 </button>
               </div>
@@ -192,7 +192,7 @@ export const Dashboard: React.FC = () => {
                 {mockActivity.map((item) => (
                   <div
                     key={item.id}
-                    className={`flex items-start gap-4 p-4 rounded-lg border transition-all duration-200 hover:shadow-md hover:shadow-purple-500/10 ${getActivityTypeStyles(item.type)}`}
+                    className={`flex items-start gap-4 p-4 rounded-lg border transition-all duration-200 hover:shadow-md hover:shadow-gold-500/10 ${getActivityTypeStyles(item.type)}`}
                   >
                     {/* Icon */}
                     <div className="mt-1">

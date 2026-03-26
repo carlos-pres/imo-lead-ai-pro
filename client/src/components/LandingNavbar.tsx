@@ -15,17 +15,17 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black-950/80 backdrop-blur-lg border-b border-gold-500/20">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-agent flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-10 h-10 rounded-lg bg-gradient-gold flex items-center justify-center text-black-900 font-bold text-sm">
               IL
             </div>
             <div>
               <div className="font-bold text-white">ImoLead AI Pro</div>
-              <div className="text-xs text-slate-400">Automação inteligente</div>
+              <div className="text-xs text-gold-400">Automação inteligente</div>
             </div>
           </div>
 
@@ -35,7 +35,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
               <button
                 key={idx}
                 onClick={item.onClick}
-                className="text-slate-300 hover:text-white transition-colors text-sm font-semibold"
+                className="text-slate-300 hover:text-gold-400 transition-colors text-sm font-semibold"
               >
                 {item.label}
               </button>
@@ -46,7 +46,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
           <div className="hidden md:block">
             <button
               onClick={onLoginClick}
-              className="px-6 py-2 rounded-lg bg-gradient-agent text-white font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+              className="px-6 py-2 rounded-lg bg-gradient-gold text-black-900 font-semibold text-sm hover:shadow-lg hover:shadow-gold-500/30 transition-all"
             >
               Entrar
             </button>
@@ -63,7 +63,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
 
         {/* Mobile Nav */}
         {isOpen && (
-          <div className="md:hidden mt-4 pb-4 space-y-3 border-t border-slate-800/50 pt-4">
+          <div className="md:hidden mt-4 pb-4 space-y-3 border-t border-gold-500/20 pt-4">
             {navItems.map((item, idx) => (
               <button
                 key={idx}
@@ -71,7 +71,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
                   item.onClick();
                   setIsOpen(false);
                 }}
-                className="block w-full text-left text-slate-300 hover:text-white transition-colors text-sm font-semibold py-2"
+                className="block w-full text-left text-slate-300 hover:text-gold-400 transition-colors text-sm font-semibold py-2"
               >
                 {item.label}
               </button>
@@ -81,7 +81,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
                 onLoginClick();
                 setIsOpen(false);
               }}
-              className="w-full mt-4 px-6 py-2 rounded-lg bg-gradient-agent text-white font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+              className="w-full mt-4 px-6 py-2 rounded-lg bg-gradient-gold text-black-900 font-semibold text-sm hover:shadow-lg hover:shadow-gold-500/30 transition-all"
             >
               Entrar
             </button>

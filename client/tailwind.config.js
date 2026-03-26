@@ -7,33 +7,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        'slate': {
-          '950': '#0f172a',
-          '900': '#0f1729',
+        'black': {
+          '950': '#0f0f0f',
+          '900': '#1a1a1a',
+          '800': '#2a2a2a',
         },
-        'purple': {
-          '600': '#9333ea',
-          '500': '#a855f7',
-        },
-        'blue': {
-          '500': '#3b82f6',
-          '400': '#60a5fa',
+        'gold': {
+          '600': '#c9a961',
+          '500': '#d4af37',
+          '400': '#f4d03f',
         },
       },
       backgroundImage: {
-        'gradient-agent': 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)',
-        'gradient-dark': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        'gradient-gold': 'linear-gradient(135deg, #d4af37 0%, #f4d03f 100%)',
+        'gradient-dark': 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
+        'gradient-gold-subtle': 'linear-gradient(135deg, #d4af37 0%, #c9a961 100%)',
       },
       boxShadow: {
-        'premium': '0 20px 60px rgba(0, 0, 0, 0.3)',
-        'card': '0 10px 30px rgba(0, 0, 0, 0.15)',
+        'premium': '0 20px 60px rgba(212, 175, 55, 0.15)',
+        'gold-glow': '0 0 30px rgba(212, 175, 55, 0.25)',
+        'card': '0 10px 30px rgba(0, 0, 0, 0.3)',
       },
       animation: {
-        'pulse-soft': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'pulse-gold': 'pulse-gold 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fadeIn 0.5s ease-in',
         'slide-in': 'slideIn 0.4s ease-out',
       },
       keyframes: {
+        'pulse-gold': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.8' },
+        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
