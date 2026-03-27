@@ -20,7 +20,8 @@ export default {
       },
       backgroundImage: {
         'gradient-gold': 'linear-gradient(135deg, #d4af37 0%, #f4d03f 100%)',
-        'gradient-dark': 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)',
+        'gradient-dark': 'linear-gradient(135deg, #0f172a 0%, #111827 100%)',
+        'gradient-agent': 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 45%, #22d3ee 100%)',
         'gradient-gold-subtle': 'linear-gradient(135deg, #d4af37 0%, #c9a961 100%)',
       },
       boxShadow: {

@@ -1,13 +1,11 @@
 import React from 'react';
-import { DashboardCockpit } from './DashboardCockpit';
+import { Dashboard } from './Dashboard';
 
 /**
  * DashboardPage
- * 
- * Wrapper page para o novo Cockpit minimalista e claro.
- * Conecta aos dados reais da aplicação via props.
+ *
+ * Wrapper page para o dashboard premium com o AgentPanel em destaque.
  */
-
 export const DashboardPage: React.FC = () => {
-  return <DashboardCockpit />;
+  return <Dashboard />;
 };

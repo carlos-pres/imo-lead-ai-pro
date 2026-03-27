@@ -1,7 +1,20 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
 import "./App.css";
-import { DashboardPage } from "./components/DashboardPage";
+import { Dashboard } from "./components/Dashboard";
+import {
+  BadgePercent,
+  Bell,
+  Bot,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  BarChart3,
+  ShieldCheck,
+  Users,
+  Sparkles,
+  Workflow,
+} from "lucide-react";
 import {
   clearSessionToken,
   createAdminPlan,
@@ -1391,6 +1404,38 @@ function App() {
     }
   }
 
+  function focusAgentPanel() {
+    navigateTo("dashboard");
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const element = document.getElementById("agent-panel");
+
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        element.classList.add(
+          "ring-2",
+          "ring-purple-500",
+          "ring-offset-2",
+          "ring-offset-slate-950"
+        );
+
+        window.setTimeout(() => {
+          element.classList.remove(
+            "ring-2",
+            "ring-purple-500",
+            "ring-offset-2",
+            "ring-offset-slate-950"
+          );
+        }, 1200);
+      }
+    }, 120);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -1770,7 +1815,6 @@ function App() {
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
   const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
-  const currentWorkspacePlanId = session?.user.planId || activePlanId;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
@@ -1834,19 +1878,6 @@ function App() {
         : `Fonte lider ${dominantSource} e ${dashboardStats.european_markets} mercados em carteira`,
     },
   ];
-  const agentTierLadder = plans
-    .slice()
-    .sort((left, right) => {
-      const order = { basic: 0, pro: 1, custom: 2 };
-      return order[left.basePlanId] - order[right.basePlanId];
-    })
-    .map((plan) => ({
-      id: plan.basePlanId,
-      publicName: plan.publicName,
-      agentLabel: plan.agentLabel,
-      summary: plan.agentCapabilities[0] || plan.recommendedFor,
-      isActive: plan.basePlanId === currentWorkspacePlanId,
-    }));
   const landingFeatureCards = [
     {
       eyebrow: "Prospeccao",
@@ -2401,6 +2432,52 @@ function App() {
 
   const viewMeta =
     visibleNavItems.find((item) => item.id === activeView) || visibleNavItems[0];
+
+  const sidebarNav = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      hint: "Cockpit",
+      icon: LayoutDashboard,
+      view: "dashboard" as ViewId,
+    },
+    {
+      id: "pipeline",
+      label: "Leads",
+      hint: "Prioridade",
+      icon: ListChecks,
+      view: "pipeline" as ViewId,
+    },
+    {
+      id: "ai-panel",
+      label: "AI Panel",
+      hint: "Assistente",
+      icon: Bot,
+      view: "dashboard" as ViewId,
+      anchor: "agent-panel",
+    },
+    {
+      id: "automation",
+      label: "Automacao",
+      hint: "Cadencia",
+      icon: Workflow,
+      view: "automation" as ViewId,
+    },
+    {
+      id: "pricing",
+      label: "Planos",
+      hint: "Escala",
+      icon: BadgePercent,
+      view: "pricing" as ViewId,
+    },
+  ];
+
+  const secondaryNav = visibleNavItems
+    .filter((item) => !["dashboard", "pipeline", "automation", "pricing"].includes(item.id))
+    .map((item) => ({
+      ...item,
+      icon: item.id === "reports" ? BarChart3 : item.id === "teams" ? Users : ShieldCheck,
+    }));
 
   useEffect(() => {
     if (!activePlan || !form.countryCode) {
@@ -7747,7 +7824,7 @@ function App() {
 
   function renderActiveView() {
     if (activeView === "dashboard") {
-      return <DashboardPage />;
+      return <Dashboard />;
     }
 
     if (activeView === "pipeline") {
@@ -7774,169 +7851,175 @@ function App() {
       return renderAdminView();
     }
 
-    return <DashboardPage />;
+    return <Dashboard />;
   }
 
   if (!session) {
     return renderLoginView();
   }
 
+  const activeContent = renderActiveView();
+
   return (
-    <main className="app-shell">
-      <aside className="shell-sidebar">
-        <div className="brand-block">
-          <div className="brand-mark">
-            <span className="brand-mark-ring" />
-            <span className="brand-mark-core">IL</span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+      <aside className="hidden lg:flex w-72 flex-col border-r border-slate-800 bg-slate-900/70 backdrop-blur-2xl px-4 py-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-900/30">
+            IL
           </div>
-          <p className="brand-kicker">ImoLead AI Pro</p>
-          <h1>Radar, agente e execucao.</h1>
-          <p>Portugal primeiro. Iberia a seguir. Europa na mesma operacao.</p>
-
-          <div className="brand-story">
-            <strong>Agente AI, radar e comunicacao numa so camada.</strong>
-            <p>
-              Um workspace desenhado para mostrar prioridade comercial, contexto de mercado
-              e outreach pronto sem obrigar a equipa a andar entre ferramentas soltas.
-            </p>
-          </div>
-
-          <div className="brand-mini-grid">
-            <article className="mini-metric">
-              <span>Heat</span>
-              <strong>{hotLeadRatio}%</strong>
-            </article>
-            <article className="mini-metric">
-              <span>Desk</span>
-              <strong>{dominantDeskLabel}</strong>
-            </article>
-            <article className="mini-metric">
-              <span>Fonte</span>
-              <strong>{dominantSource}</strong>
-            </article>
+          <div className="leading-tight">
+            <p className="text-xs text-slate-400">ImoLead AI Pro</p>
+            <p className="text-sm font-semibold text-white">Agente imobiliario inteligente</p>
           </div>
         </div>
 
-        <nav className="shell-nav">
-          {visibleNavItems.map((item) => (
-            <button
-              className={item.id === activeView ? "nav-button active" : "nav-button"}
-              key={item.id}
-              type="button"
-              onClick={() => navigateTo(item.id)}
-            >
-              <span>{item.eyebrow}</span>
-              <strong>{item.label}</strong>
-              <p>{item.description}</p>
-            </button>
-          ))}
+        <nav className="space-y-1">
+          {sidebarNav.map((item) => {
+            const isActive = item.view === activeView;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => (item.anchor ? focusAgentPanel() : navigateTo(item.view))}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150 ${
+                  isActive
+                    ? "bg-gradient-to-r from-purple-600/20 via-indigo-500/15 to-blue-500/15 border border-purple-500/60 text-white shadow-lg shadow-purple-900/30"
+                    : "border border-slate-800 bg-slate-900/60 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
+                }`}
+              >
+                <div
+                  className={`h-9 w-9 rounded-lg flex items-center justify-center ${
+                    isActive
+                      ? "bg-gradient-to-br from-purple-500 to-blue-500 text-white"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">{item.label}</span>
+                  <span className="text-xs text-slate-400">{item.hint}</span>
+                </div>
+              </button>
+            );
+          })}
         </nav>
 
-        <section className="sidebar-panel">
-          <span>Workspace</span>
-          <strong>{session.user.name}</strong>
-          <div className="sidebar-meta">
-            <p>{getRoleLabel(session.user.role)}</p>
-            <p>{session.user.officeName}</p>
-            <p>{session.user.teamName}</p>
-            <p>{session.user.email}</p>
+        {secondaryNav.length > 0 ? (
+          <div className="pt-4 mt-2 border-t border-slate-800 space-y-1">
+            <p className="text-xs uppercase text-slate-500 px-1">OperaÃ§Ã£o</p>
+            {secondaryNav.map((item) => {
+              const isActive = item.id === activeView;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigateTo(item.id as ViewId)}
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150 ${
+                    isActive
+                      ? "bg-slate-900 border border-purple-500/50 text-white shadow-lg shadow-purple-900/25"
+                      : "border border-slate-800 bg-slate-900/50 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
+                  }`}
+                >
+                  <div
+                    className={`h-9 w-9 rounded-lg flex items-center justify-center ${
+                      isActive ? "text-purple-200" : "text-slate-400"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">{item.label}</span>
+                    <span className="text-xs text-slate-400">{item.description}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <button className="ghost-button sidebar-button" type="button" onClick={handleLogout}>
+        ) : null}
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Plano</p>
+              <p className="text-sm font-semibold text-white">{session.user.planName}</p>
+            </div>
+            <span className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30">
+              {activePlan?.agentLabel || marketingAiLabel}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
+            <p>{activePlan?.includedMarkets.join(" · ") || coverageLabel}</p>
+            <p>{dashboardStats.total} leads ativas</p>
+            <p>{dashboardStats.overdue_followups} follow-ups</p>
+            <p>{aiMode === "hybrid" ? "AI externa" : "AI heuristica"}</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-2">
+          <p className="text-xs text-slate-400 uppercase tracking-wide">Workspace</p>
+          <p className="text-sm font-semibold text-white">{session.user.name}</p>
+          <p className="text-xs text-slate-400">{session.user.email}</p>
+          <p className="text-xs text-slate-400">
+            {getRoleLabel(session.user.role)} · {session.user.officeName}
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
             Terminar sessao
           </button>
-        </section>
-
-        <section className="sidebar-panel">
-          <span>Status da plataforma</span>
-          <strong>{apiState}</strong>
-          <div className="sidebar-meta">
-            <p>AI {aiMode === "hybrid" ? "externa + heuristica" : "heuristica"}</p>
-            <p>{dashboardStats.total} leads ativas</p>
-            <p>{dashboardStats.overdue_followups} follow-ups em atraso</p>
-            <p>{databaseConfigured ? "DB configurada" : "Fallback local ativo"}</p>
-          </div>
-        </section>
-
-        <section className="sidebar-panel">
-          <span>Plano comercial</span>
-          <strong>{session.user.planName}</strong>
-          <div className="sidebar-meta">
-            <p>{activePlan?.agentLabel || session.user.planName}</p>
-            <p>{activePlan?.reportsLabel || "Relatorios semanais"}</p>
-            <p>{activePlan?.annualDiscountPercent || 20}% desconto anual fixo</p>
-            <p>{activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}</p>
-          </div>
-        </section>
-
-        <section className="sidebar-panel">
-          <span>Escala do agente</span>
-          <strong>Niveis por plano</strong>
-          <div className="agent-tier-list">
-            {agentTierLadder.map((plan) => (
-              <article
-                className={plan.isActive ? "agent-tier-item active" : "agent-tier-item"}
-                key={plan.id}
-              >
-                <div>
-                  <span>{plan.publicName}</span>
-                  <strong>{plan.agentLabel}</strong>
-                </div>
-                <p>{plan.summary}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        </div>
       </aside>
 
-      <section className="shell-main">
-        <header className="shell-header">
-          <div>
-            <p className="eyebrow">{viewMeta.eyebrow}</p>
-            <h2>{viewMeta.label}</h2>
-            <p className="header-copy">{viewMeta.description}</p>
-            <p className="header-subcopy">
-              {getRoleLabel(session.user.role)} em {session.user.officeName} · {session.user.teamName}
-            </p>
-
-            <div className="header-signal-row">
-              <div className="header-signal">
-                <span>Plano</span>
-                <strong>{session.user.planName}</strong>
-              </div>
-              <div className="header-signal">
-                <span>Agente AI</span>
-                <strong>{activePlan?.agentLabel || marketingAiLabel}</strong>
-              </div>
-              <div className="header-signal">
-                <span>Radar</span>
-                <strong>{topMarket?.market || coverageLabel}</strong>
-              </div>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 bg-slate-900/70 backdrop-blur-xl">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 text-xs text-slate-400 uppercase tracking-wide">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              <span>{viewMeta.eyebrow}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg md:text-xl font-semibold text-white">{viewMeta.label}</h1>
+              <p className="text-sm text-slate-400 hidden md:block">{viewMeta.description}</p>
             </div>
           </div>
 
-          <div className="header-actions">
-            <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
-              Abrir leads
-            </button>
-            <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
-              Ver mercado
-            </button>
+          <div className="flex items-center gap-3">
             <button
-              className="primary-button header-primary"
               type="button"
-              onClick={() => navigateTo("pricing")}
+              className="relative h-10 w-10 rounded-full border border-slate-800 bg-slate-900 hover:border-purple-500/60 hover:text-purple-200 transition-colors"
             >
-              Ver planos
+              <Bell className="h-5 w-5 m-auto text-slate-300" />
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-purple-400" />
             </button>
+            <div className="flex items-center gap-3 rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold">
+                {session.user.name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold text-white">{session.user.name}</p>
+                <p className="text-xs text-slate-400">{getRoleLabel(session.user.role)}</p>
+              </div>
+            </div>
           </div>
         </header>
 
-        {loading && leads.length === 0 ? <p className="feedback">A carregar workspace...</p> : null}
-        {error && !loading ? <p className="feedback error">{error}</p> : null}
-
-        {!loading ? renderActiveView() : null}
-      </section>
-    </main>
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">
+            {loading && leads.length === 0 ? (
+              <p className="text-sm text-slate-400">A carregar workspace...</p>
+            ) : null}
+            {error && !loading ? <p className="text-sm text-red-400">{error}</p> : null}
+            {!loading ? activeContent : null}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
 

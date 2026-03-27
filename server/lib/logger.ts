@@ -43,4 +43,92 @@ export function logError(message: string, error?: Error | unknown): void {
   });
 }
 
+// Agent-specific tracking
+interface AgentMetrics {
+  apiCallsCount: number;
+  successCount: number;
+  errorCount: number;
+  totalCostUSD: number;
+  avgResponseTimeMs: number;
+  lastError?: string;
+}
+
+const agentMetrics: Record<string, AgentMetrics> = {};
+
+export function logAgentAction(
+  component: string,
+  action: string,
+  context?: Record<string, any>,
+  cost?: number,
+  durationMs?: number
+): void {
+  if (!agentMetrics[component]) {
+    agentMetrics[component] = {
+      apiCallsCount: 0,
+      successCount: 0,
+      errorCount: 0,
+      totalCostUSD: 0,
+      avgResponseTimeMs: 0,
+    };
+  }
+
+  const metrics = agentMetrics[component];
+  metrics.apiCallsCount++;
+  metrics.successCount++;
+  metrics.totalCostUSD += cost || 0;
+  if (durationMs) {
+    metrics.avgResponseTimeMs =
+      (metrics.avgResponseTimeMs * (metrics.apiCallsCount - 1) + durationMs) /
+      metrics.apiCallsCount;
+  }
+
+  logger.info({
+    type: 'AGENT_ACTION',
+    component,
+    action,
+    cost,
+    durationMs,
+    context,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function logAgentError(
+  component: string,
+  action: string,
+  error: Error | string,
+  context?: Record<string, any>
+): void {
+  if (!agentMetrics[component]) {
+    agentMetrics[component] = {
+      apiCallsCount: 0,
+      successCount: 0,
+      errorCount: 0,
+      totalCostUSD: 0,
+      avgResponseTimeMs: 0,
+    };
+  }
+
+  const errorMsg = error instanceof Error ? error.message : String(error);
+  const metrics = agentMetrics[component];
+  metrics.errorCount++;
+  metrics.lastError = errorMsg;
+
+  logger.error({
+    type: 'AGENT_ERROR',
+    component,
+    action,
+    error: errorMsg,
+    context,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function getAgentMetrics(component?: string): Record<string, AgentMetrics> {
+  if (component) {
+    return agentMetrics[component] ? { [component]: agentMetrics[component] } : {};
+  }
+  return agentMetrics;
+}
+
 export default logger;

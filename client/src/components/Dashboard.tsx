@@ -91,10 +91,10 @@ const mockActivity: ActivityItem[] = [
 
 const getActivityTypeStyles = (type: string) => {
   const styles = {
-    success: 'bg-gold-500/10 border-gold-500/30 text-gold-400',
-    lead: 'bg-gold-400/10 border-gold-400/30 text-gold-300',
-    alert: 'bg-gold-600/10 border-gold-600/30 text-gold-500',
-    action: 'bg-slate-600/10 border-slate-600/30 text-slate-400',
+    success: 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200',
+    lead: 'bg-indigo-500/10 border-indigo-400/30 text-indigo-200',
+    alert: 'bg-rose-500/10 border-rose-400/30 text-rose-200',
+    action: 'bg-slate-700/30 border-slate-600/40 text-slate-200',
   };
   return styles[type as keyof typeof styles];
 };
@@ -111,7 +111,7 @@ const getActivityIcon = (type: string) => {
 
 export const Dashboard: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-dark pt-8 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pt-8 pb-16">
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-6 space-y-8">
         
@@ -126,9 +126,9 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Agent Panel - Featured */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-gold-500/20 to-gold-600/20 rounded-2xl blur-xl opacity-50" />
-          <div className="relative bg-black-950/50 backdrop-blur-sm border border-gold-500/20 rounded-2xl p-6 md:p-8">
+        <div className="relative" id="agent-panel">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-indigo-500/25 to-blue-500/25 rounded-2xl blur-xl opacity-60" />
+          <div className="relative bg-slate-900/70 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6 md:p-8 shadow-2xl shadow-purple-900/30">
             <AgentPanel />
           </div>
         </div>
@@ -138,15 +138,15 @@ export const Dashboard: React.FC = () => {
           {mockMetrics.map((metric, idx) => (
             <div
               key={idx}
-              className="group relative overflow-hidden rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6 hover:border-gold-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/15"
+              className="group relative overflow-hidden rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-800 p-6 hover:border-purple-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/25"
             >
               {/* Gradient background on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-gold-500/5 to-gold-600/5 transition-opacity duration-300" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 transition-opacity duration-300" />
 
               <div className="relative z-10">
                 {/* Icon */}
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-gold mb-4">
-                  <div className="text-black-900">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 mb-4">
+                  <div className="text-white">
                     {metric.icon}
                   </div>
                 </div>
@@ -160,8 +160,8 @@ export const Dashboard: React.FC = () => {
                   {metric.change !== undefined && (
                     <span className={`text-sm font-semibold ${
                       metric.trend === 'up' 
-                        ? 'text-gold-400' 
-                        : 'text-slate-400'
+                        ? 'text-indigo-300' 
+                        : 'text-slate-500'
                     }`}>
                       {metric.trend === 'up' ? '+' : ''}{metric.change}%
                     </span>
@@ -169,7 +169,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Bottom accent */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-gold-500 to-gold-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             </div>
           ))}
@@ -226,17 +226,17 @@ export const Dashboard: React.FC = () => {
                 <h3 className="font-bold text-white">Próximas Ações</h3>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-500/10 border border-gold-500/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/25">
                   <span className="text-sm text-white">Contactar leads quentes</span>
-                  <span className="text-xs font-bold text-gold-400">5</span>
+                  <span className="text-xs font-bold text-indigo-200">5</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-400/10 border border-gold-400/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/25">
                   <span className="text-sm text-white">Follow-ups pendentes</span>
-                  <span className="text-xs font-bold text-gold-300">8</span>
+                  <span className="text-xs font-bold text-purple-200">8</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gold-600/10 border border-gold-600/20">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/25">
                   <span className="text-sm text-white">Propostas para enviar</span>
-                  <span className="text-xs font-bold text-gold-500">3</span>
+                  <span className="text-xs font-bold text-blue-200">3</span>
                 </div>
               </div>
             </div>
@@ -270,7 +270,7 @@ export const Dashboard: React.FC = () => {
           <div className="h-64 flex items-end justify-around gap-4 p-4 bg-black-900/30 rounded-lg">
             {[65, 75, 70, 85, 80, 90, 95].map((height, idx) => (
               <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                <div className="w-full bg-gradient-to-t from-gold-500 to-gold-400 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/50" 
+                <div className="w-full bg-gradient-to-t from-purple-500 via-indigo-500 to-blue-400 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/40" 
                      style={{ height: `${height}%` }} 
                 />
                 <span className="text-xs text-slate-400">

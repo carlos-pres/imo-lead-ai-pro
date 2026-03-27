@@ -1,1 +1,1 @@
-export { db } from "./db/index";
+export { db, testConnection, schema, pool, type Database } from "./db/index";
