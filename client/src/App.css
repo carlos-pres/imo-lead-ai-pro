@@ -3398,16 +3398,16 @@ p {
 }
 
 .status-chip {
-  background: linear-gradient(135deg, rgba(31, 111, 235, 0.26), rgba(14, 165, 233, 0.2));
+  background: linear-gradient(135deg, rgba(31, 111, 235, 0.28), rgba(14, 165, 233, 0.2));
   color: #eaf2fb;
   border: 1px solid var(--border);
   backdrop-filter: blur(6px);
 }
 
 .status-chip.muted {
-  background: linear-gradient(135deg, rgba(242, 177, 92, 0.18), rgba(31, 111, 235, 0.12));
-  color: #fffef8;
-  border-color: rgba(242, 177, 92, 0.5);
+  background: linear-gradient(135deg, rgba(242, 177, 92, 0.24), rgba(242, 177, 92, 0.14));
+  color: #0b1220;
+  border-color: rgba(242, 177, 92, 0.55);
 }
 
 .primary-button,
@@ -3473,8 +3473,8 @@ p {
 }
 
 .public-hero-chips .status-chip {
-  background: linear-gradient(135deg, rgba(242, 177, 92, 0.28), rgba(31, 111, 235, 0.22));
-  color: #fffef8;
+  background: linear-gradient(135deg, rgba(242, 177, 92, 0.35), rgba(242, 177, 92, 0.2));
+  color: #0b1220;
 }
 
 .marketing-cta-row .whatsapp-button.subtle {
