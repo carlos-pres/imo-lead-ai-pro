@@ -13,6 +13,7 @@ app.use(express.json());
 
 // API routes first
 app.use("/", router);
+app.use("/api", router);
 
 // Serve built frontend when available (Railway prod)
 const clientBuildPath = path.join(__dirname, "../client");
