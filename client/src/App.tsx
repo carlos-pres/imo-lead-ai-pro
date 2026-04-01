@@ -34,6 +34,7 @@ import {
   getLeads,
   getMarketStrategistRadar,
   getPlans,
+  getPublicStats,
   getStats,
   getTeams,
   login,
@@ -963,6 +964,7 @@ function App() {
     name: "",
     email: "",
   });
+  const [publicStats, setPublicStats] = useState<LeadStats | null>(null);
   const [trialSubmitting, setTrialSubmitting] = useState(false);
   const [trialFeedback, setTrialFeedback] = useState("");
   const [trialFeedbackTone, setTrialFeedbackTone] = useState<"success" | "error">("success");
@@ -1165,7 +1167,7 @@ function App() {
   }, [session]);
 
   async function bootstrap() {
-    await Promise.all([loadHealth(), loadPlansCatalog(), loadCompliance()]);
+    await Promise.all([loadHealth(), loadPlansCatalog(), loadCompliance(), loadPublicStats()]);
 
     try {
       const currentSession = await getCurrentSession();
@@ -1216,6 +1218,15 @@ function App() {
       setCompliance(nextCompliance);
     } catch {
       setCompliance(null);
+    }
+  }
+
+  async function loadPublicStats() {
+    try {
+      const stats = await getPublicStats();
+      setPublicStats(stats);
+    } catch {
+      setPublicStats(null);
     }
   }
 
@@ -1811,6 +1822,9 @@ function App() {
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
   const topStrategistOpportunity = strategistOpportunities[0] || null;
+  const publicHotLeads = publicStats?.quente ?? 0;
+  const publicTotalLeads = publicStats?.total ?? 0;
+  const publicUrgent = publicStats?.urgent_actions ?? 0;
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
@@ -6405,7 +6419,9 @@ function App() {
           <p>
             {topMarket
               ? `${topMarket.totalLeads} leads ativas, score medio ${topMarket.averageAiScore} e ${dashboardStats.urgent_actions} acoes urgentes visiveis.`
-              : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com criterio comercial."}
+              : publicTotalLeads > 0
+                ? `${publicTotalLeads} leads ativas publicas, ${publicHotLeads} quentes, ${publicUrgent} urgentes em SLA curto.`
+                : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com criterio comercial."}
           </p>
           <div className="public-stage-pill-row">
             <span>{coverageLabel}</span>
@@ -6464,13 +6480,29 @@ function App() {
               <button className="ghost-button" type="button" onClick={options.onSecondaryClick}>
                 {options.secondaryLabel}
               </button>
+              <button
+                className="whatsapp-button subtle"
+                type="button"
+                onClick={() =>
+                  handleOpenExternal(
+                    salesWhatsAppDemoUrl,
+                    "Nao foi possivel abrir o WhatsApp comercial neste momento."
+                  )
+                }
+              >
+                Falar no WhatsApp
+              </button>
             </div>
 
             <div className="public-hero-chips">
               <div className="status-chip">Mercado {topMarket?.market || "Portugal"}</div>
-              <div className="status-chip muted">{activePlan?.publicName || "ImoLead Pro"}</div>
               <div className="status-chip muted">
-                {PUBLIC_DEMO_ENABLED ? "Demo publica ativa" : "Acesso protegido"}
+                {publicTotalLeads > 0
+                  ? `${publicTotalLeads} leads ativas · ${publicHotLeads} quentes`
+                  : activePlan?.publicName || "ImoLead Pro"}
+              </div>
+              <div className="status-chip muted">
+                {publicUrgent > 0 ? `${publicUrgent} ações urgentes hoje` : "Pronto para demo guiada"}
               </div>
             </div>
           </div>
@@ -6490,6 +6522,9 @@ function App() {
           <div>
             <p className="eyebrow">Planos</p>
             <h3>Oferta comercial clara, europeia e pronta para venda</h3>
+            <p className="hero-text">
+              Os CTAs estao sincronizados: demo guiada para ver fluxo completo, checkout seguro para quem ja decidiu.
+            </p>
           </div>
 
           <div className="billing-toggle">
@@ -6611,39 +6646,22 @@ function App() {
           </article>
         ) : null}
 
-        <div className="pricing-grid marketing-pricing-grid">
-          {plans.map((plan) => {
-            const isYear = billingMode === "year";
-            const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
-            const suffix = isYear ? "/ano" : "/mes";
-            const featured = plan.basePlanId === "pro";
-            const secondaryAction =
-              plan.basePlanId === "custom"
-                ? () =>
-                    handleOpenExternal(
-                      salesWhatsAppProposalUrl,
-                      "Nao foi possivel abrir o WhatsApp comercial neste momento."
-                    )
-                : plan.basePlanId === "basic"
+          <div className="pricing-grid marketing-pricing-grid">
+            {plans.map((plan) => {
+              const isYear = billingMode === "year";
+              const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
+              const suffix = isYear ? "/ano" : "/mes";
+              const featured = plan.basePlanId === "pro";
+              const secondaryAction =
+                plan.basePlanId === "custom"
                   ? () =>
-                      openLandingPricing(
-                        "pro",
-                        "Caminho natural do Starter para o Pro",
-                        "Comparamos a entrada protegida com a camada vendavel para equipas e mostramos onde o upgrade faz sentido."
+                      handleOpenExternal(
+                        salesWhatsAppProposalUrl,
+                        "Nao foi possivel abrir o WhatsApp comercial neste momento."
                       )
-                  : () =>
-                      openLandingLogin(
-                        "custom",
-                        "Enterprise em foco para a fase seguinte",
-                        "Abrimos a leitura enterprise para mostrar governance, multi-loja e controlo executivo.",
-                        DEMO_ACCESS[0]
-                      );
-            const secondaryLabel =
-              plan.basePlanId === "custom"
-                ? "WhatsApp comercial"
-                : plan.basePlanId === "basic"
-                  ? "Ver salto para Pro"
-                  : "Abrir leitura Enterprise";
+                  : () => navigatePublicPage("pricing", "landing-pricing");
+              const secondaryLabel =
+                plan.basePlanId === "custom" ? "WhatsApp comercial" : "Ver checkout";
             const journeyLabel =
               plan.basePlanId === "basic"
                 ? "Entrada sugerida: trial protegido com validacao e caminho claro de upgrade."
@@ -6711,7 +6729,7 @@ function App() {
                         ? "A abrir checkout..."
                         : getTrialDaysForPlan(plan.basePlanId) > 0
                           ? `Ativar com ${getTrialDaysForPlan(plan.basePlanId)} dias de trial`
-                          : "Abrir checkout deste plano"
+                          : "Abrir checkout seguro"
                       : getTrialDaysForPlan(plan.basePlanId) > 0
                         ? plan.basePlanId === activePlanId
                           ? `Trial de ${getTrialDaysForPlan(plan.basePlanId)} dias pronto`
@@ -6758,8 +6776,12 @@ function App() {
             </article>
             <article className="marketing-proof-signal-card">
               <span>Cadencia comercial</span>
-              <strong>{dashboardStats.urgent_actions} acoes urgentes</strong>
-              <p>{followUpQueue.length} follow-ups ativos e prioridade organizada por desk e owner.</p>
+              <strong>{publicUrgent || dashboardStats.urgent_actions} acoes urgentes</strong>
+              <p>
+                {publicTotalLeads > 0
+                  ? `${publicTotalLeads} leads publicas · ${publicHotLeads} quentes`
+                  : `${followUpQueue.length} follow-ups ativos e prioridade por desk/owner.`}
+              </p>
             </article>
           </div>
 
@@ -6830,10 +6852,9 @@ function App() {
       <section className="shell-panel marketing-final-cta" id="landing-contact">
         <div className="marketing-final-copy">
           <p className="eyebrow">Fecho comercial</p>
-          <h3>O passo seguinte deve ser uma demo executiva, nao uma explicacao defensiva.</h3>
+          <h3>Próximo passo claro: demo guiada ou checkout seguro.</h3>
           <p className="hero-text">
-            O objetivo desta pagina e simples: levar o cliente para uma demonstracao curta onde
-            agente, radar, pipeline e comunicacao aparecam como vantagem operacional imediata.
+            Nada de confusão: escolhe demo executiva (ADM) ou vai direto para o checkout Stripe; os dois caminhos estão sempre visíveis.
           </p>
 
           <ul className="marketing-benefit-list">
@@ -7550,7 +7571,7 @@ function App() {
           eyebrow: "Tudo o que precisa para automatizar",
           title: "Captacao, classificacao, mensagens e controlo num unico sistema.",
           text:
-            "A pagina de produto foca o essencial: blocos de valor, workflow operacional e o discurso certo para direcao, equipas e redes imobiliarias.",
+            "Hero mostra prova viva (leads ativas, SLA, mercados). CTA principal = demo guiada; CTA secundario = rever planos.",
           stage: "features",
           primaryLabel: "Ver planos",
           secondaryLabel: "Pedir demo",
@@ -7704,12 +7725,12 @@ function App() {
       <>
         {renderPageHero({
           eyebrow: "Planos transparentes e flexiveis",
-          title: "Uma proposta clara para vender Starter, Pro e Enterprise sem ambiguidades.",
+          title: "Starter para testar, Pro para escalar, Enterprise para governar.",
           text:
-            "A pagina de precos passa a ter autonomia propria, com trial, utilizadores incluidos, extra users e progressao natural entre planos.",
+            "CTA primario abre demo guiada no plano selecionado; CTA secundario abre checkout seguro ou WhatsApp para Enterprise.",
           stage: "pricing",
-          primaryLabel: "Entrar com este plano",
-          secondaryLabel: "WhatsApp comercial",
+          primaryLabel: "Ver demo guiada",
+          secondaryLabel: "Checkout seguro",
           onPrimaryClick: () =>
             openLandingLogin(
               activePlanId,
@@ -7717,10 +7738,7 @@ function App() {
               "Abrimos a pagina de entrada com o plano selecionado e a guidance certa."
             ),
           onSecondaryClick: () =>
-            handleOpenExternal(
-              salesWhatsAppProposalUrl,
-              "Nao foi possivel abrir o WhatsApp comercial neste momento."
-            ),
+            navigatePublicPage("pricing", "landing-pricing"),
         })}
         {renderPricingCardsSection({ enableCheckout: true })}
         <section className="marketing-section public-plan-summary-grid">
@@ -7817,6 +7835,34 @@ function App() {
               : publicPage === "contact"
                 ? renderContactPage()
                 : renderHomePage()}
+        </div>
+        <div className="cta-bar">
+          <div>
+            <p className="eyebrow">Pronto para agir</p>
+            <strong>Demo guiada ou checkout seguro em 1 clique.</strong>
+          </div>
+          <div className="cta-bar-actions">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() =>
+                openLandingLogin(
+                  activePlanId,
+                  "Entrar agora com demo guiada",
+                  "Leva-te direto ao plano e perfil demo certos."
+                )
+              }
+            >
+              Ver demo agora
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => navigatePublicPage("pricing", "landing-pricing")}
+            >
+              Abrir checkout
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -8008,6 +8054,34 @@ function App() {
             </div>
           </div>
         </header>
+
+        <div className="copilot-bar">
+          <div>
+            <p className="eyebrow">Copilot</p>
+            <strong>Próxima ação sugerida</strong>
+            <span className="hero-text">
+              {followUpQueue[0]
+                ? `${followUpQueue[0].name} · ${followUpQueue[0].nextStep}`
+                : "Nenhum follow-up pendente. Gere leads ou abra automações."}
+            </span>
+          </div>
+          <div className="copilot-actions">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => navigateTo("automation")}
+            >
+              Abrir automações
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => navigateTo("pipeline")}
+            >
+              Ver pipeline
+            </button>
+          </div>
+        </div>
 
         <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">

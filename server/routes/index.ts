@@ -87,6 +87,12 @@ router.get("/stats", requireAuth(async (_req, res, user) => {
   res.json(stats);
 }));
 
+// Public stats (fallback) for marketing pages
+router.get("/stats/public", async (_req, res) => {
+  const stats = await storage.getLeadStats(null);
+  res.json(stats);
+});
+
 router.get("/market-radar/strategist", requireAuth(async (_req, res, user) => {
   // Placeholder: reuse stats to keep UI active
   const stats = await storage.getLeadStats({

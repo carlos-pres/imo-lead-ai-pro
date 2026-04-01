@@ -407,6 +407,11 @@ export async function getStats() {
   return readJson<LeadStats>(response);
 }
 
+export async function getPublicStats() {
+  const response = await apiFetch("/api/stats/public");
+  return readJson<LeadStats>(response);
+}
+
 export async function getTeams() {
   const response = await apiFetch("/api/teams");
   return readJson<TeamOverview>(response);
