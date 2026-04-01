@@ -3347,6 +3347,119 @@
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
+/* --- Pro palette refresh (mid-2026) --- */
+:root {
+  --ink: #0b1220;
+  --ink-2: #0f172a;
+  --panel: #0f192c;
+  --panel-2: #101a30;
+  --primary: #1f6feb;
+  --primary-2: #0ea5e9;
+  --accent: #f2b15c;
+  --muted: #94a3b8;
+  --muted-2: #cbd5e1;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, rgba(31, 111, 235, 0.08), transparent 32%),
+    radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.1), transparent 38%),
+    linear-gradient(180deg, #0a101a, #0c1220);
+  color: var(--muted-2);
+}
+
+.hero-panel,
+.shell-panel,
+.marketing-section,
+.public-marketing-main {
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  color: var(--muted-2);
+  border-color: var(--border);
+}
+
+.hero-copy h1,
+.panel-header h2,
+.lead-card h3,
+.section-head h3 {
+  color: #e2e8f0;
+}
+
+.hero-text,
+.panel-header p,
+.section-head p,
+p {
+  color: var(--muted);
+}
+
+.eyebrow {
+  color: var(--accent);
+}
+
+.status-chip {
+  background: linear-gradient(135deg, rgba(31, 111, 235, 0.25), rgba(14, 165, 233, 0.18));
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+}
+
+.status-chip.muted {
+  background: rgba(242, 177, 92, 0.12);
+  color: #f8fafc;
+  border-color: rgba(242, 177, 92, 0.4);
+}
+
+.primary-button,
+.app-shell .primary-button {
+  background: linear-gradient(120deg, var(--primary), var(--primary-2));
+  color: #f8fafc;
+  border: 1px solid rgba(31, 111, 235, 0.35);
+}
+
+.primary-button:hover,
+.app-shell .primary-button:hover {
+  box-shadow: 0 8px 24px rgba(31, 111, 235, 0.35);
+}
+
+.ghost-button,
+.secondary-button {
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+  background: transparent;
+}
+
+.pricing-card,
+.public-plan-summary-card,
+.dashboard-note-card,
+.marketing-proof-signal-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+}
+
+.marketing-final-cta,
+.marketing-feature-card,
+.public-stage-card,
+.public-plan-chip {
+  background: linear-gradient(170deg, rgba(16, 26, 48, 0.85), rgba(16, 31, 60, 0.9));
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+}
+
+.public-stage-head strong,
+.public-stage-card strong {
+  color: #f8fafc;
+}
+
+.public-hero-chips .status-chip {
+  background: linear-gradient(135deg, rgba(242, 177, 92, 0.25), rgba(31, 111, 235, 0.18));
+  color: #fffef8;
+}
+
+.marketing-cta-row .whatsapp-button.subtle {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
 .marketing-auth-panel {
   position: sticky;
   top: 24px;
