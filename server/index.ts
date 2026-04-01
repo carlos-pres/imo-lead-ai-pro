@@ -1,6 +1,8 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import fs from "fs";
+import path from "path";
 import { router } from "./routes";
 
 const app = express();
@@ -9,7 +11,22 @@ app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json());
 
+// API routes first
 app.use("/", router);
+
+// Serve built frontend when available (Railway prod)
+const clientBuildPath = path.join(__dirname, "../client");
+const hasClientBuild = fs.existsSync(path.join(clientBuildPath, "index.html"));
+
+if (hasClientBuild) {
+  app.use(express.static(clientBuildPath));
+  // SPA fallback
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+} else {
+  console.warn("client build not found; skipping static file serving");
+}
 
 app.get("/", (_req, res) => {
   res.json({
