@@ -2042,6 +2042,11 @@
   color: #0f172a;
 }
 
+.payment-activation-panel p,
+.payment-activation-panel li {
+  color: #223248;
+}
+
 .payment-activation-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3495,6 +3500,21 @@ p {
 .public-stage-head strong,
 .public-stage-card strong {
   color: #f8fafc;
+}
+
+/* Global readability for dark pages */
+.public-marketing-main,
+.marketing-section,
+.shell-panel,
+.public-route-hero {
+  color: #eaf2fb;
+}
+
+.public-marketing-main p,
+.public-marketing-main li,
+.marketing-section p,
+.marketing-section li {
+  color: #d5e1ee;
 }
 
 /* Pricing route hero clarity */

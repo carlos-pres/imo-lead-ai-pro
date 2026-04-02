@@ -7834,13 +7834,19 @@ function App() {
     return (
       <main className="public-marketing-shell">
         <div className="marketing-main public-marketing-main">
-          {publicPage === "features"
-            ? renderFeaturesPage()
-            : publicPage === "pricing"
-              ? renderPricingPage()
-              : publicPage === "contact"
-                ? renderContactPage()
-                : renderHomePage()}
+          {publicPage === "contact"
+            ? renderContactPage()
+            : (
+              <>
+                {publicPage === "features"
+                  ? renderFeaturesPage()
+                  : publicPage === "pricing"
+                    ? renderPricingPage()
+                    : renderHomePage()}
+                {renderFinalCtaSection()}
+                {renderLegalSection()}
+              </>
+            )}
         </div>
         <div className="cta-bar">
           <div>
