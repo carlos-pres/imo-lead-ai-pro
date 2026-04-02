@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useEffect, useState } from "react";
+﻿import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
 import "./App.css";
 import { Dashboard } from "./components/Dashboard";
@@ -1830,7 +1830,7 @@ function App() {
   const canSwitchPlan = !session;
   const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
   const dominantSource = sourceMix[0]?.[0] || "Manual";
-  const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
+  const coverageLabel = activePlan?.includedMarkets.join(" Â· ") || "Portugal Â· Espanha";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
   const salesWhatsAppDemoUrl = buildSalesWhatsAppUrl(
     "Ola, quero agendar uma demonstracao do ImoLead AI Pro e perceber o plano mais indicado para a minha operacao."
@@ -2437,12 +2437,12 @@ function App() {
       ? `${topMarket.market} lidera o radar com ${topMarket.totalLeads} leads, score medio ${topMarket.averageAiScore} e ${topMarket.overdueFollowUps} follow-ups atrasados.`
       : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.");
   const strategistRadarSources =
-    topStrategistOpportunity?.topSources?.slice(0, 3).join(" · ") ||
+    topStrategistOpportunity?.topSources?.slice(0, 3).join(" Â· ") ||
     dominantSource;
   const radarHighlight = topMarket
     ? `${topMarket.market} lidera o radar com ${topMarket.totalLeads} leads, score medio ${topMarket.averageAiScore} e ${topMarket.overdueFollowUps} follow-ups atrasados.`
     : "Radar pronto para ler o primeiro lote de leads assim que entrarem no workspace.";
-  const topRadarSources = topMarket?.topSources?.slice(0, 3).join(" · ") || dominantSource;
+  const topRadarSources = topMarket?.topSources?.slice(0, 3).join(" Â· ") || dominantSource;
 
   const viewMeta =
     visibleNavItems.find((item) => item.id === activeView) || visibleNavItems[0];
@@ -2517,7 +2517,7 @@ function App() {
         <div className="form-helper">
           <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
           <span>
-            {(activePlan?.agentLabel || "AI Copilot") + " · mercados ativos: "}
+            {(activePlan?.agentLabel || "AI Copilot") + " Â· mercados ativos: "}
             {activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}
           </span>
         </div>
@@ -2793,7 +2793,7 @@ function App() {
                 <article className="stack-item" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>{lead.location} · {lead.officeName}</p>
+                    <p>{lead.location} Â· {lead.officeName}</p>
                   </div>
                   <div className="stack-meta">
                     <span>AI {lead.aiScore}</span>
@@ -2821,7 +2821,7 @@ function App() {
                   <span>{market.market}</span>
                   <strong>{market.totalLeads} leads</strong>
                   <p>
-                    Score medio {market.averageAiScore} · ticket medio{" "}
+                    Score medio {market.averageAiScore} Â· ticket medio{" "}
                     {formatCurrency(market.averagePrice)}
                   </p>
                 </article>
@@ -2846,7 +2846,7 @@ function App() {
                   <div className="timeline-dot" />
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>{lead.nextStep} · {lead.assignedOwner}</p>
+                    <p>{lead.nextStep} Â· {lead.assignedOwner}</p>
                   </div>
                   <span>{formatDate(lead.followUpAt)}</span>
                 </article>
@@ -2877,7 +2877,7 @@ function App() {
                   <strong>{plan.agentLabel}</strong>
                   <p>{plan.recommendedFor}</p>
                   <p className="pricing-note">
-                    {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                    {formatIncludedUsers(plan.includedUsers)} Â· {formatExtraUsers(plan, billingMode)}
                   </p>
                   <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 </article>
@@ -2898,15 +2898,15 @@ function App() {
             id: `${opportunity.market}-${opportunity.location}`,
             title: opportunity.location,
             value: `Score ${opportunity.opportunityScore}`,
-            detail: `${opportunity.totalLeads} leads · ticket medio ${formatCurrency(opportunity.averagePrice)}`,
-            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} · ${opportunity.demandLevel}`,
+            detail: `${opportunity.totalLeads} leads Â· ticket medio ${formatCurrency(opportunity.averagePrice)}`,
+            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} Â· ${opportunity.demandLevel}`,
           }))
         : marketInsights.slice(0, 3).map((market) => ({
             id: market.market,
             title: market.market,
             value: `${market.totalLeads} leads`,
-            detail: `Score medio ${market.averageAiScore} · ticket medio ${formatCurrency(market.averagePrice)}`,
-            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} · ${market.officeCount} lojas`,
+            detail: `Score medio ${market.averageAiScore} Â· ticket medio ${formatCurrency(market.averagePrice)}`,
+            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} Â· ${market.officeCount} lojas`,
           }));
 
     const communicationMailtoFallback = `mailto:${SALES_CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -3072,7 +3072,7 @@ function App() {
                 <span>Lead em foco</span>
                 <strong>{communicationLead.name}</strong>
                 <p>
-                  {communicationLead.location} · {communicationLead.officeName} · AI {communicationLead.aiScore}
+                  {communicationLead.location} Â· {communicationLead.officeName} Â· AI {communicationLead.aiScore}
                 </p>
                 <p>{communicationLead.recommendedAction}</p>
               </article>
@@ -3085,7 +3085,7 @@ function App() {
                 <article className="dashboard-list-card" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>{lead.location} · {lead.assignedOwner}</p>
+                    <p>{lead.location} Â· {lead.assignedOwner}</p>
                   </div>
                   <div className="dashboard-list-meta dashboard-compact-meta">
                     <span>AI {lead.aiScore}</span>
@@ -3365,10 +3365,10 @@ function App() {
     );
   }
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
+  // @ts-ignore - Antigo dashboard, substituÃ­do por DashboardPage moderna
   void renderOperationalDashboardView;
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
+  // @ts-ignore - Antigo dashboard, substituÃ­do por DashboardPage moderna
   function renderDecisionDashboardView() {
     const marketRadarCards =
       strategistOpportunities.length > 0
@@ -3376,15 +3376,15 @@ function App() {
             id: `${opportunity.market}-${opportunity.location}`,
             title: opportunity.location,
             value: `Score ${opportunity.opportunityScore}`,
-            detail: `${opportunity.totalLeads} leads · ticket medio ${formatCurrency(opportunity.averagePrice)}`,
-            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} · ${opportunity.demandLevel}`,
+            detail: `${opportunity.totalLeads} leads Â· ticket medio ${formatCurrency(opportunity.averagePrice)}`,
+            extra: `${opportunity.topSources.slice(0, 2).join(" / ") || "Manual"} Â· ${opportunity.demandLevel}`,
           }))
         : marketInsights.slice(0, 3).map((market) => ({
             id: market.market,
             title: market.market,
             value: `${market.totalLeads} leads`,
-            detail: `Score medio ${market.averageAiScore} · ticket medio ${formatCurrency(market.averagePrice)}`,
-            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} · ${market.officeCount} lojas`,
+            detail: `Score medio ${market.averageAiScore} Â· ticket medio ${formatCurrency(market.averagePrice)}`,
+            extra: `${market.topSources.slice(0, 2).join(" / ") || "Manual"} Â· ${market.officeCount} lojas`,
           }));
 
     const communicationMailtoFallback = `mailto:${SALES_CONTACT_EMAIL}?subject=${encodeURIComponent(
@@ -3548,7 +3548,7 @@ function App() {
                 <strong>{communicationLead?.name || "Sem lead em foco"}</strong>
                 <p>
                   {communicationLead
-                    ? `${communicationLead.location} · ${communicationLead.officeName} · ${communicationLead.outreachChannel}`
+                    ? `${communicationLead.location} Â· ${communicationLead.officeName} Â· ${communicationLead.outreachChannel}`
                     : "A carteira ainda esta a aquecer e o agente assume o primeiro lote util assim que entra."}
                 </p>
                 <div className="dashboard-rail-metrics">
@@ -3598,7 +3598,7 @@ function App() {
                 <article className="dashboard-list-card dashboard-compact-item" key={lead.id}>
                   <div>
                     <strong>{lead.name}</strong>
-                    <p>{lead.location} · {lead.assignedOwner} · {getStageLabel(lead.pipelineStage)}</p>
+                    <p>{lead.location} Â· {lead.assignedOwner} Â· {getStageLabel(lead.pipelineStage)}</p>
                   </div>
                   <div className="dashboard-list-meta">
                     <span>AI {lead.aiScore}</span>
@@ -3808,7 +3808,7 @@ function App() {
               <div className="status-chip muted">{leadsWithEmailCount} leads com email</div>
               <div className="status-chip muted">{leadsWithWhatsAppCount} leads com WhatsApp</div>
               <div className="status-chip muted">
-                {followUpQueue.length} follow-ups ativos · {dashboardStats.overdue_followups} em atraso
+                {followUpQueue.length} follow-ups ativos Â· {dashboardStats.overdue_followups} em atraso
               </div>
             </div>
           </div>
@@ -3821,7 +3821,7 @@ function App() {
               </strong>
               <p>
                 {activeAgentCapabilities.length > 0
-                  ? activeAgentCapabilities.join(" · ")
+                  ? activeAgentCapabilities.join(" Â· ")
                   : "Ativa um plano comercial para desbloquear guidance, outreach e radar completo."}
               </p>
             </article>
@@ -3895,7 +3895,7 @@ function App() {
                       <div>
                         <strong>{lead.name}</strong>
                         <p>
-                          {lead.location} · {lead.officeName} · {getStageLabel(lead.pipelineStage)}
+                          {lead.location} Â· {lead.officeName} Â· {getStageLabel(lead.pipelineStage)}
                         </p>
                       </div>
                       <div className="automation-meta">
@@ -4024,7 +4024,7 @@ function App() {
                 <strong>{communicationLead?.name || "Sem lead em foco"}</strong>
                 <p>
                   {communicationLead
-                    ? `${communicationLead.outreachChannel} · ${communicationLead.recommendedAction}`
+                    ? `${communicationLead.outreachChannel} Â· ${communicationLead.recommendedAction}`
                     : "Quando houver prioridade comercial, o cockpit abre o melhor canal e mensagem."}
                 </p>
               </article>
@@ -4360,7 +4360,7 @@ function App() {
               <article className="office-card" key={office.id}>
                 <span>{office.name}</span>
                 <strong>
-                  {office.city} · {office.timezone}
+                  {office.city} Â· {office.timezone}
                 </strong>
                 <p>{office.focus}</p>
                 <div className="mini-tags">
@@ -4392,7 +4392,7 @@ function App() {
                 <strong>{member.name}</strong>
                 <span>{member.role}</span>
                 <p>
-                  {member.teamName} · {member.officeName}
+                  {member.teamName} Â· {member.officeName}
                 </p>
                 <div className="mini-tags">
                   {member.marketFocus.map((focus) => (
@@ -4498,7 +4498,7 @@ function App() {
                 <strong>{plan.reportsLabel}</strong>
                 <p>{plan.recommendedFor}</p>
                 <p className="pricing-note">
-                  {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                  {formatIncludedUsers(plan.includedUsers)} Â· {formatExtraUsers(plan, billingMode)}
                 </p>
                 <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                 <div className="mini-tags">
@@ -4634,7 +4634,7 @@ function App() {
                   </div>
 
                   <p className="pricing-note">
-                    {formatExtraUsers(plan, billingMode)} · {plan.reportsLabel}
+                    {formatExtraUsers(plan, billingMode)} Â· {plan.reportsLabel}
                   </p>
                   <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
                   <p className="pricing-note">
@@ -4938,7 +4938,7 @@ function App() {
             value={draft.features}
             onChange={(event) => onChange({ features: event.target.value })}
             placeholder={
-              "Capacidade ate 250 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17€/mes ou 163,20€/ano"
+              "Capacidade ate 250 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17â‚¬/mes ou 163,20â‚¬/ano"
             }
           />
         </label>
@@ -5181,7 +5181,7 @@ function App() {
                   adminSystemStatus?.googleCalendar ? "Calendar" : null,
                 ]
                   .filter(Boolean)
-                  .join(" · ") || "A ligar"}
+                  .join(" Â· ") || "A ligar"}
               </strong>
               <p>
                 Email {adminSystemStatus?.email ? "ativo" : "pendente"}, base{" "}
@@ -6175,7 +6175,7 @@ function App() {
                 <strong>{plan.agentLabel}</strong>
                 <p>{plan.recommendedFor}</p>
                 <p className="pricing-note">
-                  {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                  {formatIncludedUsers(plan.includedUsers)} Â· {formatExtraUsers(plan, billingMode)}
                 </p>
                 <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
               </article>
@@ -6300,7 +6300,7 @@ function App() {
                   <span>{plan.publicName}</span>
                   <strong>{formatCurrency(plan.monthlyPrice, "EUR", plan.monthlyPrice % 1 !== 0)}</strong>
                   <p>
-                    {formatIncludedUsers(plan.includedUsers)} · {formatLeadLimit(plan.leadLimit)}
+                    {formatIncludedUsers(plan.includedUsers)} Â· {formatLeadLimit(plan.leadLimit)}
                   </p>
                 </article>
               );
@@ -6331,7 +6331,7 @@ function App() {
         <div className="public-stage public-stage-contact">
           <div className="public-stage-head">
             <span>Fecho e governance</span>
-            <strong>Contacto real, linguagem clara e compliance visivel antes da reuniao</strong>
+            <strong>Contacto real, linguagem clara e compliance visível antes da reuniao</strong>
           </div>
 
           <div className="public-stage-cluster">
@@ -6410,7 +6410,7 @@ function App() {
       <div className="public-stage public-stage-home">
         <div className="public-stage-head">
           <span>Entrada comercial viva</span>
-          <strong>Menos ruído visual. Mais sinal de negocio logo na primeira dobra.</strong>
+          <strong>Menos ruÃ­do visual. Mais sinal de negocio logo na primeira dobra.</strong>
         </div>
 
         <article className="public-stage-card public-stage-card-accent public-stage-card-large">
@@ -6498,11 +6498,11 @@ function App() {
               <div className="status-chip">Mercado {topMarket?.market || "Portugal"}</div>
               <div className="status-chip muted">
                 {publicTotalLeads > 0
-                  ? `${publicTotalLeads} leads ativas · ${publicHotLeads} quentes`
+                  ? `${publicTotalLeads} leads ativas Â· ${publicHotLeads} quentes`
                   : activePlan?.publicName || "ImoLead Pro"}
               </div>
               <div className="status-chip muted">
-                {publicUrgent > 0 ? `${publicUrgent} ações urgentes hoje` : "Pronto para demo guiada"}
+                {publicUrgent > 0 ? `${publicUrgent} aÃ§Ãµes urgentes hoje` : "Pronto para demo guiada"}
               </div>
             </div>
           </div>
@@ -6779,7 +6779,7 @@ function App() {
               <strong>{publicUrgent || dashboardStats.urgent_actions} acoes urgentes</strong>
               <p>
                 {publicTotalLeads > 0
-                  ? `${publicTotalLeads} leads publicas · ${publicHotLeads} quentes`
+                  ? `${publicTotalLeads} leads publicas Â· ${publicHotLeads} quentes`
                   : `${followUpQueue.length} follow-ups ativos e prioridade por desk/owner.`}
               </p>
             </article>
@@ -6801,7 +6801,7 @@ function App() {
         <article className="shell-panel marketing-story-card">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Objeções</p>
+              <p className="eyebrow">ObjeÃ§Ãµes</p>
               <h3>Respostas curtas para nao perder a conversa no detalhe</h3>
             </div>
           </div>
@@ -6860,7 +6860,7 @@ function App() {
           <ul className="marketing-benefit-list">
             <li>Mostrar o agente certo por plano, sem esconder limites nem promessas vagas.</li>
             <li>Provar radar de mercado, desks e follow-up com contexto comercial real.</li>
-            <li>Fechar a conversa com proposta, contacto direto e compliance visivel.</li>
+            <li>Fechar a conversa com proposta, contacto direto e compliance visível.</li>
           </ul>
 
           <div className="marketing-final-actions">
@@ -6889,6 +6889,12 @@ function App() {
             >
               Abrir demo executiva
             </button>
+          </div>
+
+          <div className="legal-links-row">
+            <a href="#legal-terms">Termos de Utilização</a>
+            <a href="#legal-privacy">Política de Privacidade</a>
+            <a href="#legal-security">Segurança &amp; RGPD</a>
           </div>
         </div>
 
@@ -6939,7 +6945,7 @@ function App() {
               entre login, trial e demonstracao. Menos ruido, mais confianca comercial.
             </p>
             <p className="hero-text">
-              A demonstração publica fica fechada. Esta entrada serve contas reais, trials
+              A demonstraÃ§Ã£o publica fica fechada. Esta entrada serve contas reais, trials
               protegidos e sessoes assistidas para mostrar valor sem expor a operacao.
             </p>
 
@@ -7314,7 +7320,7 @@ function App() {
               <strong>{plan.agentLabel}</strong>
               <p>{plan.recommendedFor}</p>
               <p className="pricing-note">
-                {formatIncludedUsers(plan.includedUsers)} · {formatExtraUsers(plan, billingMode)}
+                {formatIncludedUsers(plan.includedUsers)} Â· {formatExtraUsers(plan, billingMode)}
               </p>
               <p className="upgrade-note">{getUpgradeHintForPlan(plan.basePlanId, plans)}</p>
             </article>
@@ -7724,10 +7730,10 @@ function App() {
     return (
       <>
         {renderPageHero({
-          eyebrow: "Planos transparentes e flexíveis",
+          eyebrow: "Planos transparentes e flexÃ­veis",
           title: "Starter para testar, Pro para escalar, Enterprise para governar.",
           text:
-            "CTA primário abre demo guiada no plano selecionado; CTA secundário abre checkout seguro ou WhatsApp para Enterprise.",
+            "CTA primÃ¡rio abre demo guiada no plano selecionado; CTA secundÃ¡rio abre checkout seguro ou WhatsApp para Enterprise.",
           stage: "pricing",
           primaryLabel: "Ver demo guiada",
           secondaryLabel: "Checkout seguro",
@@ -7954,7 +7960,7 @@ function App() {
 
         {secondaryNav.length > 0 ? (
           <div className="pt-4 mt-2 border-t border-slate-800 space-y-1">
-            <p className="text-xs uppercase text-slate-500 px-1">OperaÃ§Ã£o</p>
+            <p className="text-xs uppercase text-slate-500 px-1">OperaÃƒÂ§ÃƒÂ£o</p>
             {secondaryNav.map((item) => {
               const isActive = item.id === activeView;
               const Icon = item.icon;
@@ -7997,7 +8003,7 @@ function App() {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-            <p>{activePlan?.includedMarkets.join(" · ") || coverageLabel}</p>
+            <p>{activePlan?.includedMarkets.join(" Â· ") || coverageLabel}</p>
             <p>{dashboardStats.total} leads ativas</p>
             <p>{dashboardStats.overdue_followups} follow-ups</p>
             <p>{aiMode === "hybrid" ? "AI externa" : "AI heuristica"}</p>
@@ -8009,7 +8015,7 @@ function App() {
           <p className="text-sm font-semibold text-white">{session.user.name}</p>
           <p className="text-xs text-slate-400">{session.user.email}</p>
           <p className="text-xs text-slate-400">
-            {getRoleLabel(session.user.role)} · {session.user.officeName}
+            {getRoleLabel(session.user.role)} Â· {session.user.officeName}
           </p>
           <button
             type="button"
@@ -8058,11 +8064,11 @@ function App() {
         <div className="copilot-bar">
           <div>
             <p className="eyebrow">Copilot</p>
-            <strong>Próxima ação sugerida</strong>
+            <strong>PrÃ³xima aÃ§Ã£o sugerida</strong>
             <span className="hero-text">
               {followUpQueue[0]
-                ? `${followUpQueue[0].name} · ${followUpQueue[0].nextStep}`
-                : "Nenhum follow-up pendente. Gere leads ou abra automações."}
+                ? `${followUpQueue[0].name} Â· ${followUpQueue[0].nextStep}`
+                : "Nenhum follow-up pendente. Gere leads ou abra automaÃ§Ãµes."}
             </span>
           </div>
           <div className="copilot-actions">
@@ -8071,7 +8077,7 @@ function App() {
               type="button"
               onClick={() => navigateTo("automation")}
             >
-              Abrir automações
+              Abrir automaÃ§Ãµes
             </button>
             <button
               className="ghost-button"
