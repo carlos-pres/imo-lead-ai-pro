@@ -3539,6 +3539,44 @@ p {
   color: #d5e1ee;
 }
 
+/* High contrast overrides for light cards */
+.marketing-legal-card,
+.marketing-final-card,
+.public-contact-card,
+.public-plan-summary-card,
+.public-sales-card {
+  color: #0f172a;
+}
+
+.marketing-legal-card span,
+.marketing-final-card span,
+.public-contact-card span,
+.public-plan-summary-card span,
+.public-sales-card span {
+  color: #475569;
+}
+
+.marketing-legal-card strong,
+.marketing-final-card strong,
+.public-contact-card strong,
+.public-plan-summary-card strong,
+.public-sales-card strong {
+  color: #0b1220;
+}
+
+.marketing-legal-card p,
+.marketing-legal-card li,
+.marketing-final-card p,
+.marketing-final-card li,
+.public-contact-card p,
+.public-contact-card li,
+.public-plan-summary-card p,
+.public-plan-summary-card li,
+.public-sales-card p,
+.public-sales-card li {
+  color: #1f2937;
+}
+
 /* Pricing route hero clarity */
 .public-route-hero.shell-panel {
   background: linear-gradient(155deg, #0f1a2e 0%, #122945 48%, #0d1729 100%);
