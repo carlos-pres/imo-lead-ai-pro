@@ -3472,6 +3472,22 @@ p {
   color: #f8fafc;
 }
 
+/* Pricing route hero clarity */
+.public-route-hero.shell-panel {
+  background: linear-gradient(155deg, #0f1a2e 0%, #122945 48%, #0d1729 100%);
+  border: 1px solid var(--border);
+  color: #eaf2fb;
+}
+
+.public-route-copy h1 {
+  color: #f8fbff;
+  text-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+
+.public-route-copy .hero-text {
+  color: #d5e1ee;
+}
+
 .public-hero-chips .status-chip {
   background: linear-gradient(135deg, rgba(242, 177, 92, 0.35), rgba(242, 177, 92, 0.2));
   color: #0b1220;
