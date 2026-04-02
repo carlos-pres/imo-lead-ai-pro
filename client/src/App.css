@@ -3540,34 +3540,54 @@ p {
 }
 
 /* High contrast overrides for light cards */
+.marketing-pricing-grid .pricing-card,
 .marketing-legal-card,
 .marketing-final-card,
+.marketing-faq-card,
+.marketing-testimonial-card,
 .public-contact-card,
 .public-plan-summary-card,
 .public-sales-card {
   color: #0f172a;
 }
 
+.marketing-pricing-grid .pricing-head span,
 .marketing-legal-card span,
 .marketing-final-card span,
+.marketing-faq-card span,
+.marketing-testimonial-card span,
 .public-contact-card span,
 .public-plan-summary-card span,
 .public-sales-card span {
   color: #475569;
 }
 
+.marketing-pricing-grid .pricing-head strong,
+.marketing-pricing-grid .pricing-head strong small,
 .marketing-legal-card strong,
 .marketing-final-card strong,
+.marketing-faq-card strong,
+.marketing-testimonial-card strong,
 .public-contact-card strong,
 .public-plan-summary-card strong,
 .public-sales-card strong {
   color: #0b1220;
 }
 
+.marketing-pricing-grid .pricing-note,
+.marketing-pricing-grid .upgrade-note,
+.marketing-pricing-grid .feature-list,
+.marketing-pricing-grid .feature-list li,
+.marketing-pricing-grid .pricing-guidance-note,
+.marketing-pricing-grid .hero-text,
+.marketing-pricing-grid .mini-tags span,
+.marketing-pricing-grid .ghost-button,
+.marketing-faq-card p,
 .marketing-legal-card p,
 .marketing-legal-card li,
 .marketing-final-card p,
 .marketing-final-card li,
+.marketing-testimonial-card p,
 .public-contact-card p,
 .public-contact-card li,
 .public-plan-summary-card p,
@@ -3575,6 +3595,16 @@ p {
 .public-sales-card p,
 .public-sales-card li {
   color: #1f2937;
+}
+
+.marketing-pricing-grid .pricing-note,
+.marketing-pricing-grid .upgrade-note {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.marketing-pricing-grid .ghost-button {
+  border-color: rgba(15, 23, 42, 0.2);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 /* Pricing route hero clarity */
