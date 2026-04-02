@@ -2039,6 +2039,7 @@
   background:
     radial-gradient(circle at top left, rgba(31, 99, 233, 0.08), transparent 34%),
     linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+  color: #0f172a;
 }
 
 .payment-activation-grid {
@@ -2051,7 +2052,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #223248;
+  color: #0f172a;
   font-weight: 600;
   font-size: 0.92rem;
 }
@@ -2063,8 +2064,12 @@
   border: 1px solid rgba(19, 34, 55, 0.14);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
-  color: #132237;
+  color: #0b1220;
   font: inherit;
+}
+
+.payment-activation-grid input::placeholder {
+  color: #475569;
 }
 
 .payment-methods-note {
