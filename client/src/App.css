@@ -3479,9 +3479,14 @@ p {
   color: #eaf2fb;
 }
 
+.public-route-hero {
+  color: #eaf2fb;
+}
+
 .public-route-copy h1 {
   color: #f8fbff;
   text-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  opacity: 1;
 }
 
 .public-route-copy .hero-text {

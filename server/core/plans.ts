@@ -81,7 +81,7 @@ function formatPriceLabel(value: number) {
 function getLeadCapacityLabel(leadLimit: number) {
   return leadLimit >= 999999
     ? "Capacidade personalizada em regime fair use para leads geridas e analisadas"
-    : `Capacidade ate ${leadLimit} leads geridas/analisadas por mes`;
+    : `Capacidade até ${leadLimit} leads geridas/analisadas por mês`;
 }
 
 function getExtraUsersLabel(plan: Pick<
@@ -89,17 +89,17 @@ function getExtraUsersLabel(plan: Pick<
   "allowsExtraUsers" | "extraUserMonthlyPrice" | "extraUserYearlyPrice"
 >) {
   if (!plan.allowsExtraUsers) {
-    return "Sem utilizadores extra no Starter durante o trial e na operacao base";
+    return "Sem utilizadores extra no Starter durante o trial e na operação base";
   }
 
-  return `Utilizador extra: ${formatPriceLabel(plan.extraUserMonthlyPrice)}/mes ou ${formatPriceLabel(plan.extraUserYearlyPrice)}/ano`;
+  return `Utilizador extra: ${formatPriceLabel(plan.extraUserMonthlyPrice)}/mês ou ${formatPriceLabel(plan.extraUserYearlyPrice)}/ano`;
 }
 
 export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
   basic: {
     id: "basic",
     publicName: "ImoLead Starter",
-    recommendedFor: "Consultor individual ou pequena operacao local com trial inicial",
+    recommendedFor: "Consultor individual ou pequena operação local com trial inicial",
     trialDays: 15,
     includedCountryCodes: ["PT"],
     leadLimit: 50,
@@ -115,10 +115,10 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     monthlyPrice: 47,
     yearlyPrice: yearlyPriceFromMonthly(47),
     annualDiscountPercent: ANNUAL_DISCOUNT_PERCENT,
-    reportsLabel: "Relatorio de mercado local mensal",
+    reportsLabel: "Relatório de mercado local mensal",
     marketReports: [
-      "Relatorio mensal por zona",
-      "Resumo de oferta, procura e preco medio",
+      "Relatório mensal por zona",
+      "Resumo de oferta, procura e preço médio",
     ],
     includedMarkets: ["Portugal"],
     supportLabel: "Suporte por email",
@@ -126,28 +126,28 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     agentCapabilities: [
       "Triagem essencial e prioridade inicial",
       "Mensagens sugeridas para primeiro contacto",
-      "Relatorio local mensal para a loja principal",
-      "Sem automacao autonoma multi-equipa",
+      "Relatório local mensal para a loja principal",
+      "Sem automação autónoma multi-equipa",
     ],
     features: [
-      "15 dias de trial para validar a operacao sem friccao",
+      "15 dias de trial para validar a operação sem fricção",
       getLeadCapacityLabel(50),
-      "1 utilizador incluido e 1 loja",
+      "1 utilizador incluído e 1 loja",
       getExtraUsersLabel({
         allowsExtraUsers: false,
         extraUserMonthlyPrice: 0,
         extraUserYearlyPrice: 0,
       }),
       "Pipeline e follow-up base",
-      "Classificacao AI essencial",
-      "Relatorio de mercado local mensal",
+      "Classificação AI essencial",
+      "Relatório de mercado local mensal",
       "Suporte por email",
     ],
   },
   pro: {
     id: "pro",
     publicName: "ImoLead Pro",
-    recommendedFor: "Agencia em crescimento com multi-owner e foco Iberia",
+    recommendedFor: "Agência em crescimento com multi-owner e foco Ibéria",
     trialDays: 0,
     includedCountryCodes: ["PT", "ES"],
     leadLimit: 250,
@@ -163,41 +163,41 @@ export const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
     monthlyPrice: 97,
     yearlyPrice: yearlyPriceFromMonthly(97),
     annualDiscountPercent: ANNUAL_DISCOUNT_PERCENT,
-    reportsLabel: "Relatorios de mercado semanais",
+    reportsLabel: "Relatórios de mercado semanais",
     marketReports: [
-      "Relatorio semanal por cidade e carteira",
+      "Relatório semanal por cidade e carteira",
       "Comparativo de fontes e desks",
-      "Pulse report de mercado iberico",
+      "Pulse report de mercado ibérico",
     ],
     includedMarkets: ["Portugal", "Espanha"],
-    supportLabel: "Suporte prioritario",
+    supportLabel: "Suporte prioritário",
     agentLabel: "AI Copilot",
     agentCapabilities: [
       "Routing por owner, loja e prioridade comercial",
-      "Playbooks assistidos para follow-up e recuperacao",
-      "Relatorios semanais para Portugal e Espanha",
-      "Operacao multilingue assistida",
+      "Playbooks assistidos para follow-up e recuperação",
+      "Relatórios semanais para Portugal e Espanha",
+      "Operação multilingue assistida",
     ],
     features: [
-      "Upgrade natural apos o trial Starter",
+      "Upgrade natural após o trial Starter",
       getLeadCapacityLabel(250),
-      "7 utilizadores incluidos",
+      "7 utilizadores incluídos",
       getExtraUsersLabel({
         allowsExtraUsers: true,
         extraUserMonthlyPrice: 17,
         extraUserYearlyPrice: yearlyPriceFromMonthly(17),
       }),
       "Multi-loja e multi-owner",
-      "Automacao comercial e AI avancada",
-      "Relatorios de mercado semanais",
-      "Cobertura Portugal e Iberia",
-      "Suporte prioritario",
+      "Automação comercial e AI avançada",
+      "Relatórios de mercado semanais",
+      "Cobertura Portugal e Ibéria",
+      "Suporte prioritário",
     ],
   },
   custom: {
     id: "custom",
     publicName: "ImoLead Enterprise",
-    recommendedFor: "Grande imobiliaria, rede multi-loja ou expansao europeia",
+    recommendedFor: "Grande imobiliária, rede multi-loja ou expansão europeia",
     trialDays: 0,
     includedCountryCodes: ["PT", "ES", "FR", "IT"],
     leadLimit: 999999,
@@ -347,14 +347,14 @@ export function getPlanUpgradeTargets(planId: PlanType) {
 
 export function getPlanUpgradeSummary(planId: PlanType) {
   if (planId === "basic") {
-    return "Inclui 15 dias de trial e indica sempre o Pro como evolucao natural, deixando o Enterprise para equipas multi-loja e expansao europeia.";
+    return "Inclui 15 dias de trial e indica sempre o Pro como evolução natural, deixando o Enterprise para equipas multi-loja e expansão europeia.";
   }
 
   if (planId === "pro") {
     return "Pensado para equipas que saem do Starter e com caminho claro para o Enterprise quando precisarem de governance e escala europeia.";
   }
 
-  return "Camada final para operacoes que ja validaram o fit e precisam de controlo total, governance e expansao.";
+  return "Camada final para operações que já validaram o fit e precisam de controlo total, governance e expansão.";
 }
 
 export function isCountryCoveredByPlan(planId: PlanType, countryCode: string) {
@@ -367,18 +367,18 @@ export function getPlanUpgradeMessage(planId: PlanType, countryCode: string) {
   }
 
   if ((countryCode === "FR" || countryCode === "IT") && planId !== "custom") {
-    return "Franca e Italia requerem o plano ImoLead Enterprise.";
+    return "França e Itália requerem o plano ImoLead Enterprise.";
   }
 
   if (countryCode !== "PT" && planId === "basic") {
-    return "Operacoes fora de Portugal requerem o plano ImoLead Pro ou Enterprise.";
+    return "Operações fora de Portugal requerem o plano ImoLead Pro ou Enterprise.";
   }
 
   if (countryCode !== "PT" && countryCode !== "ES" && planId === "pro") {
     return "Este mercado requer o plano ImoLead Enterprise.";
   }
 
-  return `Este mercado nao esta incluido no plano ${PLAN_CONFIG[planId].publicName}.`;
+  return `Este mercado não está incluído no plano ${PLAN_CONFIG[planId].publicName}.`;
 }
 
 export function getPaymentPlanOptions() {
@@ -391,11 +391,11 @@ export function getPaymentPlanOptions() {
       currency: "EUR",
       interval: "month" as const,
       features: [
-        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
-        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluido${plan.includedUsers === 1 ? "" : "s"}`,
+        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluídos`] : []),
+        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluído${plan.includedUsers === 1 ? "" : "s"}`,
         getExtraUsersLabel(plan),
         ...plan.features,
-        `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,
+        `Mercados incluídos: ${plan.includedMarkets.join(", ")}`,
       ],
     },
     {
@@ -406,12 +406,12 @@ export function getPaymentPlanOptions() {
       currency: "EUR",
       interval: "year" as const,
       features: [
-        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluidos`] : []),
-        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluido${plan.includedUsers === 1 ? "" : "s"}`,
+        ...(plan.trialDays > 0 ? [`${plan.trialDays} dias de trial incluídos`] : []),
+        `${plan.includedUsers} utilizador${plan.includedUsers === 1 ? "" : "es"} incluído${plan.includedUsers === 1 ? "" : "s"}`,
         getExtraUsersLabel(plan),
         ...plan.features,
         `Desconto anual fixo de ${plan.annualDiscountPercent}%`,
-        `Mercados incluidos: ${plan.includedMarkets.join(", ")}`,
+        `Mercados incluídos: ${plan.includedMarkets.join(", ")}`,
       ],
     },
   ]);

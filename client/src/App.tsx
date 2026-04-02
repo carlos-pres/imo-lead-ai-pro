@@ -7724,10 +7724,10 @@ function App() {
     return (
       <>
         {renderPageHero({
-          eyebrow: "Planos transparentes e flexiveis",
+          eyebrow: "Planos transparentes e flexíveis",
           title: "Starter para testar, Pro para escalar, Enterprise para governar.",
           text:
-            "CTA primario abre demo guiada no plano selecionado; CTA secundario abre checkout seguro ou WhatsApp para Enterprise.",
+            "CTA primário abre demo guiada no plano selecionado; CTA secundário abre checkout seguro ou WhatsApp para Enterprise.",
           stage: "pricing",
           primaryLabel: "Ver demo guiada",
           secondaryLabel: "Checkout seguro",
