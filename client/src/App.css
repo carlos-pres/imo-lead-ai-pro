@@ -3292,6 +3292,26 @@
   line-height: 1.6;
 }
 
+.legal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-weight: 700;
+  color: #0b5ac0;
+  text-decoration: none;
+}
+
+.legal-link::after {
+  content: "↗";
+  font-size: 0.9em;
+}
+
+.legal-link:hover {
+  color: #0a4aa0;
+  text-decoration: underline;
+}
+
 .marketing-final-cta {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);

@@ -6840,6 +6840,9 @@ function App() {
                   <li key={bullet}>{bullet}</li>
                 ))}
               </ul>
+              <a className="legal-link" href={section.linkHref} target="_blank" rel="noreferrer">
+                {section.linkLabel}
+              </a>
             </article>
           ))}
         </div>

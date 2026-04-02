@@ -8,6 +8,8 @@ export type LegalSection = {
   title: string;
   summary: string;
   bullets: string[];
+  linkLabel: string;
+  linkHref: string;
 };
 
 export const LEGAL_SECTIONS: LegalSection[] = [
@@ -23,6 +25,9 @@ export const LEGAL_SECTIONS: LegalSection[] = [
       "Os pedidos de acesso, retificação, apagamento ou oposição podem ser feitos por email para o contacto RGPD.",
       "Não vendemos bases de dados nem prometemos volumes garantidos de leads.",
     ],
+    linkLabel: "Ler Política de Privacidade",
+    linkHref:
+      "https://raw.githubusercontent.com/carlos-pres/imo-lead-ai-pro/main/docs/privacy-policy-pt-2026-03-22.md",
   },
   {
     id: "legal-terms",
@@ -36,6 +41,9 @@ export const LEGAL_SECTIONS: LegalSection[] = [
       "As contas não podem ser usadas para atividade ilícita, scraping abusivo ou tentativa de contorno dos limites do produto.",
       "A operação enterprise pode exigir onboarding, configuração e proposta comercial específica.",
     ],
+    linkLabel: "Ler Termos de Utilização",
+    linkHref:
+      "https://raw.githubusercontent.com/carlos-pres/imo-lead-ai-pro/main/docs/terms-of-use-pt-2026-03-22.md",
   },
   {
     id: "legal-ai",
@@ -49,6 +57,9 @@ export const LEGAL_SECTIONS: LegalSection[] = [
       "Se a IA externa estiver indisponível, o sistema recorre a heurísticas internas para continuidade de serviço.",
       "A equipa cliente continua responsável pela revisão de mensagens, contactos e decisões comerciais finais.",
     ],
+    linkLabel: "Ler Política de IA",
+    linkHref:
+      "https://raw.githubusercontent.com/carlos-pres/imo-lead-ai-pro/main/docs/ai-usage-and-data-processing-pt-2026-03-22.md",
   },
   {
     id: "legal-security",
@@ -62,5 +73,8 @@ export const LEGAL_SECTIONS: LegalSection[] = [
       "Minimização: só pedimos dados necessários para operar leads, trials e faturação.",
       "Direitos RGPD (acesso, apagamento, portabilidade, oposição) podem ser exercidos via contacto RGPD.",
     ],
+    linkLabel: "Ler Segurança & RGPD",
+    linkHref:
+      "https://raw.githubusercontent.com/carlos-pres/imo-lead-ai-pro/main/docs/privacy-policy-pt-2026-03-22.md#seguranca-e-governanca",
   },
 ];
