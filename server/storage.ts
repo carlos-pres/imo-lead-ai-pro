@@ -264,6 +264,7 @@ const PREVIOUS_PRIMARY_ADMIN_EMAIL = "carlospsantos@gmail.com";
 const PRIMARY_ADMIN_EMAIL = "carlospsantos19820@gmail.com";
 const PRIMARY_ADMIN_NAME = "Carlos Santos";
 const PRIMARY_ADMIN_PASSWORD = process.env.ADMIN_BOOTSTRAP_PASSWORD || "Demo123!";
+const DEMO_SHARED_PASSWORD = process.env.DEMO_SHARED_PASSWORD || PRIMARY_ADMIN_PASSWORD;
 const PUBLIC_DEMO_USER_EMAILS = new Set(["lucas@imolead.ai", "ana@imolead.ai"]);
 const fallbackCustomers: Customer[] = [];
 const fallbackTrialRequests: TrialRequest[] = [];
@@ -432,7 +433,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     planId: "pro",
     planName: getPlanConfig("pro").publicName,
     isActive: true,
-    passwordHash: createPasswordHash("Demo123!"),
+    passwordHash: createPasswordHash(DEMO_SHARED_PASSWORD),
   },
   {
     id: "workspace-user-consultant",
@@ -445,7 +446,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     planId: "basic",
     planName: getPlanConfig("basic").publicName,
     isActive: true,
-    passwordHash: createPasswordHash("Demo123!"),
+    passwordHash: createPasswordHash(DEMO_SHARED_PASSWORD),
   },
 ];
 

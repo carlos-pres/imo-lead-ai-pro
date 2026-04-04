@@ -43,6 +43,36 @@ function requireAuth(handler: (req: any, res: any, user: storage.WorkspaceUser) 
   };
 }
 
+function toWorkspaceScope(user: storage.WorkspaceUser): storage.WorkspaceScope {
+  return {
+    userId: user.id,
+    userName: user.name,
+    role: user.role,
+    officeName: user.officeName,
+    teamName: user.teamName,
+    preferredLanguage: user.preferredLanguage,
+    planId: user.planId,
+  };
+}
+
+function requireAdmin(
+  handler: (
+    req: any,
+    res: any,
+    user: storage.WorkspaceUser,
+    scope: storage.WorkspaceScope
+  ) => Promise<void>
+) {
+  return requireAuth(async (req, res, user) => {
+    if (user.role !== "admin") {
+      res.status(403).json({ error: "Sem permissao para o painel de administracao" });
+      return;
+    }
+
+    await handler(req, res, user, toWorkspaceScope(user));
+  });
+}
+
 router.get("/plans", async (_req, res) => {
   const plans = await storage.listCommercialPlans(null, { includeInactive: false, includePrivate: false });
   res.json(plans);
@@ -62,28 +92,12 @@ router.get("/compliance", (_req, res) => {
 });
 
 router.get("/teams", requireAuth(async (_req, res, user) => {
-  const overview = await storage.getTeamOverview({
-    userId: user.id,
-    userName: user.name,
-    role: user.role,
-    officeName: user.officeName,
-    teamName: user.teamName,
-    preferredLanguage: user.preferredLanguage,
-    planId: user.planId,
-  });
+  const overview = await storage.getTeamOverview(toWorkspaceScope(user));
   res.json(overview);
 }));
 
 router.get("/stats", requireAuth(async (_req, res, user) => {
-  const stats = await storage.getLeadStats({
-    userId: user.id,
-    userName: user.name,
-    role: user.role,
-    officeName: user.officeName,
-    teamName: user.teamName,
-    preferredLanguage: user.preferredLanguage,
-    planId: user.planId,
-  });
+  const stats = await storage.getLeadStats(toWorkspaceScope(user));
   res.json(stats);
 }));
 
@@ -95,15 +109,7 @@ router.get("/stats/public", async (_req, res) => {
 
 router.get("/market-radar/strategist", requireAuth(async (_req, res, user) => {
   // Placeholder: reuse stats to keep UI active
-  const stats = await storage.getLeadStats({
-    userId: user.id,
-    userName: user.name,
-    role: user.role,
-    officeName: user.officeName,
-    teamName: user.teamName,
-    preferredLanguage: user.preferredLanguage,
-    planId: user.planId,
-  });
+  const stats = await storage.getLeadStats(toWorkspaceScope(user));
   res.json({
     headline: "Radar ativo",
     summary: "Radar estrategico simplificado com base nas estatisticas atuais.",
@@ -113,6 +119,121 @@ router.get("/market-radar/strategist", requireAuth(async (_req, res, user) => {
       `Alocar recursos para ${stats.growth_queue} leads growth em fila.`,
     ],
   });
+}));
+
+router.get("/admin/system-status", requireAdmin(async (_req, res) => {
+  const storageStatus = await storage.prepareStorage();
+
+  res.json({
+    ai: Boolean(process.env.OPENAI_API_KEY),
+    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+    googleCalendar: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    whatsapp: Boolean(process.env.WHATSAPP_API_KEY && process.env.WHATSAPP_PHONE_NUMBER_ID),
+    email: Boolean(
+      process.env.SMTP_HOST &&
+        process.env.SMTP_PORT &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASS
+    ),
+    database: storageStatus.databaseReady,
+  });
+}));
+
+router.get("/admin/plans", requireAdmin(async (_req, res, _user, scope) => {
+  const plans = await storage.listCommercialPlans(scope, {
+    includeInactive: true,
+    includePrivate: true,
+  });
+  res.json(plans);
+}));
+
+router.post("/admin/plans", requireAdmin(async (req, res, _user, scope) => {
+  try {
+    const plan = await storage.createCommercialPlan(req.body || {}, scope);
+    res.status(201).json(plan);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao criar plano";
+    res.status(400).json({ error: message });
+  }
+}));
+
+router.patch("/admin/plans/:id", requireAdmin(async (req, res, _user, scope) => {
+  try {
+    const updated = await storage.updateCommercialPlan(String(req.params.id), req.body || {}, scope);
+
+    if (!updated) {
+      res.status(404).json({ error: "Plano nao encontrado" });
+      return;
+    }
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao guardar plano";
+    res.status(400).json({ error: message });
+  }
+}));
+
+router.delete("/admin/plans/:id", requireAdmin(async (req, res, _user, scope) => {
+  const deleted = await storage.deleteCommercialPlan(String(req.params.id), scope);
+
+  if (!deleted) {
+    res.status(404).json({ error: "Plano nao encontrado" });
+    return;
+  }
+
+  res.status(204).send();
+}));
+
+router.get("/admin/users", requireAdmin(async (_req, res, _user, scope) => {
+  const users = await storage.listWorkspaceUsers(scope);
+  res.json(users);
+}));
+
+router.post("/admin/users", requireAdmin(async (req, res, _user, scope) => {
+  try {
+    const created = await storage.createWorkspaceUser(req.body || {}, scope);
+    res.status(201).json(created);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao criar utilizador";
+    res.status(400).json({ error: message });
+  }
+}));
+
+router.patch("/admin/users/:id", requireAdmin(async (req, res, user, scope) => {
+  try {
+    const targetId = String(req.params.id);
+    if (targetId === user.id && req.body && req.body.isActive === false) {
+      res.status(400).json({ error: "Nao e possivel desativar o proprio utilizador admin" });
+      return;
+    }
+
+    const updated = await storage.updateWorkspaceUser(targetId, req.body || {}, scope);
+    if (!updated) {
+      res.status(404).json({ error: "Utilizador nao encontrado" });
+      return;
+    }
+
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao guardar utilizador";
+    res.status(400).json({ error: message });
+  }
+}));
+
+router.delete("/admin/users/:id", requireAdmin(async (req, res, user, scope) => {
+  const targetId = String(req.params.id);
+  if (targetId === user.id) {
+    res.status(400).json({ error: "Nao e possivel remover o proprio utilizador admin" });
+    return;
+  }
+
+  const deleted = await storage.deleteWorkspaceUser(targetId, scope);
+  if (!deleted) {
+    res.status(404).json({ error: "Utilizador nao encontrado" });
+    return;
+  }
+
+  res.status(204).send();
 }));
 
 router.post("/trial-requests", async (req, res) => {

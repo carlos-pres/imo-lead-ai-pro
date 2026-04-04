@@ -468,19 +468,19 @@ const DEMO_ACCESS = [
   {
     role: "Admin",
     email: "carlospsantos19820@gmail.com",
-    password: "Demo123!",
+    password: "45681200",
     description: "ADM geral com controlo total da rede e do catalogo comercial.",
   },
   {
     role: "Manager",
     email: "lucas@imolead.ai",
-    password: "Demo123!",
+    password: "45681200",
     description: "Desk Europa com foco em Iberia e expansao.",
   },
   {
     role: "Consultor",
     email: "ana@imolead.ai",
-    password: "Demo123!",
+    password: "45681200",
     description: "Operacao comercial limitada a equipa e carteira propria.",
   },
 ] as const;
