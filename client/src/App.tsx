@@ -63,6 +63,31 @@ import {
 } from "./services/api";
 import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
 
+declare const __APP_VERSION__: string;
+declare const __BUILD_TIME__: string;
+
+const BUILD_META = (() => {
+  const version =
+    typeof __APP_VERSION__ !== "undefined" && __APP_VERSION__ ? __APP_VERSION__ : "dev";
+  const time =
+    typeof __BUILD_TIME__ !== "undefined" && __BUILD_TIME__ ? __BUILD_TIME__ : "";
+
+  if (!time) {
+    return { label: `v${version}`, title: `Build v${version}` };
+  }
+
+  const parsed = new Date(time);
+  const isValid = !Number.isNaN(parsed.getTime());
+  const dateLabel = isValid
+    ? parsed.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })
+    : "";
+
+  return {
+    label: dateLabel ? `v${version} · ${dateLabel}` : `v${version}`,
+    title: isValid ? `Build v${version} · ${parsed.toISOString()}` : `Build v${version}`,
+  };
+})();
+
 type ViewId =
   | "dashboard"
   | "automation"
@@ -7923,6 +7948,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+      <div className="version-badge" title={BUILD_META.title}>
+        {BUILD_META.label}
+      </div>
       <aside className="hidden lg:flex w-72 flex-col border-r border-slate-800 bg-slate-900/70 backdrop-blur-2xl px-4 py-6 space-y-6">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-900/30">
