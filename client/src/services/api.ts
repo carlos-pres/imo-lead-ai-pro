@@ -399,7 +399,17 @@ export async function getCompliance() {
 
 export async function getLeads() {
   const response = await apiFetch("/api/leads");
-  return readJson<Lead[]>(response);
+  const payload = await readJson<any>(response);
+
+  if (Array.isArray(payload)) {
+    return payload as Lead[];
+  }
+
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data as Lead[];
+  }
+
+  return [] as Lead[];
 }
 
 export async function getStats() {
