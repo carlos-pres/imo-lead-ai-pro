@@ -4,26 +4,60 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import { router } from "./routes";
+import { sanitizeInputs } from "./middleware/sanitize";
+import { apiRateLimiter } from "./middleware/rateLimit";
+import { healthRouter } from "./routes/health";
 
 const app = express();
 
 app.disable("x-powered-by");
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "1mb" }));
+app.use(sanitizeInputs);
+app.use(apiRateLimiter);
 
 // API routes first
-app.use("/", router);
 app.use("/api", router);
+app.use("/health", healthRouter);
 
 // Serve built frontend when available (Railway prod)
-const clientBuildPath = path.join(__dirname, "../client");
-const hasClientBuild = fs.existsSync(path.join(clientBuildPath, "index.html"));
+const clientBuildCandidates = [
+  path.join(__dirname, "../client"),
+  path.join(process.cwd(), "dist/client"),
+  path.join(process.cwd(), "client/dist"),
+];
 
-if (hasClientBuild) {
+const clientBuildPath = clientBuildCandidates.find((candidate) =>
+  candidate && candidate.length > 0 && fs.existsSync(path.join(candidate, "index.html"))
+);
+
+if (clientBuildPath) {
   app.use(express.static(clientBuildPath));
-  // SPA fallback
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
+
+  const spaRoutes = [
+    "/",
+    "/funcionalidades",
+    "/precos",
+    "/contacto",
+    "/entrar",
+    "/app",
+    "/app/*",
+  ];
+
+  spaRoutes.forEach((route) => {
+    app.get(route, (_req, res) => {
+      res.sendFile(path.join(clientBuildPath, "index.html"));
+    });
   });
 } else {
   console.warn("client build not found; skipping static file serving");

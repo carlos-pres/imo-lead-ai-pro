@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 import { getPlanPresentation, type PlanType } from "../core/plans.js";
 import { getPreferredChatModel } from "./aiModelConfig.js";
+
+function isExternalAIDisabled() {
+  return process.env.DISABLE_EXTERNAL_AI === "true" || process.env.DISABLE_EXTERNAL_AI === "1";
+}
 async function retry<T>(
   fn: () => Promise<T>,
   options: {
@@ -72,6 +76,15 @@ export async function analyzeLeadWithAI(leadData: {
   contact: string;
   source: string;
 }): Promise<LeadAnalysisResult> {
+  if (isExternalAIDisabled()) {
+    return {
+      status: "morno",
+      score: 50,
+      reasoning:
+        "Classificacao automatica desativada. Lead marcado como morno por defeito.",
+    };
+  }
+
   // Prefer OpenRouter/DeepSeek, fallback to OpenAI, then default classification
   const client = openrouter || openai;
   const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
@@ -227,6 +240,10 @@ interface ReportData {
 }
 
 export async function generateReportWithAI(data: ReportData): Promise<string> {
+  if (isExternalAIDisabled()) {
+    return generateDefaultReport(data);
+  }
+
   const client = openrouter || openai;
   const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
@@ -330,6 +347,11 @@ interface ConversationMessage {
 
 // Streaming version for faster perceived response
 export async function* chatWithAIStream(message: string, context?: ChatContext, conversationHistory?: ConversationMessage[]): AsyncGenerator<string> {
+  if (isExternalAIDisabled()) {
+    yield "O assistente IA esta desativado neste ambiente.";
+    return;
+  }
+
   const client = openrouter || openai;
   const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
@@ -392,6 +414,10 @@ ESTILO: Portugues de Portugal, respostas curtas (<150 palavras), sugestoes proat
 }
 
 export async function chatWithAI(message: string, context?: ChatContext, conversationHistory?: ConversationMessage[]): Promise<string> {
+  if (isExternalAIDisabled()) {
+    return "O assistente IA esta desativado neste ambiente. Por favor, ative a IA nas configuracoes para obter respostas completas.";
+  }
+
   const client = openrouter || openai;
   const model = getPreferredChatModel({ useOpenRouter: Boolean(openrouter) });
   
