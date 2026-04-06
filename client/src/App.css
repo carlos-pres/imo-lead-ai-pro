@@ -3062,6 +3062,26 @@
   box-shadow: 0 16px 34px rgba(21, 33, 48, 0.06);
 }
 
+#landing-features .marketing-feature-card {
+  background: #f9fbff;
+  border: 1px solid rgba(19, 34, 55, 0.16);
+  box-shadow: 0 20px 36px rgba(10, 22, 38, 0.14);
+}
+
+#landing-features .marketing-feature-card span {
+  color: #4e5c74;
+}
+
+#landing-features .marketing-feature-card strong {
+  color: #0c1728;
+}
+
+#landing-features .marketing-feature-card p {
+  color: #2d3e55;
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
 .marketing-feature-card strong,
 .marketing-step-card strong,
 .marketing-final-card strong,
