@@ -34,6 +34,7 @@
 }
 
 .hero-copy h1,
+.hero-copy h2,
 .panel-header h2,
 .lead-card h3 {
   margin: 0;
@@ -44,6 +45,12 @@
   font-size: clamp(2.4rem, 4vw, 4rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
+}
+
+.hero-copy h2 {
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
 }
 
 .hero-text {
@@ -1822,9 +1829,9 @@
 
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(6, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
-  overflow-x: auto;
+  align-content: start;
   padding-bottom: 4px;
 }
 
