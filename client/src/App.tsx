@@ -7930,7 +7930,7 @@ function App() {
 
   function renderActiveView() {
     if (activeView === "dashboard") {
-      return <Dashboard />;
+      return <Dashboard stats={dashboardStats} topHotLeads={topHotLeads} followUpQueue={followUpQueue} />;
     }
 
     if (activeView === "pipeline") {
@@ -7957,7 +7957,7 @@ function App() {
       return renderAdminView();
     }
 
-    return <Dashboard />;
+    return <Dashboard stats={dashboardStats} topHotLeads={topHotLeads} followUpQueue={followUpQueue} />;
   }
 
   if (!session) {
@@ -8161,4 +8161,3 @@ function App() {
 }
 
 export default App;
-
