@@ -1,339 +1,463 @@
 import React from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  CheckCircle2, 
-  AlertCircle,
-  Activity,
-  Zap,
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  Euro,
+  Sparkles,
   Target,
-  Calendar
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import { AgentPanel } from './AgentPanel';
 import type { Lead, LeadStats } from '../services/api';
 
-interface MetricCard {
-  label: string;
-  value: string | number;
-  changeText?: string;
-  icon: React.ReactNode;
-  trend?: 'up' | 'down';
-}
+type KpiTone = 'up' | 'down' | 'neutral';
 
-interface ActivityItem {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  type: 'lead' | 'action' | 'success' | 'alert';
-}
-
-type DashboardProps = {
+interface DashboardProps {
   stats: LeadStats;
   topHotLeads: Lead[];
   followUpQueue: Lead[];
-};
-
-function formatRelativeLabel(value?: string | null) {
-  if (!value) return 'Sem data';
-
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) return 'Sem data';
-
-  const diffMs = timestamp.getTime() - Date.now();
-  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.round(diffHours / 24);
-
-  if (diffHours < 0) {
-    if (Math.abs(diffHours) >= 24) {
-      return `Atrasado ${Math.abs(diffDays)}d`;
-    }
-    return `Atrasado ${Math.abs(diffHours)}h`;
-  }
-
-  if (diffHours === 0) {
-    return 'Agora';
-  }
-
-  if (diffHours >= 24) {
-    return `Em ${diffDays}d`;
-  }
-
-  return `Em ${diffHours}h`;
 }
 
-const getActivityTypeStyles = (type: string) => {
-  const styles = {
-    success: 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200',
-    lead: 'bg-indigo-500/10 border-indigo-400/30 text-indigo-200',
-    alert: 'bg-rose-500/10 border-rose-400/30 text-rose-200',
-    action: 'bg-slate-700/30 border-slate-600/40 text-slate-200',
-  };
-  return styles[type as keyof typeof styles];
-};
+interface CommercialKpi {
+  label: string;
+  value: string;
+  delta: string;
+  tone: KpiTone;
+  icon: React.ReactNode;
+}
 
-const getActivityIcon = (type: string) => {
-  const icons = {
-    success: <CheckCircle2 className="w-4 h-4" />,
-    lead: <Activity className="w-4 h-4" />,
-    alert: <AlertCircle className="w-4 h-4" />,
-    action: <Zap className="w-4 h-4" />,
-  };
-  return icons[type as keyof typeof icons];
-};
+interface PriorityLead {
+  id: string;
+  name: string;
+  location: string;
+  stage: string;
+  score: number;
+  value: string;
+  nextStep: string;
+}
+
+interface ExecutionItem {
+  id: string;
+  owner: string;
+  action: string;
+  window: string;
+  status: 'imediato' | 'hoje' | '48h';
+}
+
+interface ProofItem {
+  id: string;
+  title: string;
+  result: string;
+  detail: string;
+}
+
+interface MessageCard {
+  id: string;
+  channel: 'Email' | 'WhatsApp';
+  title: string;
+  preview: string;
+  cta: string;
+}
+
+function formatEuro(value: number) {
+  return new Intl.NumberFormat('pt-PT', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatPipelineStage(stage: Lead['pipelineStage']) {
+  if (stage === 'qualificacao') return 'Qualificacao';
+  if (stage === 'contactado') return 'Contactado';
+  if (stage === 'visita') return 'Visita';
+  if (stage === 'proposta') return 'Proposta';
+  if (stage === 'nurture') return 'Nurture';
+  return 'Novo';
+}
+
+function getKpiToneClasses(tone: KpiTone) {
+  if (tone === 'up') return 'text-emerald-300';
+  if (tone === 'down') return 'text-amber-300';
+  return 'text-slate-300';
+}
+
+function getExecutionStatusClasses(status: ExecutionItem['status']) {
+  if (status === 'imediato') return 'bg-rose-500/15 border-rose-400/40 text-rose-200';
+  if (status === 'hoje') return 'bg-indigo-500/15 border-indigo-400/40 text-indigo-200';
+  return 'bg-slate-800/80 border-slate-600/60 text-slate-200';
+}
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, topHotLeads, followUpQueue }) => {
-  const hotLeadRate =
-    stats.total > 0 ? Math.round((stats.quente / stats.total) * 100) : 0;
+  const responseRate = stats.total > 0 ? Math.round((stats.contacted_today / stats.total) * 100) : 0;
+  const opportunityValue = topHotLeads.slice(0, 6).reduce((total, lead) => total + lead.price, 0);
+  const queuedFollowUps = followUpQueue.length;
 
-  const liveMetrics: MetricCard[] = [
+  const commercialKpis: CommercialKpi[] = [
     {
-      label: 'Leads Ativos',
-      value: stats.total,
-      changeText: `${stats.contacted_today} contactados hoje`,
-      icon: <Users className="w-5 h-5" />,
-      trend: stats.contacted_today > 0 ? 'up' : 'down',
+      label: 'Receita em negociacao',
+      value: formatEuro(opportunityValue || 0),
+      delta: `${topHotLeads.length} leads de alta prioridade`,
+      tone: 'up',
+      icon: <Euro className="h-5 w-5" />,
     },
     {
-      label: 'Score Médio IA',
-      value: `${stats.average_ai_score}%`,
-      changeText: `${hotLeadRate}% quentes`,
-      icon: <TrendingUp className="w-5 h-5" />,
-      trend: stats.quente > 0 ? 'up' : 'down',
+      label: 'Leads prioritarias hoje',
+      value: `${topHotLeads.length}`,
+      delta: `${stats.flagship_queue} na desk flagship`,
+      tone: 'neutral',
+      icon: <Users className="h-5 w-5" />,
     },
     {
-      label: 'Ações Urgentes',
-      value: stats.urgent_actions,
-      changeText: `${stats.flagship_queue} flagship`,
-      icon: <CheckCircle2 className="w-5 h-5" />,
-      trend: stats.urgent_actions <= stats.flagship_queue ? 'up' : 'down',
+      label: 'Taxa de resposta',
+      value: `${responseRate}%`,
+      delta: `${stats.contacted_today} contactos hoje`,
+      tone: 'up',
+      icon: <TrendingUp className="h-5 w-5" />,
     },
     {
-      label: 'Follow-ups Pendentes',
-      value: stats.overdue_followups,
-      changeText: `${followUpQueue.length} na fila`,
-      icon: <AlertCircle className="w-5 h-5" />,
-      trend: stats.overdue_followups > 0 ? 'down' : 'up',
+      label: 'Follow-ups vencidos',
+      value: `${stats.overdue_followups}`,
+      delta: `${queuedFollowUps} follow-ups na fila ativa`,
+      tone: stats.overdue_followups > 0 ? 'down' : 'neutral',
+      icon: <TrendingDown className="h-5 w-5" />,
     },
   ];
 
-  const liveActivity: ActivityItem[] = [
-    ...topHotLeads.slice(0, 2).map((lead) => ({
-      id: `hot-${lead.id}`,
-      title: 'Lead Quente Prioritária',
-      description: `${lead.name} · ${lead.location} · Score ${lead.aiScore}%`,
-      timestamp: formatRelativeLabel(lead.lastContactAt),
-      type: 'success' as const,
-    })),
-    ...followUpQueue.slice(0, 2).map((lead) => ({
-      id: `follow-${lead.id}`,
-      title: 'Follow-up em Fila',
-      description: `${lead.name} · ${lead.nextStep || 'Rever contexto e contactar'}`,
-      timestamp: formatRelativeLabel(lead.followUpAt),
-      type: 'alert' as const,
-    })),
+  const priorityLeads: PriorityLead[] = topHotLeads.slice(0, 4).map((lead) => ({
+    id: lead.id,
+    name: lead.name,
+    location: lead.location,
+    stage: formatPipelineStage(lead.pipelineStage),
+    score: lead.aiScore,
+    value: formatEuro(lead.price),
+    nextStep: lead.nextStep || lead.recommendedAction || 'Executar contacto inicial com contexto comercial.',
+  }));
+
+  const topLead = priorityLeads[0] || {
+    id: 'empty',
+    name: 'Sem lead prioritario',
+    location: 'Aguarda novas entradas',
+    stage: 'Novo',
+    score: stats.average_ai_score || 0,
+    value: formatEuro(0),
+    nextStep: 'A equipa pode abrir o pipeline e preparar a proxima vaga de contactos.',
+  };
+
+  const executionPlan: ExecutionItem[] = [
+    {
+      id: 'plan-1',
+      owner: 'Desk Flagship',
+      action: `Executar ${Math.min(3, Math.max(1, topHotLeads.length))} contactos de score alto`,
+      window: 'Proximas 2h',
+      status: 'imediato',
+    },
+    {
+      id: 'plan-2',
+      owner: 'Inside Sales',
+      action: `Limpar ${stats.overdue_followups} follow-ups fora de prazo`,
+      window: 'Hoje ate 18:00',
+      status: 'hoje',
+    },
+    {
+      id: 'plan-3',
+      owner: 'Gestao Comercial',
+      action: `Ajustar distribuicao de ${stats.total} leads por desk`,
+      window: 'Em 48h',
+      status: '48h',
+    },
   ];
 
-  const activityFeed = liveActivity.length > 0
-    ? liveActivity
-    : [
-        {
-          id: 'empty',
-          title: 'Sem atividade recente',
-          description: 'Assim que entrarem novas leads, o cockpit mostra prioridades aqui.',
-          timestamp: 'Agora',
-          type: 'action' as const,
-        },
-      ];
+  const proofItems: ProofItem[] = [
+    {
+      id: 'proof-1',
+      title: 'Leads contactadas hoje',
+      result: `${stats.contacted_today}`,
+      detail: 'Velocidade de resposta comercial no dia em curso.',
+    },
+    {
+      id: 'proof-2',
+      title: 'Heat do pipeline',
+      result: `${stats.total > 0 ? Math.round((stats.quente / stats.total) * 100) : 0}%`,
+      detail: 'Percentagem de leads quentes no total ativo.',
+    },
+    {
+      id: 'proof-3',
+      title: 'Mercados ativos',
+      result: `${stats.european_markets}`,
+      detail: 'Cobertura comercial ja ativa no workspace.',
+    },
+  ];
+
+  const firstLead = topHotLeads[0];
+  const secondLead = topHotLeads[1];
+
+  const messageCards: MessageCard[] = [
+    {
+      id: 'msg-1',
+      channel: 'Email',
+      title: firstLead ? `Proposta pronta para ${firstLead.name}` : 'Proposta premium pronta',
+      preview: firstLead
+        ? `${firstLead.location}: ${firstLead.recommendedAction}`
+        : 'Mensagem de proposta com comparavel de mercado e proximo passo claro.',
+      cta: 'Abrir email',
+    },
+    {
+      id: 'msg-2',
+      channel: 'WhatsApp',
+      title: secondLead ? `Follow-up para ${secondLead.name}` : 'Follow-up com urgencia',
+      preview: secondLead
+        ? `${secondLead.location}: ${secondLead.recommendedAction}`
+        : 'Mensagem curta para reativar interesse e bloquear agenda.',
+      cta: 'Abrir WhatsApp',
+    },
+  ];
+
+  const riskList = [
+    `${stats.overdue_followups} follow-ups fora de prazo podem cair para churn comercial.`,
+    `${stats.nurture_queue} leads em nurture pedem sequencia de reativacao.`,
+    `${stats.flagship_queue} leads no flagship exigem prioridade da equipa senior.`,
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pt-8 pb-16">
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-6 space-y-8">
-        
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            Cockpit de IA
-          </h1>
-          <p className="text-lg text-slate-400">
-            Decisões comerciais inteligentes em tempo real
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+        <section className="relative overflow-hidden rounded-3xl border border-indigo-400/25 bg-slate-900/70 p-6 shadow-2xl shadow-indigo-950/30 sm:p-8">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-blue-500/15 blur-3xl" />
 
-        {/* Agent Panel - Featured */}
-        <div className="relative" id="agent-panel">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-indigo-500/25 to-blue-500/25 rounded-2xl blur-xl opacity-60" />
-          <div className="relative bg-slate-900/70 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6 md:p-8 shadow-2xl shadow-purple-900/30">
-            <AgentPanel />
-          </div>
-        </div>
+          <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
+                Cockpit comercial de decisao
+              </p>
+              <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                Um dashboard que mostra valor em 10 segundos e diz a equipa o que fazer agora.
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                A vista combina prioridade comercial, prova de desempenho e proxima acao operacional.
+                Sem ruido, sem adivinhacao, com CTA direto para fechar pipeline.
+              </p>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {liveMetrics.map((metric, idx) => (
-            <div
-              key={idx}
-              className="group relative overflow-hidden rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-800 p-6 hover:border-purple-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/25"
-            >
-              {/* Gradient background on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 transition-opacity duration-300" />
-
-              <div className="relative z-10">
-                {/* Icon */}
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 mb-4">
-                  <div className="text-white">
-                    {metric.icon}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <p className="text-sm text-slate-400 mb-2">{metric.label}</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-white">
-                    {metric.value}
-                  </span>
-                  {metric.changeText ? (
-                    <span className={`text-sm font-semibold ${
-                      metric.trend === 'up' 
-                        ? 'text-indigo-300' 
-                        : 'text-slate-500'
-                    }`}>
-                      {metric.changeText}
-                    </span>
-                  ) : null}
-                </div>
-
-                {/* Bottom accent */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Recent Activity */}
-          <div className="lg:col-span-2">
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Atividade Recente</h2>
-                <button className="text-gold-400 hover:text-gold-300 transition-colors text-sm font-semibold">
-                  Ver tudo
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {activityFeed.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex items-start gap-4 p-4 rounded-lg border transition-all duration-200 hover:shadow-md hover:shadow-gold-500/10 ${getActivityTypeStyles(item.type)}`}
-                  >
-                    {/* Icon */}
-                    <div className="mt-1">
-                      {getActivityIcon(item.type)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white">{item.title}</p>
-                      <p className="text-sm text-slate-300 mt-1">{item.description}</p>
-                    </div>
-
-                    {/* Timestamp */}
-                    <div className="flex-shrink-0">
-                      <p className="text-xs text-slate-400 whitespace-nowrap">
-                        {item.timestamp}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="space-y-4">
-            {/* Próximas ações */}
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="w-5 h-5 text-gold-400" />
-                <h3 className="font-bold text-white">Próximas Ações</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/25">
-                  <span className="text-sm text-white">Contactar leads quentes</span>
-                  <span className="text-xs font-bold text-indigo-200">{stats.quente}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/25">
-                  <span className="text-sm text-white">Follow-ups pendentes</span>
-                  <span className="text-xs font-bold text-purple-200">{followUpQueue.length}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/25">
-                  <span className="text-sm text-white">Propostas para enviar</span>
-                  <span className="text-xs font-bold text-blue-200">{stats.growth_queue}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Próximas reuniões */}
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-gold-400" />
-                <h3 className="font-bold text-white">Agendadas</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="text-sm">
-                  <p className="font-semibold text-white">
-                    {followUpQueue[0] ? `Follow-up · ${followUpQueue[0].name}` : 'Sem reuniões agendadas'}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {followUpQueue[0] ? formatRelativeLabel(followUpQueue[0].followUpAt) : 'Adiciona data no pipeline'}
-                  </p>
-                </div>
-                <div className="w-full h-px bg-slate-800" />
-                <div className="text-sm">
-                  <p className="font-semibold text-white">
-                    {followUpQueue[1] ? `Contacto · ${followUpQueue[1].name}` : 'Fila pronta para priorização'}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {followUpQueue[1] ? formatRelativeLabel(followUpQueue[1].followUpAt) : 'Sem segundo compromisso'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section - Performance Trends */}
-        <div className="rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Performance Mensal</h2>
-          
-          {/* Simplified chart placeholder */}
-          <div className="h-64 flex items-end justify-around gap-4 p-4 bg-black-900/30 rounded-lg">
-            {[
-              { label: 'Hot', value: stats.quente, max: Math.max(stats.total, 1) },
-              { label: 'Warm', value: stats.morno, max: Math.max(stats.total, 1) },
-              { label: 'Cold', value: stats.frio, max: Math.max(stats.total, 1) },
-              { label: 'Flag', value: stats.flagship_queue, max: Math.max(stats.total, 1) },
-              { label: 'Grow', value: stats.growth_queue, max: Math.max(stats.total, 1) },
-              { label: 'Nurt', value: stats.nurture_queue, max: Math.max(stats.total, 1) },
-              { label: 'Urg', value: stats.urgent_actions, max: Math.max(stats.total, 1) },
-            ].map((entry) => {
-              const ratio = Math.min(100, Math.max(8, Math.round((entry.value / entry.max) * 100)));
-              return (
-              <div key={entry.label} className="flex flex-col items-center gap-2 flex-1">
-                <div className="w-full bg-gradient-to-t from-purple-500 via-indigo-500 to-blue-400 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/40" 
-                     style={{ height: `${ratio}%` }} 
-                />
-                <span className="text-xs text-slate-400">
-                  {entry.label}
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:brightness-110"
+                  href="/app/pipeline"
+                >
+                  Abrir pipeline de fecho
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/60"
+                  href="/app/automation"
+                >
+                  Executar automacoes
+                </a>
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                  Semana de entrega ativa
                 </span>
               </div>
-            )})}
+            </div>
+
+            <article className="rounded-2xl border border-slate-700/80 bg-slate-950/70 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">
+                Prioridade comercial agora
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">{topLead.name}</h2>
+              <p className="mt-1 text-sm text-slate-300">
+                {topLead.location} · {topLead.stage} · Score IA {topLead.score}
+              </p>
+              <p className="mt-4 rounded-xl border border-slate-700 bg-slate-900/70 p-3 text-sm text-slate-200">
+                {topLead.nextStep}
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-3">
+                  <p className="text-xs uppercase tracking-wider text-slate-400">Ticket</p>
+                  <strong className="text-base text-white">{topLead.value}</strong>
+                </div>
+                <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-3">
+                  <p className="text-xs uppercase tracking-wider text-slate-400">Janela</p>
+                  <strong className="text-base text-white">2 horas</strong>
+                </div>
+              </div>
+
+              <a
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-400/60 bg-indigo-500/15 px-4 py-2.5 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/25"
+                href="/app/automation"
+              >
+                Abrir plano de acao
+                <Target className="h-4 w-4" />
+              </a>
+            </article>
           </div>
-        </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {commercialKpis.map((kpi) => (
+            <article
+              className="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 transition hover:border-indigo-400/45"
+              key={kpi.label}
+            >
+              <div className="mb-4 inline-flex rounded-lg bg-indigo-500/15 p-2 text-indigo-200">
+                {kpi.icon}
+              </div>
+              <p className="text-sm text-slate-300">{kpi.label}</p>
+              <strong className="mt-2 block text-3xl font-semibold text-white">{kpi.value}</strong>
+              <p className={`mt-2 text-xs font-semibold ${getKpiToneClasses(kpi.tone)}`}>{kpi.delta}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="space-y-6">
+            <article className="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">
+                    Pipeline de alto impacto
+                  </p>
+                  <h2 className="text-xl font-semibold text-white">Leads prontas para fechar esta semana</h2>
+                </div>
+                <a
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-400/60"
+                  href="/app/pipeline"
+                >
+                  Ver pipeline
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+
+              <div className="space-y-3">
+                {priorityLeads.length === 0 ? (
+                  <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-4">
+                    <strong className="text-base text-white">Sem leads quentes neste momento</strong>
+                    <p className="mt-2 text-sm text-slate-300">
+                      Abre o pipeline para validar novas entradas e definir prioridade.
+                    </p>
+                  </article>
+                ) : (
+                  priorityLeads.map((lead) => (
+                    <article
+                      className="rounded-xl border border-slate-700 bg-slate-950/50 p-4 transition hover:border-indigo-400/45"
+                      key={lead.id}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <strong className="text-base text-white">{lead.name}</strong>
+                          <p className="text-sm text-slate-300">
+                            {lead.location} · {lead.stage} · {lead.value}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-indigo-400/35 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-200">
+                          Score IA {lead.score}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-200">{lead.nextStep}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6">
+              <div className="mb-5 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+                <h2 className="text-xl font-semibold text-white">Prova de resultado desta semana</h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {proofItems.map((item) => (
+                  <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-4" key={item.id}>
+                    <p className="text-xs uppercase tracking-wider text-slate-400">{item.title}</p>
+                    <strong className="mt-2 block text-2xl text-emerald-300">{item.result}</strong>
+                    <p className="mt-2 text-sm text-slate-300">{item.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article
+              className="rounded-2xl border border-indigo-400/25 bg-slate-900/75 p-6 shadow-lg shadow-indigo-950/30"
+              id="agent-panel"
+            >
+              <div className="mb-5 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-indigo-200" />
+                <h2 className="text-xl font-semibold text-white">Copiloto comercial</h2>
+              </div>
+              <AgentPanel />
+            </article>
+          </div>
+
+          <div className="space-y-6">
+            <article className="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6">
+              <div className="mb-5 flex items-center gap-2">
+                <Clock3 className="h-5 w-5 text-indigo-200" />
+                <h2 className="text-lg font-semibold text-white">Plano de execucao 48h</h2>
+              </div>
+              <div className="space-y-3">
+                {executionPlan.map((item) => (
+                  <article
+                    className={`rounded-xl border p-4 ${getExecutionStatusClasses(item.status)}`}
+                    key={item.id}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <strong className="text-sm">{item.owner}</strong>
+                      <span className="text-xs font-semibold uppercase tracking-wider">{item.status}</span>
+                    </div>
+                    <p className="mt-2 text-sm">{item.action}</p>
+                    <p className="mt-2 text-xs text-slate-300">{item.window}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6">
+              <div className="mb-5 flex items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-white">Comunicacao pronta</h2>
+                <a
+                  className="text-sm font-semibold text-indigo-200 transition hover:text-indigo-100"
+                  href="/app/automation"
+                >
+                  Abrir centro
+                </a>
+              </div>
+              <div className="space-y-3">
+                {messageCards.map((card) => (
+                  <article className="rounded-xl border border-slate-700 bg-slate-950/50 p-4" key={card.id}>
+                    <p className="text-xs uppercase tracking-wider text-slate-400">{card.channel}</p>
+                    <strong className="mt-1 block text-sm text-white">{card.title}</strong>
+                    <p className="mt-2 text-sm text-slate-300">{card.preview}</p>
+                    <a
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-indigo-200 transition hover:text-indigo-100"
+                      href="/app/automation"
+                    >
+                      {card.cta}
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-amber-400/30 bg-amber-500/5 p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-300" />
+                <h2 className="text-lg font-semibold text-white">Risco comercial hoje</h2>
+              </div>
+              <ul className="space-y-2 text-sm text-amber-100">
+                {riskList.map((risk) => (
+                  <li className="rounded-lg border border-amber-400/20 bg-slate-950/40 p-3" key={risk}>
+                    {risk}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
       </div>
     </div>
   );
