@@ -290,7 +290,7 @@ const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
 
 const STAGE_ORDER: PipelineStage[] = [
   "novo",
-  "qualificação",
+  "qualificacao",
   "contactado",
   "visita",
   "proposta",
@@ -302,7 +302,7 @@ const initialForm: CreateLeadInput = {
   property: "",
   location: "",
   price: "",
-  área: "",
+  area: "",
   source: "Manual",
   contact: "",
   notes: "",
@@ -681,7 +681,7 @@ function getStageLabel(stage: PipelineStage) {
     return "Novo";
   }
 
-  if (stage === "qualificação") {
+  if (stage === "qualificacao") {
     return "Qualificação";
   }
 
@@ -1599,9 +1599,9 @@ function App() {
 
     try {
       const updatedLead = await updateLeadWorkflow(lead.id, {
-        pipelineStage: patch.pipelineStage   draft.pipelineStage   lead.pipelineStage,
-        assignedOwner: patch.assignedOwner   draft.assignedOwner   lead.assignedOwner,
-        nextStep: patch.nextStep   draft.nextStep   lead.nextStep,
+        pipelineStage: patch.pipelineStage ?? draft.pipelineStage ?? lead.pipelineStage,
+        assignedOwner: patch.assignedOwner ?? draft.assignedOwner ?? lead.assignedOwner,
+        nextStep: patch.nextStep ?? draft.nextStep ?? lead.nextStep,
         followUpAt:
           patch.followUpAt !== undefined
             ? patch.followUpAt || null
@@ -1865,9 +1865,9 @@ function App() {
   const sourceMix = buildSourceMix(leads);
   const topMarket = marketInsights[0];
   const topStrategistOpportunity = strategistOpportunities[0] || null;
-  const publicHotLeads = publicStats?.quente   0;
-  const publicTotalLeads = publicStats?.total   0;
-  const publicUrgent = publicStats?.urgent_actions   0;
+  const publicHotLeads = publicStats?.quente ?? 0;
+  const publicTotalLeads = publicStats?.total ?? 0;
+  const publicUrgent = publicStats?.urgent_actions ?? 0;
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
@@ -2662,9 +2662,9 @@ function App() {
             <input
               type="number"
               min="0"
-              value={form.área}
+              value={form.area}
               onChange={(event) =>
-                setForm((current) => ({ ...current, área: event.target.value }))
+                setForm((current) => ({ ...current, area: event.target.value }))
               }
               placeholder="140"
             />
