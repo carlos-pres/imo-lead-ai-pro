@@ -11,6 +11,28 @@ import { healthRouter } from "./routes/health";
 const app = express();
 
 app.disable("x-powered-by");
+
+// Railway/Reverse-proxy environments send X-Forwarded-For.
+// Express must trust the proxy hop so rate-limit can resolve client IP correctly.
+const trustProxyEnv = process.env.TRUST_PROXY?.trim().toLowerCase();
+if (trustProxyEnv) {
+  if (trustProxyEnv === "true") {
+    app.set("trust proxy", 1);
+  } else if (trustProxyEnv === "false") {
+    app.set("trust proxy", false);
+  } else {
+    const parsedHops = Number(trustProxyEnv);
+    app.set("trust proxy", Number.isFinite(parsedHops) ? parsedHops : trustProxyEnv);
+  }
+} else {
+  const runningOnRailway = Boolean(
+    process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_SERVICE_ID || process.env.RAILWAY_ENVIRONMENT
+  );
+  if (runningOnRailway) {
+    app.set("trust proxy", 1);
+  }
+}
+
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((origin) => origin.trim())
