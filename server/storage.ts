@@ -455,6 +455,18 @@ function normalizeOptionalString(value: string | undefined | null) {
   return normalized ? normalized : undefined;
 }
 
+function normalizeWorkspaceRole(value: unknown): WorkspaceRole {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "admin" || normalized === "manager" || normalized === "consultant") {
+    return normalized;
+  }
+
+  return "consultant";
+}
+
 function normalizeEmailAddress(value: string) {
   return value.trim().toLowerCase();
 }
@@ -1947,7 +1959,7 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
     id: String(row.id),
     name: String(row.name),
     email: String(row.email),
-    role: String(row.role) as WorkspaceRole,
+    role: normalizeWorkspaceRole(row.role),
     officeName: String(row.office_name),
     teamName: String(row.team_name),
     preferredLanguage: String(row.preferred_language || "pt-PT"),
@@ -3055,4 +3067,3 @@ export const storage = {
   updateLeadWorkflow,
   getLeadStats,
 };
-

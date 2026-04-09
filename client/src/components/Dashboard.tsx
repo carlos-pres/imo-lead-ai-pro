@@ -10,11 +10,12 @@ import {
   Calendar
 } from 'lucide-react';
 import { AgentPanel } from './AgentPanel';
+import type { Lead, LeadStats } from '../services/api';
 
 interface MetricCard {
   label: string;
   value: string | number;
-  change?: number;
+  changeText?: string;
   icon: React.ReactNode;
   trend?: 'up' | 'down';
 }
@@ -26,90 +27,161 @@ interface ActivityItem {
   timestamp: string;
   type: 'lead' | 'action' | 'success' | 'alert';
 }
+type ActivityType = ActivityItem['type'];
 
-const mockMetrics: MetricCard[] = [
-  {
-    label: 'Leads Ativos',
-    value: '247',
-    change: 12,
-    icon: <Users className="w-5 h-5" />,
-    trend: 'up',
-  },
-  {
-    label: 'Taxa de Conversão',
-    value: '34.5%',
-    change: 5.2,
-    icon: <TrendingUp className="w-5 h-5" />,
-    trend: 'up',
-  },
-  {
-    label: 'Ações Completadas',
-    value: '89',
-    change: -2,
-    icon: <CheckCircle2 className="w-5 h-5" />,
-    trend: 'down',
-  },
-  {
-    label: 'Follow-ups Pendentes',
-    value: '23',
-    change: 8,
-    icon: <AlertCircle className="w-5 h-5" />,
-    trend: 'down',
-  },
-];
-
-const mockActivity: ActivityItem[] = [
-  {
-    id: '1',
-    title: 'Lead Qualificado',
-    description: 'João Silva avançou para fase de proposta',
-    timestamp: '2 minutos atrás',
-    type: 'success',
-  },
-  {
-    id: '2',
-    title: 'Contacto Sugerido',
-    description: 'Maria Oliveira - Score de 85%',
-    timestamp: '15 minutos atrás',
-    type: 'lead',
-  },
-  {
-    id: '3',
-    title: 'Follow-up urgente',
-    description: 'Pedro Santos - Sem contacto há 5 dias',
-    timestamp: '30 minutos atrás',
-    type: 'alert',
-  },
-  {
-    id: '4',
-    title: 'Tarefa Automatizada',
-    description: 'Email de acompanhamento enviado a 12 leads',
-    timestamp: '1 hora atrás',
-    type: 'action',
-  },
-];
-
-const getActivityTypeStyles = (type: string) => {
-  const styles = {
-    success: 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200',
-    lead: 'bg-indigo-500/10 border-indigo-400/30 text-indigo-200',
-    alert: 'bg-rose-500/10 border-rose-400/30 text-rose-200',
-    action: 'bg-slate-700/30 border-slate-600/40 text-slate-200',
-  };
-  return styles[type as keyof typeof styles];
+type DashboardProps = {
+  stats?: LeadStats;
+  topHotLeads?: Lead[];
+  followUpQueue?: Lead[];
 };
 
-const getActivityIcon = (type: string) => {
-  const icons = {
-    success: <CheckCircle2 className="w-4 h-4" />,
-    lead: <Activity className="w-4 h-4" />,
-    alert: <AlertCircle className="w-4 h-4" />,
-    action: <Zap className="w-4 h-4" />,
-  };
-  return icons[type as keyof typeof icons];
+const EMPTY_STATS: LeadStats = {
+  total: 0,
+  quente: 0,
+  morno: 0,
+  frio: 0,
+  average_ai_score: 0,
+  flagship_queue: 0,
+  growth_queue: 0,
+  nurture_queue: 0,
+  urgent_actions: 0,
+  active_teams: 0,
+  active_offices: 0,
+  overdue_followups: 0,
+  contacted_today: 0,
+  european_markets: 0,
 };
 
-export const Dashboard: React.FC = () => {
+function formatRelativeLabel(value?: string | null) {
+  if (!value) return 'Sem data';
+
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) return 'Sem data';
+
+  const diffMs = timestamp.getTime() - Date.now();
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const absMinutes = Math.abs(diffMinutes);
+  const absHours = Math.floor(absMinutes / 60);
+  const absDays = Math.floor(absHours / 24);
+
+  if (Math.abs(diffMinutes) < 60) {
+    return 'Agora';
+  }
+
+  if (diffMinutes < 0) {
+    if (absHours >= 24) {
+      return `Atrasado ${Math.max(absDays, 1)}d`;
+    }
+    return `Atrasado ${Math.max(absHours, 1)}h`;
+  }
+
+  if (absHours >= 24) {
+    return `Em ${Math.max(absDays, 1)}d`;
+  }
+
+  return `Em ${Math.max(absHours, 1)}h`;
+}
+
+const ACTIVITY_TYPE_STYLES: Record<ActivityType, string> = {
+  success: 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200',
+  lead: 'bg-indigo-500/10 border-indigo-400/30 text-indigo-200',
+  alert: 'bg-rose-500/10 border-rose-400/30 text-rose-200',
+  action: 'bg-slate-700/30 border-slate-600/40 text-slate-200',
+};
+
+const ACTIVITY_TYPE_ICONS: Record<ActivityType, React.ReactNode> = {
+  success: <CheckCircle2 className="w-4 h-4" />,
+  lead: <Activity className="w-4 h-4" />,
+  alert: <AlertCircle className="w-4 h-4" />,
+  action: <Zap className="w-4 h-4" />,
+};
+
+const getActivityTypeStyles = (type: ActivityType) => ACTIVITY_TYPE_STYLES[type];
+
+const getActivityIcon = (type: ActivityType) => ACTIVITY_TYPE_ICONS[type];
+
+export const Dashboard: React.FC<DashboardProps> = ({
+  stats = EMPTY_STATS,
+  topHotLeads = [],
+  followUpQueue = [],
+}) => {
+  const hotLeadRate =
+    stats.total > 0 ? Math.round((stats.quente / stats.total) * 100) : 0;
+
+  const liveMetrics: MetricCard[] = [
+    {
+      label: 'Leads Ativos',
+      value: stats.total,
+      changeText: `${stats.contacted_today} contactados hoje`,
+      icon: <Users className="w-5 h-5" />,
+      trend: stats.contacted_today > 0 ? 'up' : 'down',
+    },
+    {
+      label: 'Score Médio IA',
+      value: `${stats.average_ai_score}%`,
+      changeText: `${hotLeadRate}% quentes`,
+      icon: <TrendingUp className="w-5 h-5" />,
+      trend: stats.quente > 0 ? 'up' : 'down',
+    },
+    {
+      label: 'Ações Urgentes',
+      value: stats.urgent_actions,
+      changeText: `${stats.flagship_queue} flagship`,
+      icon: <CheckCircle2 className="w-5 h-5" />,
+      trend: stats.urgent_actions <= stats.flagship_queue ? 'up' : 'down',
+    },
+    {
+      label: 'Follow-ups Pendentes',
+      value: stats.overdue_followups,
+      changeText: `${followUpQueue.length} na fila`,
+      icon: <AlertCircle className="w-5 h-5" />,
+      trend: stats.overdue_followups > 0 ? 'down' : 'up',
+    },
+  ];
+
+  const liveActivity: ActivityItem[] = [
+    ...topHotLeads.slice(0, 2).map((lead) => ({
+      id: `hot-${lead.id}`,
+      title: 'Lead Quente Prioritária',
+      description: `${lead.name} · ${lead.location} · Score ${lead.aiScore}%`,
+      timestamp: formatRelativeLabel(lead.lastContactAt),
+      type: 'success' as const,
+    })),
+    ...followUpQueue.slice(0, 2).map((lead) => ({
+      id: `follow-${lead.id}`,
+      title: 'Follow-up em Fila',
+      description: `${lead.name} · ${lead.nextStep || 'Rever contexto e contactar'}`,
+      timestamp: formatRelativeLabel(lead.followUpAt),
+      type: 'alert' as const,
+    })),
+  ];
+
+  const activityFeed = liveActivity.length > 0
+    ? liveActivity
+    : [
+        {
+          id: 'empty',
+          title: 'Sem atividade recente',
+          description: 'Assim que entrarem novas leads, o cockpit mostra prioridades aqui.',
+          timestamp: 'Agora',
+          type: 'action' as const,
+        },
+      ];
+
+  const performanceSegments = [
+    { label: 'Quente', value: stats.quente },
+    { label: 'Morno', value: stats.morno },
+    { label: 'Frio', value: stats.frio },
+    { label: 'Flag', value: stats.flagship_queue },
+    { label: 'Grow', value: stats.growth_queue },
+    { label: 'Nurt', value: stats.nurture_queue },
+    { label: 'Urg', value: stats.urgent_actions },
+  ] as const;
+  const performanceMax = Math.max(
+    1,
+    ...performanceSegments.map((entry) => entry.value)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pt-8 pb-16">
       {/* Main Container */}
@@ -120,7 +192,7 @@ export const Dashboard: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-white">
             Cockpit de IA
           </h1>
-          <p className="text-lg text-slate-400">
+          <p className="text-lg text-slate-200">
             Decisões comerciais inteligentes em tempo real
           </p>
         </div>
@@ -128,17 +200,17 @@ export const Dashboard: React.FC = () => {
         {/* Agent Panel - Featured */}
         <div className="relative" id="agent-panel">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-indigo-500/25 to-blue-500/25 rounded-2xl blur-xl opacity-60" />
-          <div className="relative bg-slate-900/70 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6 md:p-8 shadow-2xl shadow-purple-900/30">
+          <div className="relative bg-slate-900 border border-purple-400/60 rounded-2xl p-6 md:p-8 shadow-2xl shadow-purple-900/30">
             <AgentPanel />
           </div>
         </div>
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockMetrics.map((metric, idx) => (
+          {liveMetrics.map((metric) => (
             <div
-              key={idx}
-              className="group relative overflow-hidden rounded-xl bg-slate-900/70 backdrop-blur-sm border border-slate-800 p-6 hover:border-purple-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/25"
+              key={metric.label}
+              className="group relative overflow-hidden rounded-xl bg-slate-900 border border-slate-700 p-6 hover:border-purple-400/70 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/25"
             >
               {/* Gradient background on hover */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 transition-opacity duration-300" />
@@ -152,20 +224,20 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <p className="text-sm text-slate-400 mb-2">{metric.label}</p>
+                <p className="text-sm text-slate-200 mb-2">{metric.label}</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-white">
                     {metric.value}
                   </span>
-                  {metric.change !== undefined && (
+                  {metric.changeText ? (
                     <span className={`text-sm font-semibold ${
                       metric.trend === 'up' 
-                        ? 'text-indigo-300' 
-                        : 'text-slate-500'
+                        ? 'text-indigo-100' 
+                        : 'text-slate-200'
                     }`}>
-                      {metric.trend === 'up' ? '+' : ''}{metric.change}%
+                      {metric.changeText}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Bottom accent */}
@@ -180,7 +252,7 @@ export const Dashboard: React.FC = () => {
           
           {/* Recent Activity */}
           <div className="lg:col-span-2">
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
+            <div className="rounded-xl bg-slate-950 border border-amber-400/40 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Atividade Recente</h2>
                 <button className="text-gold-400 hover:text-gold-300 transition-colors text-sm font-semibold">
@@ -189,7 +261,7 @@ export const Dashboard: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {mockActivity.map((item) => (
+                {activityFeed.map((item) => (
                   <div
                     key={item.id}
                     className={`flex items-start gap-4 p-4 rounded-lg border transition-all duration-200 hover:shadow-md hover:shadow-gold-500/10 ${getActivityTypeStyles(item.type)}`}
@@ -202,12 +274,12 @@ export const Dashboard: React.FC = () => {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-white">{item.title}</p>
-                      <p className="text-sm text-slate-300 mt-1">{item.description}</p>
+                      <p className="text-sm text-slate-100 mt-1">{item.description}</p>
                     </div>
 
                     {/* Timestamp */}
                     <div className="flex-shrink-0">
-                      <p className="text-xs text-slate-400 whitespace-nowrap">
+                      <p className="text-xs text-slate-200 whitespace-nowrap">
                         {item.timestamp}
                       </p>
                     </div>
@@ -220,7 +292,7 @@ export const Dashboard: React.FC = () => {
           {/* Quick Stats */}
           <div className="space-y-4">
             {/* Próximas ações */}
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
+            <div className="rounded-xl bg-slate-950 border border-amber-400/40 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-5 h-5 text-gold-400" />
                 <h3 className="font-bold text-white">Próximas Ações</h3>
@@ -228,34 +300,42 @@ export const Dashboard: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/25">
                   <span className="text-sm text-white">Contactar leads quentes</span>
-                  <span className="text-xs font-bold text-indigo-200">5</span>
+                  <span className="text-xs font-bold text-indigo-200">{stats.quente}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/25">
                   <span className="text-sm text-white">Follow-ups pendentes</span>
-                  <span className="text-xs font-bold text-purple-200">8</span>
+                  <span className="text-xs font-bold text-purple-200">{followUpQueue.length}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/25">
                   <span className="text-sm text-white">Propostas para enviar</span>
-                  <span className="text-xs font-bold text-blue-200">3</span>
+                  <span className="text-xs font-bold text-blue-200">{stats.growth_queue}</span>
                 </div>
               </div>
             </div>
 
             {/* Próximas reuniões */}
-            <div className="rounded-xl bg-black-950/50 backdrop-blur-sm border border-gold-500/20 p-6">
+            <div className="rounded-xl bg-slate-950 border border-amber-400/40 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-gold-400" />
                 <h3 className="font-bold text-white">Agendadas</h3>
               </div>
               <div className="space-y-3">
                 <div className="text-sm">
-                  <p className="font-semibold text-white">Visita - Apartamento T3</p>
-                  <p className="text-xs text-slate-400 mt-1">Hoje às 14:30</p>
+                  <p className="font-semibold text-white">
+                    {followUpQueue[0] ? `Follow-up · ${followUpQueue[0].name}` : 'Sem reuniões agendadas'}
+                  </p>
+                  <p className="text-xs text-slate-200 mt-1">
+                    {followUpQueue[0] ? formatRelativeLabel(followUpQueue[0].followUpAt) : 'Adiciona data no pipeline'}
+                  </p>
                 </div>
                 <div className="w-full h-px bg-slate-800" />
                 <div className="text-sm">
-                  <p className="font-semibold text-white">Reunião com proprietário</p>
-                  <p className="text-xs text-slate-400 mt-1">Amanhã às 10:00</p>
+                  <p className="font-semibold text-white">
+                    {followUpQueue[1] ? `Contacto · ${followUpQueue[1].name}` : 'Fila pronta para priorização'}
+                  </p>
+                  <p className="text-xs text-slate-200 mt-1">
+                    {followUpQueue[1] ? formatRelativeLabel(followUpQueue[1].followUpAt) : 'Sem segundo compromisso'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -263,21 +343,25 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Bottom Section - Performance Trends */}
-        <div className="rounded-xl bg-slate-950/50 backdrop-blur-sm border border-slate-800/50 p-6">
+        <div className="rounded-xl bg-slate-950 border border-slate-700 p-6">
           <h2 className="text-xl font-bold text-white mb-6">Performance Mensal</h2>
           
           {/* Simplified chart placeholder */}
           <div className="h-64 flex items-end justify-around gap-4 p-4 bg-black-900/30 rounded-lg">
-            {[65, 75, 70, 85, 80, 90, 95].map((height, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-2 flex-1">
+            {performanceSegments.map((entry) => {
+              const ratio = entry.value > 0
+                ? Math.min(100, Math.max(10, Math.round((entry.value / performanceMax) * 100)))
+                : 0;
+              return (
+              <div key={entry.label} className="flex flex-col items-center gap-2 flex-1">
                 <div className="w-full bg-gradient-to-t from-purple-500 via-indigo-500 to-blue-400 rounded-t-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/40" 
-                     style={{ height: `${height}%` }} 
+                     style={{ height: `${ratio}%` }} 
                 />
-                <span className="text-xs text-slate-400">
-                  {String.fromCharCode(83 + idx)}
+                <span className="text-xs text-slate-200 font-medium">
+                  {entry.label}
                 </span>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>

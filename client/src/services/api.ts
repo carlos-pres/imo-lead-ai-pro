@@ -263,6 +263,25 @@ export type Lead = {
   createdAt: string;
 };
 
+function normalizeWorkspaceRole(role: unknown): WorkspaceRole {
+  const normalized = String(role || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "admin" || normalized === "manager" || normalized === "consultant") {
+    return normalized;
+  }
+
+  return "consultant";
+}
+
+function normalizeWorkspaceUser(user: WorkspaceUser): WorkspaceUser {
+  return {
+    ...user,
+    role: normalizeWorkspaceRole(user.role),
+  };
+}
+
 export type LeadStats = {
   total: number;
   quente: number;
@@ -399,14 +418,19 @@ export async function getCompliance() {
 
 export async function getLeads() {
   const response = await apiFetch("/api/leads");
-  const payload = await readJson<any>(response);
+  const payload = await readJson<unknown>(response);
 
   if (Array.isArray(payload)) {
     return payload as Lead[];
   }
 
-  if (payload && Array.isArray(payload.data)) {
-    return payload.data as Lead[];
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "data" in payload &&
+    Array.isArray((payload as { data: unknown }).data)
+  ) {
+    return (payload as { data: Lead[] }).data;
   }
 
   return [] as Lead[];
@@ -480,7 +504,8 @@ export async function getAdminPlans() {
 
 export async function getAdminUsers() {
   const response = await apiFetch("/api/admin/users");
-  return readJson<WorkspaceUser[]>(response);
+  const users = await readJson<WorkspaceUser[]>(response);
+  return users.map(normalizeWorkspaceUser);
 }
 
 export async function getAdminSystemStatus() {
@@ -531,7 +556,8 @@ export async function createAdminUser(data: CreateAdminUserInput) {
     body: JSON.stringify(data),
   });
 
-  return readJson<WorkspaceUser>(response);
+  const user = await readJson<WorkspaceUser>(response);
+  return normalizeWorkspaceUser(user);
 }
 
 export async function updateAdminUser(id: string, data: UpdateAdminUserInput) {
@@ -543,7 +569,8 @@ export async function updateAdminUser(id: string, data: UpdateAdminUserInput) {
     body: JSON.stringify(data),
   });
 
-  return readJson<WorkspaceUser>(response);
+  const user = await readJson<WorkspaceUser>(response);
+  return normalizeWorkspaceUser(user);
 }
 
 export async function deleteAdminUser(id: string) {
@@ -566,8 +593,12 @@ export async function login(email: string, password: string) {
   });
 
   const session = await readJson<AuthSession>(response);
+  const normalizedSession = {
+    ...session,
+    user: normalizeWorkspaceUser(session.user),
+  } satisfies AuthSession;
   setSessionToken(session.token);
-  return session;
+  return normalizedSession;
 }
 
 export async function getCurrentSession() {
@@ -581,7 +612,7 @@ export async function getCurrentSession() {
   const payload = await readJson<{ user: WorkspaceUser }>(response);
   return {
     token,
-    user: payload.user,
+    user: normalizeWorkspaceUser(payload.user),
   } satisfies AuthSession;
 }
 

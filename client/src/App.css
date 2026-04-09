@@ -79,9 +79,9 @@
 }
 
 .status-chip.muted {
-  background: rgba(255, 250, 242, 0.72);
+  background: #f8fafc;
   color: #132237;
-  border: 1px solid rgba(19, 34, 55, 0.12);
+  border: 1px solid rgba(19, 34, 55, 0.22);
 }
 
 .hero-visual {
@@ -127,7 +127,7 @@
 }
 
 .command-surface-primary span {
-  color: rgba(255, 250, 242, 0.68);
+  color: #f1f5f9;
 }
 
 .command-surface-card strong {
@@ -149,7 +149,7 @@
 }
 
 .command-surface-primary p {
-  color: rgba(255, 250, 242, 0.82);
+  color: #e2e8f0;
 }
 
 .hero-visual img {
@@ -2014,9 +2014,30 @@
   font-size: 2rem;
 }
 
+.pricing-head .pricing-price {
+  font-size: clamp(2rem, 2.8vw, 2.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pricing-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: linear-gradient(120deg, #fbbf24, #f59e0b);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+}
+
 .pricing-head strong small {
   font-size: 1rem;
-  color: #5c6b80;
+  color: #cbd5e1;
 }
 
 .pricing-note {
@@ -2145,11 +2166,11 @@
 
 .select-plan-button {
   width: 100%;
-  border: 1px solid rgba(19, 34, 55, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.5);
   border-radius: 14px;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #132237;
+  background: #0f172a;
+  color: #f8fafc;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -2161,8 +2182,9 @@
 }
 
 .select-plan-button.active {
-  background: rgba(19, 34, 55, 0.92);
+  background: linear-gradient(120deg, #2563eb, #1d4ed8);
   color: #fffaf2;
+  border-color: rgba(147, 197, 253, 0.85);
 }
 
 .auth-shell {
@@ -3529,9 +3551,9 @@ p {
 
 .ghost-button,
 .secondary-button {
-  border: 1px solid var(--border);
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.9);
 }
 
 .pricing-card,
@@ -3615,7 +3637,7 @@ p {
 .public-contact-card strong,
 .public-plan-summary-card strong,
 .public-sales-card strong {
-  color: #0b1220;
+  color: #f8fafc;
 }
 
 .marketing-pricing-grid .pricing-note,
@@ -3647,8 +3669,8 @@ p {
 }
 
 .marketing-pricing-grid .ghost-button {
-  border-color: rgba(15, 23, 42, 0.2);
-  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(148, 163, 184, 0.65);
+  background: rgba(15, 23, 42, 0.92);
 }
 
 /* Pricing route hero clarity */
