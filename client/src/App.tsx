@@ -2574,7 +2574,7 @@ function App() {
 
       return right.aiScore - left.aiScore;
     })
-    .slice(0, 6);
+    .slice(0, 3);
   const strategistRadarHighlight =
     strategistRadar?.summary ||
     (topMarket
@@ -4016,7 +4016,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Fila de automação</p>
-                <h3>Leads com próxima ação pronta</h3>
+                <h3>Top 3 prioridades com próxima ação pronta</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
                 Abrir pipeline
@@ -4074,74 +4074,33 @@ function App() {
                       <button
                         className="primary-button"
                         type="button"
-                        onClick={() =>
-                          handleOpenExternal(
-                            mailto,
-                            "Não foi possivel abrir o email neste momento."
-                          )
-                        }
-                      >
-                        {email ? "Abrir email" : "Email da equipa"}
-                      </button>
-                      <button
-                        className="primary-button"
-                        type="button"
-                        onClick={() =>
-                          handleOpenExternal(
-                            whatsappUrl,
-                            "Não foi possivel abrir o WhatsApp neste momento."
-                          )
-                        }
-                      >
-                        {phone ? "Abrir WhatsApp" : "WhatsApp da equipa"}
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        onClick={() =>
+                        disabled={savingLeadId === lead.id}
+                        onClick={() => {
+                          if (phone) {
+                            handleOpenExternal(
+                              whatsappUrl,
+                              "Não foi possível abrir o WhatsApp neste momento."
+                            );
+                            publishWorkspaceFeedback("Ação executada no WhatsApp.");
+                            return;
+                          }
+
+                          if (email) {
+                            handleOpenExternal(
+                              mailto,
+                              "Não foi possível abrir o email neste momento."
+                            );
+                            publishWorkspaceFeedback("Ação executada por email.");
+                            return;
+                          }
+
                           void handleCopyText(
                             lead.outreachMessage || buildLeadWhatsAppMessage(lead),
                             "Mensagem do agente copiada para a equipa."
-                          )
-                        }
+                          );
+                        }}
                       >
-                        Copiar script
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        disabled={savingLeadId === lead.id}
-                        onClick={() =>
-                          void handleQuickWorkflowAction(
-                            lead,
-                            {
-                              nextStep: "Follow-up automatico agendado pelo cockpit",
-                              followUpAt: createNextFollowUp(24),
-                            },
-                            "Follow-up agendado para as próximas 24h."
-                          )
-                        }
-                      >
-                        Follow-up 24h
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        disabled={savingLeadId === lead.id}
-                        onClick={() =>
-                          void handleQuickWorkflowAction(
-                            lead,
-                            {
-                              pipelineStage: "contactado",
-                              nextStep: "Validar resposta e preparar qualificação",
-                              lastContactAt: new Date().toISOString(),
-                              followUpAt: createNextFollowUp(24),
-                            },
-                            "Lead marcado como contactado e follow-up preparado."
-                          )
-                        }
-                      >
-                        Marcar contactado
+                        {phone ? "Executar no WhatsApp" : email ? "Executar por email" : "Copiar mensagem do agente"}
                       </button>
                     </div>
                   </article>
