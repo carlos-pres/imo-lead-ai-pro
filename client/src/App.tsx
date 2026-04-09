@@ -517,6 +517,102 @@ const SALES_WHATSAPP_DIGITS = "351927627844";
 const PUBLIC_DEMO_ENABLED =
   import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_DEMO === "true";
 
+const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] = [
+  {
+    id: "fallback-basic",
+    basePlanId: "basic",
+    slug: "starter",
+    publicName: "Starter",
+    recommendedFor: "Equipas em arranque",
+    includedCountryCodes: ["PT"],
+    leadLimit: 120,
+    includedUsers: 3,
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: 15,
+    extraUserYearlyPrice: 144,
+    advancedAI: false,
+    autoContact: false,
+    multiLocation: false,
+    multiLanguage: true,
+    maxMessagesPerMonth: 400,
+    monthlyPrice: 79,
+    yearlyPrice: 758.4,
+    annualDiscountPercent: 20,
+    reportsLabel: "Relatório operativo mensal",
+    marketReports: ["Pipeline semanal", "SLA de contacto"],
+    includedMarkets: ["Portugal"],
+    supportLabel: "Suporte standard",
+    agentLabel: "Copilot Base",
+    agentCapabilities: ["Score IA", "Sugestão de próxima ação"],
+    features: ["Pipeline visual", "Follow-up com prioridades", "Dashboard de conversão"],
+    isActive: true,
+    isPublic: true,
+    sortOrder: 10,
+  },
+  {
+    id: "fallback-pro",
+    basePlanId: "pro",
+    slug: "pro",
+    publicName: "Pro",
+    recommendedFor: "Operação comercial em escala",
+    includedCountryCodes: ["PT", "ES", "FR"],
+    leadLimit: 450,
+    includedUsers: 8,
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: 19,
+    extraUserYearlyPrice: 182.4,
+    advancedAI: true,
+    autoContact: true,
+    multiLocation: true,
+    multiLanguage: true,
+    maxMessagesPerMonth: 1800,
+    monthlyPrice: 149,
+    yearlyPrice: 1430.4,
+    annualDiscountPercent: 20,
+    reportsLabel: "Cockpit executivo com radar de mercado",
+    marketReports: ["Radar por mercado", "Conversão por origem", "Ações urgentes"],
+    includedMarkets: ["Portugal", "Espanha", "França"],
+    supportLabel: "Suporte prioritário",
+    agentLabel: "Copilot Pro",
+    agentCapabilities: ["Score IA avançado", "Roteamento automático", "Cadências inteligentes"],
+    features: ["Multi-equipa", "Automação de follow-up", "Analytics comercial"],
+    isActive: true,
+    isPublic: true,
+    sortOrder: 20,
+  },
+  {
+    id: "fallback-custom",
+    basePlanId: "custom",
+    slug: "enterprise",
+    publicName: "Enterprise",
+    recommendedFor: "Redes multi-loja",
+    includedCountryCodes: ["PT", "ES", "FR", "IT"],
+    leadLimit: 2000,
+    includedUsers: 25,
+    allowsExtraUsers: true,
+    extraUserMonthlyPrice: 25,
+    extraUserYearlyPrice: 240,
+    advancedAI: true,
+    autoContact: true,
+    multiLocation: true,
+    multiLanguage: true,
+    maxMessagesPerMonth: 6000,
+    monthlyPrice: 349,
+    yearlyPrice: 3350.4,
+    annualDiscountPercent: 20,
+    reportsLabel: "Governance e SLA enterprise",
+    marketReports: ["Controlo por região", "Forecast de receita", "Compliance"],
+    includedMarkets: ["Europa"],
+    supportLabel: "Suporte dedicado",
+    agentLabel: "Copilot Enterprise",
+    agentCapabilities: ["Playbooks por país", "Controlo multi-loja", "Execução assistida"],
+    features: ["Admin avançado", "Onboarding dedicado", "Integrações enterprise"],
+    isActive: true,
+    isPublic: true,
+    sortOrder: 30,
+  },
+];
+
 type DemoAccessEntry = (typeof DEMO_ACCESS)[number];
 
 function getSuggestedDemoEntry(planId: PlanType): DemoAccessEntry {
@@ -967,7 +1063,7 @@ function App() {
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
   const [strategistRadar, setStrategistRadar] = useState<MarketStrategistRadar | null>(null);
-  const [plans, setPlans] = useState<PlanCatalogEntry[]>([]);
+  const [plans, setPlans] = useState<PlanCatalogEntry[]>(FALLBACK_PLAN_CATALOG);
   const [adminPlans, setAdminPlans] = useState<PlanCatalogEntry[]>([]);
   const [adminDrafts, setAdminDrafts] = useState<AdminPlanDraftMap>({});
   const [newPlanDraft, setNewPlanDraft] = useState<AdminPlanDraft>(() => createEmptyAdminPlanDraft());
@@ -1025,6 +1121,8 @@ function App() {
 
   useEffect(() => {
     void bootstrap();
+    // Bootstrap is intentionally executed only once on initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1276,8 +1374,9 @@ function App() {
   async function loadPlansCatalog() {
     try {
       const planData = await getPlans();
-      setPlans(planData);
+      setPlans(planData.length > 0 ? planData : FALLBACK_PLAN_CATALOG);
     } catch (planError) {
+      setPlans(FALLBACK_PLAN_CATALOG);
       setError(planError instanceof Error ? planError.message : "Falha ao carregar planos");
     }
   }
@@ -3410,10 +3509,8 @@ function App() {
     );
   }
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   void renderOperationalDashboardView;
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   function renderDecisionDashboardView() {
     const marketRadarCards =
       strategistOpportunities.length > 0
@@ -3835,6 +3932,8 @@ function App() {
       </div>
     );
   }
+
+  void renderDecisionDashboardView;
 
   function renderAutomationView() {
     return (
@@ -6714,15 +6813,16 @@ function App() {
                   ? "Entrada sugerida: demonstração de equipa com pipeline, owners e desks em ação."
                   : "Entrada sugerida: leitura executiva com governance, ADM e expansao multi-loja.";
 
-            return (
-              <article className={featured ? "pricing-card featured" : "pricing-card"} key={plan.id}>
-                <div className="pricing-head">
-                  <span>{plan.recommendedFor}</span>
-                  <strong>
-                    {formatCurrency(price, "EUR", price % 1 !== 0)}
-                    <small>{suffix}</small>
-                  </strong>
-                </div>
+	            return (
+	              <article className={featured ? "pricing-card featured" : "pricing-card"} key={plan.id}>
+	                <div className="pricing-head">
+	                  <span>{plan.recommendedFor}</span>
+	                  {featured ? <span className="pricing-badge">Mais vendido</span> : null}
+	                  <strong className="pricing-price">
+	                    {formatCurrency(price, "EUR", price % 1 !== 0)}
+	                    <small>{suffix}</small>
+	                  </strong>
+	                </div>
 
                 <p className="pricing-note">{plan.agentLabel}</p>
                 <p className="hero-text">{plan.reportsLabel}</p>
@@ -7930,7 +8030,13 @@ function App() {
 
   function renderActiveView() {
     if (activeView === "dashboard") {
-      return <Dashboard />;
+      return (
+        <Dashboard
+          stats={dashboardStats}
+          topHotLeads={topHotLeads}
+          followUpQueue={followUpQueue}
+        />
+      );
     }
 
     if (activeView === "pipeline") {
@@ -7957,7 +8063,13 @@ function App() {
       return renderAdminView();
     }
 
-    return <Dashboard />;
+    return (
+      <Dashboard
+        stats={dashboardStats}
+        topHotLeads={topHotLeads}
+        followUpQueue={followUpQueue}
+      />
+    );
   }
 
   if (!session) {
@@ -8161,4 +8273,3 @@ function App() {
 }
 
 export default App;
-
