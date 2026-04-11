@@ -7930,7 +7930,16 @@ function App() {
 
   function renderActiveView() {
     if (activeView === "dashboard") {
-      return <Dashboard stats={dashboardStats} topHotLeads={topHotLeads} followUpQueue={followUpQueue} />;
+      return (
+        <Dashboard
+          stats={dashboardStats}
+          topHotLeads={topHotLeads}
+          followUpQueue={followUpQueue}
+          isLoading={loading}
+          error={error}
+          onRetry={loadWorkspace}
+        />
+      );
     }
 
     if (activeView === "pipeline") {
@@ -7957,7 +7966,16 @@ function App() {
       return renderAdminView();
     }
 
-    return <Dashboard stats={dashboardStats} topHotLeads={topHotLeads} followUpQueue={followUpQueue} />;
+    return (
+      <Dashboard
+        stats={dashboardStats}
+        topHotLeads={topHotLeads}
+        followUpQueue={followUpQueue}
+        isLoading={loading}
+        error={error}
+        onRetry={loadWorkspace}
+      />
+    );
   }
 
   if (!session) {

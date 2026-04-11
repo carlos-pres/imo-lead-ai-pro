@@ -1,265 +1,288 @@
-import React from 'react';
-import { Sparkles, TrendingUp, Users, AlertCircle, CheckCircle2, Clock, Zap, Target } from 'lucide-react';
+import { ArrowRight, ChevronRight, RefreshCcw, Sparkles, Target, Waves, WifiOff } from "lucide-react";
 
-/**
- * DashboardCockpit
- * 
- * Cockpit minimalista com paleta GOLD PREMIUM + BLACK:
- * - Agente de IA em posição central (dourado)
- * - 4 métricas principais 
- * - O que fazer AGORA (3 ações)
- * - Status do workspace em rodapé
- */
-
-interface CockpitMetric {
+type KpiItem = {
   label: string;
-  value: string | number;
-  unit?: string;
-  icon: React.ReactNode;
-  color: 'gold' | 'gold-light' | 'gold-alt' | 'silver';
-}
-
-interface CockpitAction {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onClick: () => void;
-  priority: 'high' | 'medium' | 'low';
-}
-
-interface DashboardCockpitProps {
-  agentStatus?: 'ready' | 'processing' | 'idle';
-  agentInsight?: string;
-  metrics?: CockpitMetric[];
-  actions?: CockpitAction[];
-  lastUpdate?: string;
-  workspaceStatus?: string;
-}
-
-const getColorStyles = (color: string) => {
-  const colors = {
-    gold: 'bg-gold-500/20 border-gold-500/40 text-gold-400',
-    'gold-light': 'bg-gold-400/20 border-gold-400/40 text-gold-300',
-    'gold-alt': 'bg-gold-600/20 border-gold-600/40 text-gold-500',
-    silver: 'bg-slate-500/20 border-slate-500/40 text-slate-300',
-  };
-  return colors[color as keyof typeof colors];
+  value: string;
+  detail: string;
 };
 
-const getPriorityStyles = (priority: string) => {
-  const styles = {
-    high: 'bg-gold-500/10 border-gold-500/20',
-    medium: 'bg-gold-400/10 border-gold-400/20',
-    low: 'bg-slate-700/20 border-slate-600/30',
-  };
-  return styles[priority as keyof typeof styles];
-};
+export function AICopilotHero({
+  greeting,
+  summary,
+  bestOpportunityTitle,
+  bestOpportunity,
+  recommendation,
+  justification,
+  primaryCta,
+  secondaryCta,
+  tertiaryCta,
+}: {
+  greeting: string;
+  summary: string;
+  bestOpportunityTitle: string;
+  bestOpportunity: string;
+  recommendation: string;
+  justification: string;
+  primaryCta: string;
+  secondaryCta: string;
+  tertiaryCta: string;
+}) {
+  return (
+    <section className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/25 sm:p-8 lg:p-10">
+      <div className="absolute -right-24 -top-20 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+      <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
 
-export const DashboardCockpit: React.FC<DashboardCockpitProps> = ({
-  agentStatus = 'ready',
-  agentInsight = 'Agente preparado para receber ações comerciais e gerar valor',
-  metrics,
-  actions,
-  lastUpdate = 'Agora',
-  workspaceStatus = 'Online',
-}) => {
-  // Mock data se não for fornecido
-  const defaultMetrics: CockpitMetric[] = metrics || [
-    {
-      label: 'Leads Ativos',
-      value: '0',
-      unit: 'em carteira',
-      icon: <Users className="w-5 h-5" />,
-      color: 'gold',
-    },
-    {
-      label: 'Score Médio',
-      value: '0',
-      unit: '%',
-      icon: <TrendingUp className="w-5 h-5" />,
-      color: 'gold-light',
-    },
-    {
-      label: 'Ações Hoje',
-      value: '0',
-      unit: 'completadas',
-      icon: <CheckCircle2 className="w-5 h-5" />,
-      color: 'gold-alt',
-    },
-    {
-      label: 'Follow-ups',
-      value: '0',
-      unit: 'urgentes',
-      icon: <AlertCircle className="w-5 h-5" />,
-      color: 'silver',
-    },
+      <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <div className="space-y-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-100">
+            <Sparkles className="h-3.5 w-3.5" />
+            Agente IA ativo
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+              Mesa de decisão comercial
+            </p>
+            <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">
+              {greeting} {summary}
+            </h1>
+          </div>
+          <p className="max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">{bestOpportunity}</p>
+          <div className="grid gap-3 rounded-2xl border border-slate-700/70 bg-slate-950/45 p-4">
+            <p className="text-sm font-semibold text-indigo-100">{recommendation}</p>
+            <p className="text-sm leading-relaxed text-slate-300">{justification}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/25 transition hover:brightness-110">
+              {primaryCta}
+              <Target className="h-4 w-4" />
+            </button>
+            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/50">
+              {secondaryCta}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50">
+              {tertiaryCta}
+              <Waves className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-700/80 bg-slate-950/60 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Melhor oportunidade
+          </p>
+          <div className="mt-3 space-y-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">{bestOpportunityTitle}</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3">
+                <span className="text-xs uppercase tracking-wider text-slate-400">Estado</span>
+                <strong className="mt-1 block text-lg text-white">Prioridade máxima</strong>
+              </div>
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3">
+                <span className="text-xs uppercase tracking-wider text-slate-400">Janela</span>
+                <strong className="mt-1 block text-lg text-white">Ainda hoje</strong>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-4">
+              <p className="text-sm font-semibold text-indigo-100">Próxima ação recomendada</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-200">{recommendation}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function PriorityActionCard() {
+  return (
+    <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
+            Ação prioritária
+          </p>
+          <h2 className="text-xl font-semibold text-white">Executar agora para não perder tração</h2>
+        </div>
+        <button className="inline-flex items-center gap-2 rounded-xl border border-indigo-400/35 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-100">
+          Ver plano de ação
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <p className="text-xs uppercase tracking-wider text-slate-400">1. Contacto</p>
+          <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
+          <p className="mt-2 text-sm text-slate-300">Abrir conversa com contexto comercial pronto a usar.</p>
+        </article>
+        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <p className="text-xs uppercase tracking-wider text-slate-400">2. Valor</p>
+          <strong className="mt-1 block text-white">Ver proposta</strong>
+          <p className="mt-2 text-sm text-slate-300">Mostrar comparável e argumento de mercado imediatamente.</p>
+        </article>
+        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <p className="text-xs uppercase tracking-wider text-slate-400">3. Seguimento</p>
+          <strong className="mt-1 block text-white">Agendar seguimento</strong>
+          <p className="mt-2 text-sm text-slate-300">Bloquear a próxima janela útil sem perda de ritmo.</p>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+export function PriorityLeadCard({
+  name,
+  location,
+  property,
+  score,
+  value,
+  nextStep,
+  channel,
+  reasoning,
+}: {
+  name: string;
+  location: string;
+  property: string;
+  score: number;
+  value: string;
+  nextStep: string;
+  channel: string;
+  reasoning: string;
+}) {
+  return (
+    <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
+            Lead prioritário
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">{name}</h2>
+          <p className="mt-1 text-sm text-slate-300">
+            {location} · {property}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-3 text-right">
+          <span className="text-xs uppercase tracking-wider text-indigo-100">Score IA</span>
+          <strong className="block text-2xl text-white">{score}</strong>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <span className="text-xs uppercase tracking-wider text-slate-400">Valor</span>
+          <strong className="mt-1 block text-lg text-white">{value}</strong>
+        </div>
+        <div className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <span className="text-xs uppercase tracking-wider text-slate-400">Canal recomendado</span>
+          <strong className="mt-1 block text-lg text-white">{channel}</strong>
+        </div>
+        <div className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <span className="text-xs uppercase tracking-wider text-slate-400">Próxima ação</span>
+          <strong className="mt-1 block text-lg text-white">{nextStep}</strong>
+        </div>
+      </div>
+      <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Justificação</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-200">{reasoning}</p>
+      </div>
+    </section>
+  );
+}
+
+export function KPIOverviewRow({ kpis }: { kpis: KpiItem[] }) {
+  return (
+    <section className="grid gap-4 md:grid-cols-3">
+      {kpis.map((kpi) => (
+        <article className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5" key={kpi.label}>
+          <p className="text-sm text-slate-300">{kpi.label}</p>
+          <strong className="mt-2 block text-3xl font-semibold text-white">{kpi.value}</strong>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">
+            {kpi.detail}
+          </p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+export function QuickActionsBar() {
+  const actions = [
+    "Contactar agora",
+    "Abrir pipeline",
+    "Ver automações",
+    "Enviar no WhatsApp",
+    "Ver proposta",
+    "Agendar seguimento",
   ];
-
-  const defaultActions: CockpitAction[] = actions || [
-    {
-      icon: <Target className="w-6 h-6" />,
-      title: 'Primeira ação',
-      description: 'Comece a adicionar leads manualmente ou via integração',
-      buttonLabel: 'Adicionar lead',
-      onClick: () => console.log('Add lead'),
-      priority: 'high',
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: 'Conectar origem',
-      description: 'Ative captura automática de leads de portais imobiliários',
-      buttonLabel: 'Conectar API',
-      onClick: () => console.log('Connect API'),
-      priority: 'medium',
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: 'Agendar follow-ups',
-      description: 'Configure cadência automática de contactos comerciais',
-      buttonLabel: 'Configurar automação',
-      onClick: () => console.log('Setup automation'),
-      priority: 'medium',
-    },
-  ];
-
-  const statusColor =
-    agentStatus === 'ready'
-      ? 'text-gold-400'
-      : agentStatus === 'processing'
-        ? 'text-gold-300'
-        : 'text-slate-400';
-
-  const statusDot =
-    agentStatus === 'ready'
-      ? 'bg-gold-500'
-      : agentStatus === 'processing'
-        ? 'bg-gold-400'
-        : 'bg-slate-500';
 
   return (
-    <div className="min-h-screen bg-gradient-dark pt-8 pb-16 px-6">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* ===== HEADER ===== */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold text-white mb-2">Cockpit Comercial</h1>
-          <p className="text-lg text-slate-300">Seu agente de IA premium e ações prioritárias</p>
+    <section className="rounded-3xl border border-slate-700/70 bg-slate-900/60 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center gap-3">
+        {actions.map((action) => (
+          <button
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/45 hover:bg-slate-900"
+            key={action}
+          >
+            {action}
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="h-72 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+        <div className="h-36 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+        <div className="h-40 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
         </div>
+        <div className="h-24 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+      </div>
+    </div>
+  );
+}
 
-        {/* ===== AGENT SECTION (CENTRAL & PROMINENT) ===== */}
-        <div className="mb-12 p-8 rounded-3xl bg-gradient-to-br from-gold-500/15 to-gold-600/10 border border-gold-500/30 relative overflow-hidden shadow-gold-glow">
-          {/* Background glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/15 rounded-full blur-3xl" />
-
-          <div className="relative z-10">
-            {/* Agent Header */}
-            <div className="flex items-start justify-between mb-8">
-              <div className="flex items-start gap-4">
-                <div className="p-4 rounded-xl bg-gradient-gold shadow-gold-glow">
-                  <Sparkles className="w-8 h-8 text-black-900" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Agente Premium</h2>
-                  <div className={`flex items-center gap-2 ${statusColor}`}>
-                    <span className={`w-2 h-2 rounded-full animate-pulse-gold ${statusDot}`} />
-                    <span className="text-sm font-semibold">
-                      {agentStatus === 'ready'
-                        ? 'Pronto para ação'
-                        : agentStatus === 'processing'
-                          ? 'A processar'
-                          : 'Aguardando dados'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-slate-400 mb-1">Última atualização</p>
-                <p className="text-sm font-semibold text-gold-400">{lastUpdate}</p>
-              </div>
+export function DashboardErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-6 text-slate-100">
+      <div className="mx-auto flex max-w-4xl items-start px-4 sm:px-6 lg:px-8">
+        <div className="w-full rounded-3xl border border-rose-400/20 bg-slate-900/80 p-6 shadow-2xl shadow-rose-950/20">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-3 text-rose-200">
+              <WifiOff className="h-6 w-6" />
             </div>
-
-            {/* Agent Insight */}
-            <div className="bg-black-800/50 border border-gold-500/20 rounded-xl p-4 mb-6">
-              <p className="text-slate-200 text-sm leading-relaxed font-medium">{agentInsight}</p>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-4 gap-3">
-              {defaultMetrics.map((metric, idx) => (
-                <div key={idx} className={`p-4 rounded-xl border transition-all hover:shadow-lg hover:shadow-gold-500/20 ${getColorStyles(metric.color)}`}>
-                  <div className="flex items-center gap-2 mb-2 text-gold-400">
-                    <span>{metric.icon}</span>
-                  </div>
-                  <div className="text-2xl font-bold text-white">{metric.value}</div>
-                  <p className="text-xs text-slate-400 mt-1">{metric.label}</p>
-                </div>
-              ))}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-200">Erro de ligação</p>
+              <h1 className="text-2xl font-semibold text-white">Não foi possível carregar os dados do cockpit.</h1>
+              <p className="text-sm text-slate-300">Verifique a ligação ou tente novamente.</p>
+              <p className="text-sm text-slate-400">{message}</p>
             </div>
           </div>
-        </div>
-
-        {/* ===== NOW ACTIONS (O QUE FAZER AGORA) ===== */}
-        <div className="mb-12">
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-white">Ações Prioritárias</h3>
-            <p className="text-slate-400 mt-2">Próximos passos para ativar seu cockpit comercial</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {defaultActions.map((action, idx) => (
-              <div
-                key={idx}
-                className={`group p-6 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/15 ${getPriorityStyles(
-                  action.priority
-                )}`}
-              >
-                {/* Priority Badge */}
-                <div className="inline-flex items-center gap-2 mb-4">
-                  {action.priority === 'high' && (
-                    <span className="px-3 py-1 rounded-full bg-gold-500/90 text-black-900 text-xs font-bold">
-                      URGENTE
-                    </span>
-                  )}
-                  {action.priority === 'medium' && (
-                    <span className="px-3 py-1 rounded-full bg-gold-400/80 text-black-900 text-xs font-bold">
-                      IMPORTANTE
-                    </span>
-                  )}
-                </div>
-
-                {/* Icon */}
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gold-500/20 mb-4 text-gold-400 group-hover:bg-gold-500/30 group-hover:text-gold-300 transition-all">
-                  {action.icon}
-                </div>
-
-                {/* Title & Description */}
-                <h4 className="text-lg font-bold text-white mb-2">{action.title}</h4>
-                <p className="text-sm text-slate-300 mb-6 leading-relaxed">{action.description}</p>
-
-                {/* Button */}
-                <button
-                  onClick={action.onClick}
-                  className="w-full px-4 py-2.5 rounded-lg bg-gradient-gold text-black-900 font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/30 active:scale-95"
-                >
-                  {action.buttonLabel}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ===== FOOTER STATUS ===== */}
-        <div className="p-6 rounded-xl bg-black-800/50 border border-gold-500/20 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-gold-500 animate-pulse-gold" />
-            <span className="text-white font-semibold">Workspace {workspaceStatus}</span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Agente sincronizado • API conectada • Pronto para operação premium
-          </p>
+          <button
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white"
+            onClick={onRetry}
+            type="button"
+          >
+            Tentar novamente
+            <RefreshCcw className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
   );
-};
+}

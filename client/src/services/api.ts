@@ -335,10 +335,21 @@ function getHeaders(headers?: HeadersInit) {
 }
 
 async function apiFetch(path: string, init?: RequestInit) {
-  return fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: getHeaders(init?.headers),
-  });
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: getHeaders(init?.headers),
+    });
+
+    return response;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Falha de rede inesperada";
+    throw new Error(
+      reason.includes("Failed to fetch")
+        ? "Não foi possível ligar ao servidor. Verifique a ligação e tente novamente."
+        : reason
+    );
+  }
 }
 
 export function getSessionToken() {
