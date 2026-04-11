@@ -84,7 +84,7 @@ export function AICopilotHero({
             </button>
           </div>
           <p className="text-xs leading-relaxed text-slate-400">
-            Se nunca usou este cockpit, comece por <strong className="text-slate-200">Ver plano de ação</strong> ou{" "}
+            Se é a sua primeira vez, comece por <strong className="text-slate-200">Ver plano de ação</strong> ou{" "}
             <strong className="text-slate-200">Abrir pipeline</strong>.
           </p>
         </div>
@@ -130,13 +130,13 @@ export function PriorityActionCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
-            Ação prioritária
+            Passo 1, 2, 3
           </p>
-          <h2 className="text-xl font-semibold text-white">O que fazer agora</h2>
+          <h2 className="text-xl font-semibold text-white">O caminho mais rápido para começar</h2>
         </div>
       </div>
       <p className="mt-2 text-sm text-slate-300">
-        Um utilizador novo deve conseguir começar por aqui sem procurar menus.
+        Cada passo abaixo abre uma ação concreta. Sem menus escondidos, sem decisões extra.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <button
@@ -144,9 +144,9 @@ export function PriorityActionCard({
           onClick={onOpenWhatsApp}
           type="button"
         >
-          <p className="text-xs uppercase tracking-wider text-slate-400">1. Falar com o lead</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">1. Responder já</p>
           <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
-          <p className="mt-2 text-sm text-slate-300">Melhor opção quando precisa de resposta rápida.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre a conversa com o contexto comercial certo.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
@@ -155,16 +155,16 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
           <strong className="mt-1 block text-white">Ver proposta</strong>
-          <p className="mt-2 text-sm text-slate-300">Abre o argumento comercial pronto a apresentar.</p>
+          <p className="mt-2 text-sm text-slate-300">Mostra o argumento pronto a apresentar ao lead.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
           onClick={onScheduleFollowUp}
           type="button"
         >
-          <p className="text-xs uppercase tracking-wider text-slate-400">3. Marcar próximo passo</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">3. Garantir seguimento</p>
           <strong className="mt-1 block text-white">Agendar seguimento</strong>
-          <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
+          <p className="mt-2 text-sm text-slate-300">Impede que a oportunidade arrefeça.</p>
         </button>
       </div>
     </section>
