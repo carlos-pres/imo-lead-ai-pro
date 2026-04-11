@@ -257,20 +257,17 @@ export function QuickActionsBar({
   onOpenPipeline,
   onOpenAutomation,
   onOpenWhatsApp,
-  onOpenProposal,
   onScheduleFollowUp,
 }: {
   onOpenPipeline?: () => void;
   onOpenAutomation?: () => void;
   onOpenWhatsApp?: () => void;
-  onOpenProposal?: () => void;
   onScheduleFollowUp?: () => void;
 }) {
   const actions = [
     { label: "Contactar agora", onClick: onOpenWhatsApp },
     { label: "Abrir pipeline", onClick: onOpenPipeline },
     { label: "Ver automações", onClick: onOpenAutomation },
-    { label: "Ver proposta", onClick: onOpenProposal },
     { label: "Agendar seguimento", onClick: onScheduleFollowUp },
   ];
 

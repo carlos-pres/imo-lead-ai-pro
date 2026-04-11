@@ -69,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     justification: bestLead
       ? `O lead tem score IA ${bestLead.aiScore} e já está numa fase crítica de decisão comercial.`
       : "Não há leads quentes suficientes para priorização automática neste momento.",
-    primaryCta: "Contactar agora",
+    primaryCta: "Ver plano de ação",
     secondaryCta: "Abrir pipeline",
     tertiaryCta: "Ver automações",
   };
@@ -134,7 +134,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           onOpenPipeline={onOpenPipeline}
           onOpenAutomation={onOpenAutomation}
           onOpenWhatsApp={onOpenWhatsApp}
-          onOpenProposal={onOpenProposal}
           onScheduleFollowUp={onScheduleFollowUp}
         />
       </div>
