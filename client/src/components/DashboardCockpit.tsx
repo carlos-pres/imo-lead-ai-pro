@@ -120,10 +120,12 @@ export function PriorityActionCard({
   onOpenWhatsApp,
   onOpenProposal,
   onScheduleFollowUp,
+  leadName,
 }: {
   onOpenWhatsApp?: () => void;
   onOpenProposal?: () => void;
   onScheduleFollowUp?: () => void;
+  leadName?: string;
 }) {
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
@@ -134,7 +136,9 @@ export function PriorityActionCard({
         </div>
       </div>
       <p className="mt-2 text-sm text-slate-300">
-        Um utilizador novo consegue avançar sem procurar menus nem aprender o sistema.
+        {leadName
+          ? `Estas ações aplicam-se ao lead em foco: ${leadName}.`
+          : "Um utilizador novo consegue avançar sem procurar menus nem aprender o sistema."}
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <button
@@ -143,7 +147,9 @@ export function PriorityActionCard({
           type="button"
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">1. Responder já</p>
-          <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
+          <strong className="mt-1 block text-white">
+            {leadName ? `Enviar no WhatsApp para ${leadName}` : "Enviar no WhatsApp"}
+          </strong>
           <p className="mt-2 text-sm text-slate-300">Abre a conversa com contexto comercial.</p>
         </button>
         <button
@@ -152,7 +158,9 @@ export function PriorityActionCard({
           type="button"
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
-          <strong className="mt-1 block text-white">Ver proposta</strong>
+          <strong className="mt-1 block text-white">
+            {leadName ? `Ver proposta de ${leadName}` : "Ver proposta"}
+          </strong>
           <p className="mt-2 text-sm text-slate-300">Mostra o argumento pronto a apresentar.</p>
         </button>
         <button
@@ -161,7 +169,9 @@ export function PriorityActionCard({
           type="button"
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">3. Garantir seguimento</p>
-          <strong className="mt-1 block text-white">Agendar seguimento</strong>
+          <strong className="mt-1 block text-white">
+            {leadName ? `Agendar seguimento de ${leadName}` : "Agendar seguimento"}
+          </strong>
           <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
         </button>
       </div>
@@ -258,14 +268,16 @@ export function QuickActionsBar({
   onOpenAutomation,
   onOpenWhatsApp,
   onScheduleFollowUp,
+  leadName,
 }: {
   onOpenPipeline?: () => void;
   onOpenAutomation?: () => void;
   onOpenWhatsApp?: () => void;
   onScheduleFollowUp?: () => void;
+  leadName?: string;
 }) {
   const actions = [
-    { label: "Contactar agora", onClick: onOpenWhatsApp },
+    { label: leadName ? `Contactar ${leadName}` : "Contactar agora", onClick: onOpenWhatsApp },
     { label: "Abrir pipeline", onClick: onOpenPipeline },
     { label: "Ver automações", onClick: onOpenAutomation },
     { label: "Agendar seguimento", onClick: onScheduleFollowUp },
