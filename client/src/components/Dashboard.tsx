@@ -69,9 +69,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     justification: bestLead
       ? `O lead tem score IA ${bestLead.aiScore} e já está numa fase crítica de decisão comercial.`
       : "Não há leads quentes suficientes para priorização automática neste momento.",
-    primaryCta: bestLead ? `Contactar ${bestLead.name}` : "Contactar agora",
-    secondaryCta: bestLead ? `Ver proposta de ${bestLead.name}` : "Abrir pipeline",
-    tertiaryCta: bestLead ? `Agendar seguimento de ${bestLead.name}` : "Ver automações",
+    primaryCta: bestLead ? `Abrir WhatsApp de ${bestLead.name}` : "Abrir WhatsApp",
+    secondaryCta: bestLead ? `Abrir proposta de ${bestLead.name}` : "Abrir proposta",
+    tertiaryCta: bestLead ? `Agendar seguimento de ${bestLead.name}` : "Agendar seguimento",
   };
 
   const priorityLead = bestLead
@@ -133,7 +133,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <KPIOverviewRow kpis={kpis} />
         <QuickActionsBar
           onOpenPipeline={onOpenPipeline}
-          onOpenAutomation={onOpenAutomation}
           onOpenWhatsApp={onOpenWhatsApp}
           onScheduleFollowUp={onScheduleFollowUp}
           leadName={priorityLead.name}

@@ -84,8 +84,8 @@ export function AICopilotHero({
             </button>
           </div>
           <p className="text-xs leading-relaxed text-slate-400">
-            Se é a sua primeira vez, comece por <strong className="text-slate-200">Contactar agora</strong> ou{" "}
-            <strong className="text-slate-200">Abrir pipeline</strong>.
+            Se é a sua primeira vez, comece por <strong className="text-slate-200">Abrir WhatsApp</strong> ou{" "}
+            <strong className="text-slate-200">Abrir proposta</strong>.
           </p>
         </div>
 
@@ -148,9 +148,9 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">1. Responder já</p>
           <strong className="mt-1 block text-white">
-            {leadName ? `Enviar no WhatsApp para ${leadName}` : "Enviar no WhatsApp"}
+            {leadName ? `Abrir WhatsApp de ${leadName}` : "Abrir WhatsApp"}
           </strong>
-          <p className="mt-2 text-sm text-slate-300">Abre a conversa com contexto comercial.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre a conversa direta com o lead em foco.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
@@ -159,9 +159,9 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
           <strong className="mt-1 block text-white">
-            {leadName ? `Ver proposta de ${leadName}` : "Ver proposta"}
+            {leadName ? `Abrir proposta de ${leadName}` : "Abrir proposta"}
           </strong>
-          <p className="mt-2 text-sm text-slate-300">Mostra o argumento pronto a apresentar.</p>
+          <p className="mt-2 text-sm text-slate-300">Mostra a proposta e o argumento comercial.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
@@ -265,21 +265,19 @@ export function KPIOverviewRow({ kpis }: { kpis: KpiItem[] }) {
 
 export function QuickActionsBar({
   onOpenPipeline,
-  onOpenAutomation,
   onOpenWhatsApp,
   onScheduleFollowUp,
   leadName,
 }: {
   onOpenPipeline?: () => void;
-  onOpenAutomation?: () => void;
   onOpenWhatsApp?: () => void;
   onScheduleFollowUp?: () => void;
   leadName?: string;
 }) {
   const actions = [
-    { label: leadName ? `Contactar ${leadName}` : "Contactar agora", onClick: onOpenWhatsApp },
+    { label: leadName ? `Abrir WhatsApp` : "Abrir WhatsApp", onClick: onOpenWhatsApp },
     { label: "Abrir pipeline", onClick: onOpenPipeline },
-    { label: "Ver automações", onClick: onOpenAutomation },
+    { label: leadName ? `Abrir proposta` : "Abrir proposta", onClick: onOpenPipeline },
     { label: "Agendar seguimento", onClick: onScheduleFollowUp },
   ];
 
@@ -290,7 +288,7 @@ export function QuickActionsBar({
           Atalhos para começar
         </p>
         <p className="text-sm text-slate-300">
-          Se ainda não conhece o sistema, toque primeiro em <strong className="text-slate-100">Contactar agora</strong> ou{" "}
+          Se ainda não conhece o sistema, toque primeiro em <strong className="text-slate-100">Abrir WhatsApp</strong> ou{" "}
           <strong className="text-slate-100">Abrir pipeline</strong>.
         </p>
       </div>
