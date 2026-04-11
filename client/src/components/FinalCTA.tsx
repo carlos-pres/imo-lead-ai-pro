@@ -1,5 +1,5 @@
-import React from 'react';
-import { MessageCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React from "react";
+import { ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
 
 interface FinalCTAProps {
   title: string;
@@ -23,73 +23,63 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
   email,
 }) => {
   return (
-    <section className="py-20 px-6 bg-gradient-dark">
-      <div className="max-w-5xl mx-auto">
-        {/* Main CTA Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gold-500/15 to-gold-600/15 border border-gold-500/30 p-12 md:p-16">
-          {/* Background glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/15 rounded-full blur-3xl" />
+    <section className="bg-gradient-dark px-6 py-20">
+      <div className="mx-auto max-w-5xl">
+        <div className="relative overflow-hidden rounded-3xl border border-gold-500/30 bg-gradient-to-br from-gold-500/15 to-gold-600/15 p-12 md:p-16">
+          <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-gold-500/15 blur-3xl" />
 
           <div className="relative z-10">
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-600/20 border border-gold-500/30 mb-6">
-              <CheckCircle2 className="w-4 h-4 text-gold-400" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-500/30 bg-gold-600/20 px-4 py-2">
+              <CheckCircle2 className="h-4 w-4 text-gold-400" />
               <span className="text-sm font-semibold text-gold-300">Pronto para começar</span>
             </div>
 
-            {/* Title */}
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-              {title}
-            </h2>
+            <h2 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl">{title}</h2>
+            <p className="mb-10 max-w-2xl text-lg leading-relaxed text-slate-300">{description}</p>
 
-            {/* Description */}
-            <p className="text-lg text-slate-300 max-w-2xl mb-10 leading-relaxed">
-              {description}
-            </p>
-
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <div className="mb-12 flex flex-col gap-4 sm:flex-row">
               <button
                 onClick={primaryButtonAction}
-                className="group px-8 py-4 rounded-xl bg-gradient-gold font-semibold text-black-900 text-lg transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/30 hover:scale-105 flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-8 py-4 text-lg font-semibold text-black-900 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/30"
+                type="button"
               >
                 {primaryButtonLabel}
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="h-5 w-5" />
               </button>
 
               <button
                 onClick={secondaryButtonAction}
-                className="px-8 py-4 rounded-xl bg-black-800/50 border border-gold-500/40 font-semibold text-gold-400 text-lg transition-all duration-300 hover:bg-black-700/50"
+                className="rounded-xl border border-gold-500/40 bg-black-800/50 px-8 py-4 text-lg font-semibold text-gold-400 transition-all duration-300 hover:bg-black-700/50"
+                type="button"
               >
                 {secondaryButtonLabel}
               </button>
             </div>
 
-            {/* Contact Info */}
             {(whatsappNumber || email) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-gold-500/20">
+              <div className="grid grid-cols-1 gap-6 border-t border-gold-500/20 pt-8 md:grid-cols-2">
                 {whatsappNumber && (
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-gold-600/20">
-                      <MessageCircle className="w-6 h-6 text-gold-400" />
+                    <div className="rounded-lg bg-gold-600/20 p-3">
+                      <MessageCircle className="h-6 w-6 text-gold-400" />
                     </div>
                     <div>
-                      <div className="text-sm text-slate-400 mb-1">Contacto rápido</div>
+                      <div className="mb-1 text-sm text-slate-400">Contacto rápido</div>
                       <div className="font-semibold text-white">{whatsappNumber}</div>
-                      <div className="text-xs text-slate-400 mt-1">WhatsApp disponível 24/7</div>
+                      <div className="mt-1 text-xs text-slate-400">WhatsApp disponível 24/7</div>
                     </div>
                   </div>
                 )}
 
                 {email && (
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-gold-600/20">
-                      <MessageCircle className="w-6 h-6 text-gold-400" />
+                    <div className="rounded-lg bg-gold-600/20 p-3">
+                      <MessageCircle className="h-6 w-6 text-gold-400" />
                     </div>
                     <div>
-                      <div className="text-sm text-slate-400 mb-1">Email comercial</div>
+                      <div className="mb-1 text-sm text-slate-400">Email comercial</div>
                       <div className="font-semibold text-white">{email}</div>
-                      <div className="text-xs text-slate-400 mt-1">Resposta em menos de 1h</div>
+                      <div className="mt-1 text-xs text-slate-400">Resposta em menos de 1h</div>
                     </div>
                   </div>
                 )}
@@ -98,20 +88,16 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
           </div>
         </div>
 
-        {/* Trust Badges */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+        <div className="mt-16 grid grid-cols-2 gap-6 md:grid-cols-4">
           {[
-            { label: 'Seguro', value: 'SSL 256-bit' },
-            { label: 'Conformidade', value: 'RGPD' },
-            { label: 'Uptime', value: '99.9%' },
-            { label: 'Suporte', value: '24/7' },
+            { label: "Seguro", value: "SSL 256-bit" },
+            { label: "Conformidade", value: "RGPD" },
+            { label: "Uptime", value: "99.9%" },
+            { label: "Suporte", value: "24/7" },
           ].map((badge, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-xl bg-black-900/50 border border-gold-500/20 text-center"
-            >
-              <div className="text-xs text-slate-400 mb-1">{badge.label}</div>
-              <div className="font-semibold text-white text-sm">{badge.value}</div>
+            <div key={idx} className="rounded-xl border border-gold-500/20 bg-black-900/50 p-4 text-center">
+              <div className="mb-1 text-xs text-slate-400">{badge.label}</div>
+              <div className="text-sm font-semibold text-white">{badge.value}</div>
             </div>
           ))}
         </div>

@@ -44,6 +44,12 @@ app.use(
     credentials: true,
   })
 );
+app.use((_req, res, next) => {
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
 app.use(express.json({ limit: "1mb" }));
 app.use(sanitizeInputs);
 app.use(apiRateLimiter);
@@ -72,6 +78,8 @@ if (clientBuildPath) {
     "/precos",
     "/contacto",
     "/entrar",
+    "/criar-conta",
+    "/register",
     "/app",
     "/app/*",
   ];

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import React from "react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 interface LandingHeroProps {
   eyebrow: string;
@@ -23,71 +23,66 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   badge,
 }) => {
   return (
-    <section className="relative min-h-screen bg-gradient-dark pt-32 pb-20 px-6 overflow-hidden">
-      {/* Gradient overlay background - GOLD PREMIUM */}
+    <section className="relative min-h-screen overflow-hidden bg-gradient-dark px-6 pb-20 pt-32">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-gold-600/15 rounded-full blur-3xl" />
+        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-gold-500/15 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/4 h-96 w-96 rounded-full bg-gold-600/15 blur-3xl" />
       </div>
 
-      <div className="max-w-6xl mx-auto relative z-10">
-        {/* Eyebrow */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-600/20 border border-gold-500/30">
-            <Sparkles className="w-4 h-4 text-gold-400" />
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="mb-6 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold-500/30 bg-gold-600/20 px-4 py-2">
+            <Sparkles className="h-4 w-4 text-gold-400" />
             <span className="text-sm font-semibold text-gold-300">{eyebrow}</span>
           </div>
         </div>
 
-        {/* Main Title */}
-        <h1 className="text-5xl md:text-7xl font-bold text-white text-center mb-8 leading-tight">
+        <h1 className="mb-8 text-center text-5xl font-bold leading-tight text-white md:text-7xl">
           {title}
         </h1>
 
-        {/* Description */}
-        <p className="text-xl md:text-2xl text-slate-300 text-center max-w-3xl mx-auto mb-12 leading-relaxed">
+        <p className="mx-auto mb-12 max-w-3xl text-center text-xl leading-relaxed text-slate-300 md:text-2xl">
           {description}
         </p>
 
-        {/* Badge if provided */}
         {badge && (
-          <div className="flex justify-center mb-12">
-            <span className="px-6 py-2 rounded-full bg-gold-500/20 border border-gold-500/40 text-gold-300 text-sm font-semibold">
+          <div className="mb-12 flex justify-center">
+            <span className="rounded-full border border-gold-500/40 bg-gold-500/20 px-6 py-2 text-sm font-semibold text-gold-300">
               {badge}
             </span>
           </div>
         )}
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <div className="mb-16 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <button
             onClick={onPrimaryClick}
-            className="group relative px-8 py-4 rounded-xl bg-gradient-gold font-semibold text-black-900 text-lg transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/30 hover:scale-105 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-xl bg-gradient-gold px-8 py-4 text-lg font-semibold text-black-900 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/30"
+            type="button"
           >
             {primaryButtonLabel}
-            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
 
           <button
             onClick={onSecondaryClick}
-            className="px-8 py-4 rounded-xl bg-black-800/50 border border-gold-500/40 font-semibold text-gold-400 text-lg transition-all duration-300 hover:bg-black-700/50 hover:border-gold-400/60"
+            className="rounded-xl border border-gold-500/40 bg-black-800/50 px-8 py-4 text-lg font-semibold text-gold-400 transition-all duration-300 hover:border-gold-400/60 hover:bg-black-700/50"
+            type="button"
           >
             {secondaryButtonLabel}
           </button>
         </div>
 
-        {/* Trust indicators */}
-        <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto text-center">
+        <div className="mx-auto grid max-w-2xl grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-3xl font-bold text-gold-400 mb-2">87%</div>
+            <div className="mb-2 text-3xl font-bold text-gold-400">87%</div>
             <p className="text-sm text-slate-400">Taxa de conversão com IA</p>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gold-500 mb-2">24/7</div>
+            <div className="mb-2 text-3xl font-bold text-gold-500">24/7</div>
             <p className="text-sm text-slate-400">Agente operacional</p>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gold-300 mb-2">10x</div>
+            <div className="mb-2 text-3xl font-bold text-gold-300">10x</div>
             <p className="text-sm text-slate-400">Mais rápido que manual</p>
           </div>
         </div>

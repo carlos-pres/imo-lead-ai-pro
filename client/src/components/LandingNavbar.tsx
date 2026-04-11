@@ -1,5 +1,5 @@
-import React from 'react';
-import { Menu, X } from 'lucide-react';
+import React from "react";
+import { Menu, X } from "lucide-react";
 
 interface NavItem {
   label: string;
@@ -8,19 +8,23 @@ interface NavItem {
 
 interface LandingNavbarProps {
   onLoginClick: () => void;
+  onCreateAccountClick?: () => void;
   navItems: NavItem[];
 }
 
-export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navItems }) => {
+export const LandingNavbar: React.FC<LandingNavbarProps> = ({
+  onLoginClick,
+  onCreateAccountClick,
+  navItems,
+}) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black-950/80 backdrop-blur-lg border-b border-gold-500/20">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gold-500/20 bg-black-950/80 backdrop-blur-lg">
+      <div className="mx-auto max-w-7xl px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-gold flex items-center justify-center text-black-900 font-bold text-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-gold text-sm font-bold text-black-900">
               IL
             </div>
             <div>
@@ -29,41 +33,43 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
             </div>
           </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden items-center gap-8 md:flex">
             {navItems.map((item, idx) => (
               <button
                 key={idx}
                 onClick={item.onClick}
-                className="text-slate-300 hover:text-gold-400 transition-colors text-sm font-semibold"
+                className="text-sm font-semibold text-slate-300 transition-colors hover:text-gold-400"
+                type="button"
               >
                 {item.label}
               </button>
             ))}
           </div>
 
-          {/* Desktop Login Button */}
-          <div className="hidden md:block">
+          <div className="hidden gap-3 md:flex">
             <button
               onClick={onLoginClick}
-              className="px-6 py-2 rounded-lg bg-gradient-gold text-black-900 font-semibold text-sm hover:shadow-lg hover:shadow-gold-500/30 transition-all"
+              className="rounded-lg px-6 py-2 text-sm font-semibold text-white transition-colors hover:text-gold-300"
+              type="button"
             >
               Entrar
             </button>
+            <button
+              onClick={onCreateAccountClick || onLoginClick}
+              className="rounded-lg bg-gradient-gold px-6 py-2 text-sm font-semibold text-black-900 transition-all hover:shadow-lg hover:shadow-gold-500/30"
+              type="button"
+            >
+              Criar conta
+            </button>
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden text-white"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <button className="text-white md:hidden" onClick={() => setIsOpen(!isOpen)} type="button">
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
-        {/* Mobile Nav */}
         {isOpen && (
-          <div className="md:hidden mt-4 pb-4 space-y-3 border-t border-gold-500/20 pt-4">
+          <div className="mt-4 space-y-3 border-t border-gold-500/20 pb-4 pt-4 md:hidden">
             {navItems.map((item, idx) => (
               <button
                 key={idx}
@@ -71,17 +77,29 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLoginClick, navI
                   item.onClick();
                   setIsOpen(false);
                 }}
-                className="block w-full text-left text-slate-300 hover:text-gold-400 transition-colors text-sm font-semibold py-2"
+                className="block w-full py-2 text-left text-sm font-semibold text-slate-300 transition-colors hover:text-gold-400"
+                type="button"
               >
                 {item.label}
               </button>
             ))}
             <button
               onClick={() => {
+                (onCreateAccountClick || onLoginClick)();
+                setIsOpen(false);
+              }}
+              className="mt-4 w-full rounded-lg bg-gradient-gold px-6 py-2 text-sm font-semibold text-black-900 transition-all hover:shadow-lg hover:shadow-gold-500/30"
+              type="button"
+            >
+              Criar conta
+            </button>
+            <button
+              onClick={() => {
                 onLoginClick();
                 setIsOpen(false);
               }}
-              className="w-full mt-4 px-6 py-2 rounded-lg bg-gradient-gold text-black-900 font-semibold text-sm hover:shadow-lg hover:shadow-gold-500/30 transition-all"
+              className="w-full rounded-lg px-6 py-2 text-sm font-semibold text-white"
+              type="button"
             >
               Entrar
             </button>

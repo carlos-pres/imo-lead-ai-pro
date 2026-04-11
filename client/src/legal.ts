@@ -1,6 +1,6 @@
 export const LEGAL_POLICY_VERSION = "2026-03-21";
 export const PRIVACY_CONTACT_EMAIL =
-  import.meta.env.VITE_PRIVACY_CONTACT_EMAIL || "carlospsantos19820@gmail.com";
+  import.meta.env.VITE_PRIVACY_CONTACT_EMAIL || "privacidade@imolead.ai";
 
 export type LegalSection = {
   id: string;

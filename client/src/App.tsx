@@ -493,7 +493,7 @@ function toAdminUserUpdatePayload(draft: AdminUserDraft): UpdateAdminUserInput {
 const DEMO_ACCESS = [
   {
     role: "Admin",
-    email: "carlospsantos19820@gmail.com",
+    email: "admin@imolead.ai",
     password: "45681200",
     description: "ADM geral com controlo total da rede e do catalogo comercial.",
   },
@@ -511,7 +511,7 @@ const DEMO_ACCESS = [
   },
 ] as const;
 
-const SALES_CONTACT_EMAIL = "carlospsantos19820@gmail.com";
+const SALES_CONTACT_EMAIL = "comercial@imolead.ai";
 const SALES_WHATSAPP_LABEL = "+351 927 627 844";
 const SALES_WHATSAPP_DIGITS = "351927627844";
 

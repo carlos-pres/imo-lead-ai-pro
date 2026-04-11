@@ -5,6 +5,8 @@ import { getComplianceSummary, getPrivacyContactEmail, LEGAL_POLICY_VERSION } fr
 import * as storage from "../storage";
 import { generateToken, verifyToken } from "../auth";
 import { stripeService } from "../lib/stripeService";
+import { authRateLimiter } from "../middleware/rateLimit";
+import { validateContact, validateLogin, validateTrialRequest } from "../middleware/validation";
 
 const router = Router();
 
@@ -236,7 +238,7 @@ router.delete("/admin/users/:id", requireAdmin(async (req, res, user, scope) => 
   res.status(204).send();
 }));
 
-router.post("/trial-requests", async (req, res) => {
+router.post("/trial-requests", authRateLimiter, validateTrialRequest, async (req, res) => {
   try {
     const result = await storage.createTrialRequest({
       ...req.body,
@@ -341,10 +343,10 @@ router.post("/payments/customer-portal-session", requireAuth(async (req, res, us
   }
 }));
 
-router.post("/auth/login", async (req, res) => {
+router.post("/auth/login", authRateLimiter, validateLogin, async (req, res) => {
   const { email, password } = req.body as { email?: string; password?: string };
   if (!email || !password) {
-    res.status(400).json({ error: "Email e password sao obrigatorios" });
+    res.status(400).json({ error: "Email e palavra-passe sao obrigatorios" });
     return;
   }
 
@@ -356,6 +358,35 @@ router.post("/auth/login", async (req, res) => {
 
   const token = generateToken(user.id);
   res.json({ token, user });
+});
+
+router.post("/auth/logout", (_req, res) => {
+  res.json({ ok: true });
+});
+
+router.post("/auth/register", authRateLimiter, validateTrialRequest, async (req, res) => {
+  try {
+    const result = await storage.createTrialRequest({
+      ...req.body,
+      source: req.body?.source || "register",
+    });
+
+    res.status(201).json({
+      ok: true,
+      trialRequestId: result.id,
+      message: "Conta de teste registada com sucesso.",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao registar conta de teste";
+    res.status(400).json({ ok: false, message });
+  }
+});
+
+router.post("/auth/reset-password", authRateLimiter, validateLogin, async (_req, res) => {
+  res.json({
+    ok: true,
+    message: "Se existir uma conta com esse email, vai receber instruções por email.",
+  });
 });
 
 router.get("/auth/me", async (req, res) => {

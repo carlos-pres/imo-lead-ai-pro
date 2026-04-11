@@ -1,11 +1,11 @@
-import React from 'react';
-import { Check, Zap } from 'lucide-react';
+import React from "react";
+import { Check, Zap } from "lucide-react";
 
 export interface PricingCardData {
   name: string;
   description: string;
   price: number;
-  billingPeriod: 'month' | 'year';
+  billingPeriod: "month" | "year";
   isPopular?: boolean;
   features: string[];
   buttonLabel: string;
@@ -18,82 +18,67 @@ interface PricingGridProps {
   cards: PricingCardData[];
 }
 
-export const PricingGrid: React.FC<PricingGridProps> = ({
-  title,
-  description,
-  cards,
-}) => {
+export const PricingGrid: React.FC<PricingGridProps> = ({ title, description, cards }) => {
   return (
-    <section className="py-20 px-6 bg-gradient-dark">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">{title}</h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">{description}</p>
+    <section className="bg-gradient-dark px-6 py-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-16 text-center">
+          <h2 className="mb-6 text-4xl font-bold text-white md:text-5xl">{title}</h2>
+          <p className="mx-auto max-w-2xl text-xl text-slate-400">{description}</p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
           {cards.map((card, idx) => (
             <div
               key={idx}
-              className={`relative group rounded-2xl overflow-hidden transition-all duration-300 ${
+              className={`relative group overflow-hidden rounded-2xl transition-all duration-300 ${
                 card.isPopular
-                  ? 'md:scale-105 bg-gradient-to-br from-gold-500/15 to-gold-600/15 border-2 border-gold-500/50 shadow-2xl shadow-gold-500/20'
-                  : 'bg-black-900/50 border border-gold-500/20 hover:border-gold-500/40'
+                  ? "md:scale-105 border-2 border-gold-500/50 bg-gradient-to-br from-gold-500/15 to-gold-600/15 shadow-2xl shadow-gold-500/20"
+                  : "border border-gold-500/20 bg-black-900/50 hover:border-gold-500/40"
               }`}
             >
-              {/* Popular Badge */}
               {card.isPopular && (
-                <div className="absolute top-6 left-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/90 text-black-900 text-xs font-bold">
-                    <Zap className="w-3.5 h-3.5" />
+                <div className="absolute left-6 top-6">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-gold-500/90 px-3 py-1 text-xs font-bold text-black-900">
+                    <Zap className="h-3.5 w-3.5" />
                     MAIS VENDIDO
                   </div>
                 </div>
               )}
 
               <div className="p-8">
-                {/* Plan Name */}
-                <h3 className="text-2xl font-bold text-white mb-2">{card.name}</h3>
-                <p className="text-slate-400 text-sm mb-6">{card.description}</p>
+                <h3 className="mb-2 text-2xl font-bold text-white">{card.name}</h3>
+                <p className="mb-6 text-sm text-slate-400">{card.description}</p>
 
-                {/* Price */}
-                <div className="mb-8">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl md:text-5xl font-bold text-white">
-                      €{card.price}
-                    </span>
-                    <span className="text-slate-400">/{card.billingPeriod === 'month' ? 'mês' : 'ano'}</span>
-                  </div>
+                <div className="mb-8 flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-white">€{card.price}</span>
+                  <span className="text-slate-400">/{card.billingPeriod === "month" ? "mês" : "ano"}</span>
                 </div>
 
-                {/* CTA Button */}
                 <button
                   onClick={card.onButtonClick}
-                  className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 mb-8 ${
+                  className={`mb-8 w-full rounded-xl py-3 font-semibold transition-all duration-300 ${
                     card.isPopular
-                      ? 'bg-gradient-gold text-black-900 hover:shadow-lg hover:shadow-gold-500/30'
-                      : 'bg-gold-500/20 text-gold-400 border border-gold-500/30 hover:bg-gold-500/30'
+                      ? "bg-gradient-gold text-black-900 hover:shadow-lg hover:shadow-gold-500/30"
+                      : "border border-gold-500/30 bg-gold-500/20 text-gold-400 hover:bg-gold-500/30"
                   }`}
+                  type="button"
                 >
                   {card.buttonLabel}
                 </button>
 
-                {/* Features List */}
                 <div className="space-y-4">
                   {card.features.map((feature, featureIdx) => (
                     <div key={featureIdx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-gold-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-slate-300 text-sm">{feature}</span>
+                      <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-gold-400" />
+                      <span className="text-sm text-slate-300">{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Hover effect */}
               {!card.isPopular && (
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-gold-500 to-gold-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-gold-500 to-gold-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               )}
             </div>
           ))}

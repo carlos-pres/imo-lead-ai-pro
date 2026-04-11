@@ -103,3 +103,30 @@ export const validateContact = [
     .withMessage('Mensagem deve ter entre 10 e 1000 caracteres'),
   handleValidationErrors
 ];
+
+export const validateTrialRequest = [
+  body('name')
+    .trim()
+    .escape()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Nome deve ter entre 2 e 100 caracteres'),
+  body('email')
+    .trim()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Email invalido'),
+  body('phone')
+    .trim()
+    .matches(/^[0-9+\s()-]{9,20}$/)
+    .withMessage('Telefone invalido'),
+  body('privacyAccepted')
+    .isBoolean()
+    .withMessage('Aceite da privacidade obrigatorio'),
+  body('termsAccepted')
+    .isBoolean()
+    .withMessage('Aceite dos termos obrigatorio'),
+  body('aiDisclosureAccepted')
+    .isBoolean()
+    .withMessage('Aceite do uso de IA obrigatorio'),
+  handleValidationErrors
+];

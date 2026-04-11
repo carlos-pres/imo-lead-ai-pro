@@ -1,5 +1,5 @@
-import React from 'react';
-import { Star } from 'lucide-react';
+import React from "react";
+import { Star } from "lucide-react";
 
 interface TrustMetric {
   icon: React.ReactNode;
@@ -20,60 +20,44 @@ interface SocialProofProps {
 
 export const SocialProof: React.FC<SocialProofProps> = ({ metrics, testimonials }) => {
   return (
-    <section className="py-20 px-6 bg-black-950">
-      <div className="max-w-6xl mx-auto">
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
+    <section className="bg-black-950 px-6 py-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-20 grid grid-cols-2 gap-8 md:grid-cols-4">
           {metrics.map((metric, idx) => (
             <div
               key={idx}
-              className="text-center p-6 rounded-2xl bg-gradient-to-br from-black-900 to-black-950 border border-gold-500/20 hover:border-gold-500/40 transition-all"
+              className="rounded-2xl border border-gold-500/20 bg-gradient-to-br from-black-900 to-black-950 p-6 text-center transition-all hover:border-gold-500/40"
             >
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-gold mb-4">
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-gold">
                 <div className="text-black-900">{metric.icon}</div>
               </div>
-              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-300 mb-2">
+              <div className="mb-2 bg-gradient-to-r from-gold-400 to-gold-300 bg-clip-text text-3xl font-bold text-transparent">
                 {metric.value}
               </div>
-              <div className="text-white font-semibold mb-1">{metric.label}</div>
+              <div className="mb-1 font-semibold text-white">{metric.label}</div>
               <p className="text-xs text-slate-400">{metric.description}</p>
             </div>
           ))}
         </div>
 
-        {/* Testimonials */}
         {testimonials && testimonials.length > 0 && (
           <div className="mt-20">
-            <h3 className="text-3xl font-bold text-white text-center mb-12">
-              O que dizem os nossos clientes
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <h3 className="mb-12 text-center text-3xl font-bold text-white">O que dizem os nossos clientes</h3>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               {testimonials.map((testimonial, idx) => (
                 <div
                   key={idx}
-                  className="p-8 rounded-2xl bg-gradient-to-br from-black-900 to-black-950 border border-gold-500/20"
+                  className="rounded-2xl border border-gold-500/20 bg-gradient-to-br from-black-900 to-black-950 p-8"
                 >
-                  {/* Stars */}
-                  <div className="flex gap-1 mb-4">
+                  <div className="mb-4 flex gap-1">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-gold-500 text-gold-500" />
+                      <Star key={i} className="h-5 w-5 fill-gold-500 text-gold-500" />
                     ))}
                   </div>
-
-                  {/* Quote */}
-                  <p className="text-slate-300 mb-6 leading-relaxed italic">
-                    "{testimonial.text}"
-                  </p>
-
-                  {/* Author */}
+                  <p className="mb-6 leading-relaxed italic text-slate-300">"{testimonial.text}"</p>
                   <div className="flex items-center gap-3">
                     {testimonial.avatar && (
-                      <img
-                        src={testimonial.avatar}
-                        alt={testimonial.author}
-                        className="w-10 h-10 rounded-full"
-                      />
+                      <img src={testimonial.avatar} alt={testimonial.author} className="h-10 w-10 rounded-full" />
                     )}
                     <div>
                       <div className="font-semibold text-white">{testimonial.author}</div>

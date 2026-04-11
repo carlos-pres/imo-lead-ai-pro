@@ -63,9 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     bestOpportunity: bestLead
       ? `A melhor oportunidade é ${bestLead.name}.`
       : "A melhor oportunidade aparece aqui assim que houver novos leads.",
-    recommendation: bestLead
-      ? "Envie o valor de mercado agora."
-      : "Abra o pipeline.",
+    recommendation: bestLead ? "Envie o valor de mercado agora." : "Abra o pipeline.",
     justification: bestLead
       ? `O lead tem score IA ${bestLead.aiScore}.`
       : "Ainda não há leads quentes suficientes.",
@@ -97,21 +95,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       };
 
   const kpis = [
-    {
-      label: "Leads em carteira",
-      value: String(stats.total),
-      detail: `${stats.quente} quentes e ${stats.morno} mornos`,
-    },
-    {
-      label: "Score médio IA",
-      value: `${stats.average_ai_score}`,
-      detail: opportunityValue > 0 ? formatEuro(opportunityValue) : "Sem valor em análise",
-    },
-    {
-      label: "Ações urgentes",
-      value: String(urgentCount),
-      detail: `${followUpQueue.length} follow-ups`,
-    },
+    { label: "Leads em carteira", value: String(stats.total), detail: `${stats.quente} quentes e ${stats.morno} mornos` },
+    { label: "Score médio IA", value: `${stats.average_ai_score}`, detail: opportunityValue > 0 ? formatEuro(opportunityValue) : "Sem valor em análise" },
+    { label: "Ações urgentes", value: String(urgentCount), detail: `${followUpQueue.length} seguimentos` },
   ];
 
   return (
@@ -131,10 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
         <PriorityLeadCard {...priorityLead} onFocusLead={onFocusLead} />
         <KPIOverviewRow kpis={kpis} />
-        <QuickActionsBar
-          onOpenPipeline={onOpenPipeline}
-          onOpenWhatsApp={onOpenWhatsApp}
-        />
+        <QuickActionsBar onOpenPipeline={onOpenPipeline} onOpenWhatsApp={onOpenWhatsApp} />
       </div>
     </div>
   );
