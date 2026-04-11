@@ -96,7 +96,7 @@ type ViewId =
   | "reports"
   | "pricing"
   | "admin";
-type PublicPageId = "home" | "features" | "pricing" | "contact" | "login";
+type PublicPageId = "home" | "features" | "pricing" | "contact" | "login" | "createAccount";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
 type LoginForm = {
@@ -243,6 +243,7 @@ const PUBLIC_PAGE_PATHS: Record<PublicPageId, string> = {
   pricing: "/precos",
   contact: "/contacto",
   login: "/entrar",
+  createAccount: "/criar-conta",
 };
 
 const INTERNAL_PAGE_PATHS: Record<ViewId, string> = {
@@ -573,11 +574,20 @@ function normalizePublicPath(pathname: string) {
 
 function getPublicPageFromPath(pathname: string): PublicPageId {
   const normalizedPath = normalizePublicPath(pathname);
+
+  if (normalizedPath === "/register") {
+    return "createAccount";
+  }
+
   const matched = (Object.keys(PUBLIC_PAGE_PATHS) as PublicPageId[]).find(
     (pageId) => PUBLIC_PAGE_PATHS[pageId] === normalizedPath
   );
 
   return matched && isPublicPageId(matched) ? matched : "home";
+}
+
+function isAuthPage(page: PublicPageId) {
+  return page === "login" || page === "createAccount";
 }
 
 function getViewFromPath(pathname: string): ViewId | null {
@@ -2137,7 +2147,7 @@ function App() {
         planId
       )
     );
-    navigatePublicPage("login", "landing-trial");
+    navigatePublicPage("createAccount", "landing-trial");
     focusPublicAnchor("landing-trial", "trial-name");
   }
 
@@ -2148,7 +2158,7 @@ function App() {
   function handlePublicNavigation(event: MouseEvent<HTMLAnchorElement>, page: PublicPageId) {
     event.preventDefault();
 
-    if (page === "login") {
+    if (isAuthPage(page)) {
       openDirectLogin();
       return;
     }
@@ -6979,6 +6989,7 @@ function App() {
 
   function renderLoginEntryHero() {
     const featuredPlan = activePlan || plans.find((plan) => plan.basePlanId === "pro") || plans[0] || null;
+    const isCreateAccountView = publicPage === "createAccount";
 
     return (
       <section className="shell-panel public-login-intro">
@@ -6987,23 +6998,25 @@ function App() {
         <div className="public-login-intro-grid">
           <div className="public-login-copy">
             <p className="eyebrow">Acesso protegido</p>
-            <h1>Acesso real para contas, trial protegido e demos assistidas.</h1>
+            <h1>{isCreateAccountView ? "Criar conta — trial gratuito de 15 dias." : "Entrar no workspace com acesso protegido."}</h1>
             <p className="public-login-lead">
-              O cliente deve perceber logo o plano ativo, o nível do agente e o passo seguinte
-              entre login, trial e demonstração. Menos ruido, mais confiança comercial.
+              {isCreateAccountView
+                ? "Preencha o formulário, confirme os consentimentos e reserve o trial protegido."
+                : "Use os seus dados para entrar e continuar a operar sem desvio."}
             </p>
             <p className="hero-text">
-              A demonstração pública fica fechada. Esta entrada serve contas reais, trials
-              protegidos e sessões assistidas para mostrar valor sem expor a operação.
+              {isCreateAccountView
+                ? "O trial fica limitado a 1 email e 1 telefone."
+                : "A demonstração pública fica fechada. Esta entrada serve contas reais e sessões assistidas."}
             </p>
 
             <div className="marketing-cta-row">
               <button
                 className="primary-button"
                 type="button"
-                onClick={() => navigatePublicPage("pricing")}
+                onClick={() => navigatePublicPage(isCreateAccountView ? "login" : "createAccount")}
               >
-                Ver planos
+                {isCreateAccountView ? "Já tem conta? Entrar" : "Criar conta"}
               </button>
               <button
                 className="whatsapp-button"
@@ -7022,7 +7035,7 @@ function App() {
             <div className="public-hero-chips">
               <div className="status-chip">{activePlan?.publicName || "ImoLead Pro"}</div>
               <div className="status-chip muted">
-                {PUBLIC_DEMO_ENABLED ? "Demo pública ativa" : "Demo assistida"}
+                {isCreateAccountView ? "Trial gratuito" : PUBLIC_DEMO_ENABLED ? "Demo pública ativa" : "Demo assistida"}
               </div>
               <div className="status-chip muted">{featuredPlan?.agentLabel || marketingAiLabel}</div>
             </div>
@@ -7867,7 +7880,7 @@ function App() {
   }
 
   function renderPublicSite() {
-    if (publicPage === "login") {
+    if (isAuthPage(publicPage)) {
       return (
         <main className="auth-shell marketing-auth-shell public-login-shell">
           <div className="marketing-main public-login-main">
