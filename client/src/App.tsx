@@ -7938,6 +7938,13 @@ function App() {
           isLoading={loading}
           error={error}
           onRetry={loadWorkspace}
+          onOpenPipeline={() => navigateTo("pipeline")}
+          onOpenAutomation={() => navigateTo("automation")}
+          onOpenReports={() => navigateTo("reports")}
+          onFocusLead={focusAgentPanel}
+          onOpenWhatsApp={() => navigateTo("automation")}
+          onOpenProposal={() => navigateTo("pipeline")}
+          onScheduleFollowUp={() => navigateTo("automation")}
         />
       );
     }
@@ -7974,6 +7981,13 @@ function App() {
         isLoading={loading}
         error={error}
         onRetry={loadWorkspace}
+        onOpenPipeline={() => navigateTo("pipeline")}
+        onOpenAutomation={() => navigateTo("automation")}
+        onOpenReports={() => navigateTo("reports")}
+        onFocusLead={focusAgentPanel}
+        onOpenWhatsApp={() => navigateTo("automation")}
+        onOpenProposal={() => navigateTo("pipeline")}
+        onScheduleFollowUp={() => navigateTo("automation")}
       />
     );
   }

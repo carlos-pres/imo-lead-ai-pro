@@ -17,6 +17,13 @@ interface DashboardProps {
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
+  onOpenPipeline?: () => void;
+  onOpenAutomation?: () => void;
+  onOpenReports?: () => void;
+  onFocusLead?: () => void;
+  onOpenWhatsApp?: () => void;
+  onOpenProposal?: () => void;
+  onScheduleFollowUp?: () => void;
 }
 
 function formatEuro(value: number) {
@@ -34,6 +41,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isLoading = false,
   error,
   onRetry,
+  onOpenPipeline,
+  onOpenAutomation,
+  onOpenReports,
+  onFocusLead,
+  onOpenWhatsApp,
+  onOpenProposal,
+  onScheduleFollowUp,
 }) => {
   if (isLoading) return <DashboardSkeleton />;
   if (error) return <DashboardErrorState message={error} onRetry={onRetry} />;
@@ -103,11 +117,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-6 text-slate-100">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
-        <AICopilotHero {...heroData} />
-        <PriorityActionCard />
-        <PriorityLeadCard {...priorityLead} />
+        <AICopilotHero
+          {...heroData}
+          onOpenPipeline={onOpenPipeline}
+          onOpenAutomation={onOpenAutomation}
+          onOpenReports={onOpenReports}
+        />
+        <PriorityActionCard
+          onOpenWhatsApp={onOpenWhatsApp}
+          onOpenProposal={onOpenProposal}
+          onScheduleFollowUp={onScheduleFollowUp}
+        />
+        <PriorityLeadCard {...priorityLead} onFocusLead={onFocusLead} />
         <KPIOverviewRow kpis={kpis} />
-        <QuickActionsBar />
+        <QuickActionsBar
+          onOpenPipeline={onOpenPipeline}
+          onOpenAutomation={onOpenAutomation}
+          onOpenWhatsApp={onOpenWhatsApp}
+          onOpenProposal={onOpenProposal}
+          onScheduleFollowUp={onScheduleFollowUp}
+        />
       </div>
     </div>
   );

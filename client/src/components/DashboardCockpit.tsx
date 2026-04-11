@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronRight, RefreshCcw, Sparkles, Target, Waves, WifiOff } from "lucide-react";
+import { ChevronRight, RefreshCcw, Sparkles, Target, WifiOff } from "lucide-react";
 
 type KpiItem = {
   label: string;
@@ -16,6 +16,9 @@ export function AICopilotHero({
   primaryCta,
   secondaryCta,
   tertiaryCta,
+  onOpenPipeline,
+  onOpenAutomation,
+  onOpenReports,
 }: {
   greeting: string;
   summary: string;
@@ -26,13 +29,16 @@ export function AICopilotHero({
   primaryCta: string;
   secondaryCta: string;
   tertiaryCta: string;
+  onOpenPipeline?: () => void;
+  onOpenAutomation?: () => void;
+  onOpenReports?: () => void;
 }) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/25 sm:p-8 lg:p-10">
       <div className="absolute -right-24 -top-20 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
       <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
 
-      <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+      <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <div className="space-y-5">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-100">
             <Sparkles className="h-3.5 w-3.5" />
@@ -52,22 +58,34 @@ export function AICopilotHero({
             <p className="text-sm leading-relaxed text-slate-300">{justification}</p>
           </div>
           <div className="grid gap-3 sm:flex sm:flex-wrap">
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/25 transition hover:brightness-110">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/25 transition hover:brightness-110"
+              onClick={onOpenPipeline}
+              type="button"
+            >
               {primaryCta}
               <Target className="h-4 w-4" />
             </button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/50">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/50"
+              onClick={onOpenAutomation}
+              type="button"
+            >
               {secondaryCta}
-              <ArrowRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50"
+              onClick={onOpenReports}
+              type="button"
+            >
               {tertiaryCta}
-              <Waves className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
           <p className="text-xs leading-relaxed text-slate-400">
             Se nunca usou este cockpit, comece por <strong className="text-slate-200">Ver plano de ação</strong> ou{" "}
-            <strong className="text-slate-200">Abrir pipeline</strong>. São os caminhos mais rápidos.
+            <strong className="text-slate-200">Abrir pipeline</strong>.
           </p>
         </div>
 
@@ -76,9 +94,7 @@ export function AICopilotHero({
             Melhor oportunidade
           </p>
           <div className="mt-3 space-y-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-white">{bestOpportunityTitle}</h2>
-            </div>
+            <h2 className="text-2xl font-semibold text-white">{bestOpportunityTitle}</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3">
                 <span className="text-xs uppercase tracking-wider text-slate-400">Estado</span>
@@ -100,7 +116,15 @@ export function AICopilotHero({
   );
 }
 
-export function PriorityActionCard() {
+export function PriorityActionCard({
+  onOpenWhatsApp,
+  onOpenProposal,
+  onScheduleFollowUp,
+}: {
+  onOpenWhatsApp?: () => void;
+  onOpenProposal?: () => void;
+  onScheduleFollowUp?: () => void;
+}) {
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -108,32 +132,40 @@ export function PriorityActionCard() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
             Ação prioritária
           </p>
-          <h2 className="text-xl font-semibold text-white">O que fazer agora, sem pensar muito</h2>
+          <h2 className="text-xl font-semibold text-white">O que fazer agora</h2>
         </div>
-        <button className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-400/35 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-100">
-          Ver plano de ação
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
       <p className="mt-2 text-sm text-slate-300">
-        Esta secção ajuda quem entra agora no sistema a perceber o próximo passo em segundos.
+        Um utilizador novo deve conseguir começar por aqui sem procurar menus.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+        <button
+          className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
+          onClick={onOpenWhatsApp}
+          type="button"
+        >
           <p className="text-xs uppercase tracking-wider text-slate-400">1. Falar com o lead</p>
           <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
           <p className="mt-2 text-sm text-slate-300">Melhor opção quando precisa de resposta rápida.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+        </button>
+        <button
+          className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
+          onClick={onOpenProposal}
+          type="button"
+        >
           <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
           <strong className="mt-1 block text-white">Ver proposta</strong>
-          <p className="mt-2 text-sm text-slate-300">Abre o argumento comercial já pronto a apresentar.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
+          <p className="mt-2 text-sm text-slate-300">Abre o argumento comercial pronto a apresentar.</p>
+        </button>
+        <button
+          className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
+          onClick={onScheduleFollowUp}
+          type="button"
+        >
           <p className="text-xs uppercase tracking-wider text-slate-400">3. Marcar próximo passo</p>
           <strong className="mt-1 block text-white">Agendar seguimento</strong>
           <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
-        </article>
+        </button>
       </div>
     </section>
   );
@@ -148,6 +180,7 @@ export function PriorityLeadCard({
   nextStep,
   channel,
   reasoning,
+  onFocusLead,
 }: {
   name: string;
   location: string;
@@ -157,6 +190,7 @@ export function PriorityLeadCard({
   nextStep: string;
   channel: string;
   reasoning: string;
+  onFocusLead?: () => void;
 }) {
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
@@ -193,6 +227,14 @@ export function PriorityLeadCard({
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Justificação</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-200">{reasoning}</p>
       </div>
+      <button
+        className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-400/35 bg-indigo-500/10 px-4 py-2.5 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/20"
+        onClick={onFocusLead}
+        type="button"
+      >
+        Focar este lead
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </section>
   );
 }
@@ -213,14 +255,25 @@ export function KPIOverviewRow({ kpis }: { kpis: KpiItem[] }) {
   );
 }
 
-export function QuickActionsBar() {
+export function QuickActionsBar({
+  onOpenPipeline,
+  onOpenAutomation,
+  onOpenWhatsApp,
+  onOpenProposal,
+  onScheduleFollowUp,
+}: {
+  onOpenPipeline?: () => void;
+  onOpenAutomation?: () => void;
+  onOpenWhatsApp?: () => void;
+  onOpenProposal?: () => void;
+  onScheduleFollowUp?: () => void;
+}) {
   const actions = [
-    "Contactar agora",
-    "Abrir pipeline",
-    "Ver automações",
-    "Enviar no WhatsApp",
-    "Ver proposta",
-    "Agendar seguimento",
+    { label: "Contactar agora", onClick: onOpenWhatsApp },
+    { label: "Abrir pipeline", onClick: onOpenPipeline },
+    { label: "Ver automações", onClick: onOpenAutomation },
+    { label: "Ver proposta", onClick: onOpenProposal },
+    { label: "Agendar seguimento", onClick: onScheduleFollowUp },
   ];
 
   return (
@@ -242,10 +295,11 @@ export function QuickActionsBar() {
                 ? "border-indigo-400/35 bg-indigo-500/10 text-indigo-100 hover:bg-indigo-500/20"
                 : "border-slate-700 bg-slate-950/60 text-slate-100 hover:border-indigo-400/45 hover:bg-slate-900"
             }`}
-            key={action}
+            key={action.label}
+            onClick={action.onClick}
             type="button"
           >
-            {action}
+            {action.label}
             <ChevronRight className="h-4 w-4" />
           </button>
         ))}
