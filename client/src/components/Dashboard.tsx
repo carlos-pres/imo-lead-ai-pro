@@ -69,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     justification: bestLead
       ? `O lead tem score IA ${bestLead.aiScore} e já está numa fase crítica de decisão comercial.`
       : "Não há leads quentes suficientes para priorização automática neste momento.",
-    primaryCta: "Ver plano de ação",
+    primaryCta: "Contactar agora",
     secondaryCta: "Abrir pipeline",
     tertiaryCta: "Ver automações",
   };
@@ -91,7 +91,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         property: "Cockpit sem nova oportunidade",
         score: 0,
         value: formatEuro(0),
-        nextStep: "Abra o pipeline para validar novas entradas e reagir a tempo.",
+        nextStep: "Abra o pipeline para validar novas entradas.",
         channel: "WhatsApp",
         reasoning: "Sem dados suficientes para recomendar uma ação específica.",
       };
@@ -105,7 +105,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     {
       label: "Score médio IA",
       value: `${stats.average_ai_score}`,
-      detail: `${opportunityValue > 0 ? formatEuro(opportunityValue) : "Sem valor em análise"}`,
+      detail: opportunityValue > 0 ? formatEuro(opportunityValue) : "Sem valor em análise",
     },
     {
       label: "Ações urgentes",

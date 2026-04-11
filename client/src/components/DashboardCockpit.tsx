@@ -38,7 +38,7 @@ export function AICopilotHero({
       <div className="absolute -right-24 -top-20 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
       <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
 
-      <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+      <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
         <div className="space-y-5">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-100">
             <Sparkles className="h-3.5 w-3.5" />
@@ -84,7 +84,7 @@ export function AICopilotHero({
             </button>
           </div>
           <p className="text-xs leading-relaxed text-slate-400">
-            Se é a sua primeira vez, comece por <strong className="text-slate-200">Ver plano de ação</strong> ou{" "}
+            Se é a sua primeira vez, comece por <strong className="text-slate-200">Contactar agora</strong> ou{" "}
             <strong className="text-slate-200">Abrir pipeline</strong>.
           </p>
         </div>
@@ -127,16 +127,14 @@ export function PriorityActionCard({
 }) {
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/70 p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
-            Passo 1, 2, 3
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">Passo 1, 2, 3</p>
           <h2 className="text-xl font-semibold text-white">O caminho mais rápido para começar</h2>
         </div>
       </div>
       <p className="mt-2 text-sm text-slate-300">
-        Cada passo abaixo abre uma ação concreta. Sem menus escondidos, sem decisões extra.
+        Um utilizador novo consegue avançar sem procurar menus nem aprender o sistema.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <button
@@ -146,7 +144,7 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">1. Responder já</p>
           <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
-          <p className="mt-2 text-sm text-slate-300">Abre a conversa com o contexto comercial certo.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre a conversa com contexto comercial.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
@@ -155,7 +153,7 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
           <strong className="mt-1 block text-white">Ver proposta</strong>
-          <p className="mt-2 text-sm text-slate-300">Mostra o argumento pronto a apresentar ao lead.</p>
+          <p className="mt-2 text-sm text-slate-300">Mostra o argumento pronto a apresentar.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
@@ -164,7 +162,7 @@ export function PriorityActionCard({
         >
           <p className="text-xs uppercase tracking-wider text-slate-400">3. Garantir seguimento</p>
           <strong className="mt-1 block text-white">Agendar seguimento</strong>
-          <p className="mt-2 text-sm text-slate-300">Impede que a oportunidade arrefeça.</p>
+          <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
         </button>
       </div>
     </section>
@@ -313,14 +311,13 @@ export function DashboardSkeleton() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-6">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <div className="h-72 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+        <div className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
         <div className="h-36 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
-        <div className="h-40 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
-          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
-          <div className="h-32 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+          <div className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+          <div className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
+          <div className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
         </div>
-        <div className="h-24 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/70" />
       </div>
     </div>
   );
