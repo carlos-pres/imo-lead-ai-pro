@@ -35,13 +35,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   error,
   onRetry,
 }) => {
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
-
-  if (error) {
-    return <DashboardErrorState message={error} onRetry={onRetry} />;
-  }
+  if (isLoading) return <DashboardSkeleton />;
+  if (error) return <DashboardErrorState message={error} onRetry={onRetry} />;
 
   const bestLead = topHotLeads[0];
   const opportunityValue = topHotLeads.slice(0, 3).reduce((sum, lead) => sum + lead.price, 0);

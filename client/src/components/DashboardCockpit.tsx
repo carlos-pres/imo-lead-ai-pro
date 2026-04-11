@@ -51,20 +51,24 @@ export function AICopilotHero({
             <p className="text-sm font-semibold text-indigo-100">{recommendation}</p>
             <p className="text-sm leading-relaxed text-slate-300">{justification}</p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/25 transition hover:brightness-110">
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/25 transition hover:brightness-110">
               {primaryCta}
               <Target className="h-4 w-4" />
             </button>
-            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/50">
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/50">
               {secondaryCta}
               <ArrowRight className="h-4 w-4" />
             </button>
-            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50">
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/50">
               {tertiaryCta}
               <Waves className="h-4 w-4" />
             </button>
           </div>
+          <p className="text-xs leading-relaxed text-slate-400">
+            Se nunca usou este cockpit, comece por <strong className="text-slate-200">Ver plano de ação</strong> ou{" "}
+            <strong className="text-slate-200">Abrir pipeline</strong>. São os caminhos mais rápidos.
+          </p>
         </div>
 
         <div className="rounded-3xl border border-slate-700/80 bg-slate-950/60 p-5">
@@ -75,7 +79,7 @@ export function AICopilotHero({
             <div>
               <h2 className="text-2xl font-semibold text-white">{bestOpportunityTitle}</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3">
                 <span className="text-xs uppercase tracking-wider text-slate-400">Estado</span>
                 <strong className="mt-1 block text-lg text-white">Prioridade máxima</strong>
@@ -104,28 +108,31 @@ export function PriorityActionCard() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">
             Ação prioritária
           </p>
-          <h2 className="text-xl font-semibold text-white">Executar agora para não perder tração</h2>
+          <h2 className="text-xl font-semibold text-white">O que fazer agora, sem pensar muito</h2>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-xl border border-indigo-400/35 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-100">
+        <button className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-400/35 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-100">
           Ver plano de ação
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+      <p className="mt-2 text-sm text-slate-300">
+        Esta secção ajuda quem entra agora no sistema a perceber o próximo passo em segundos.
+      </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
-          <p className="text-xs uppercase tracking-wider text-slate-400">1. Contacto</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">1. Falar com o lead</p>
           <strong className="mt-1 block text-white">Enviar no WhatsApp</strong>
-          <p className="mt-2 text-sm text-slate-300">Abrir conversa com contexto comercial pronto a usar.</p>
+          <p className="mt-2 text-sm text-slate-300">Melhor opção quando precisa de resposta rápida.</p>
         </article>
         <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
-          <p className="text-xs uppercase tracking-wider text-slate-400">2. Valor</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
           <strong className="mt-1 block text-white">Ver proposta</strong>
-          <p className="mt-2 text-sm text-slate-300">Mostrar comparável e argumento de mercado imediatamente.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre o argumento comercial já pronto a apresentar.</p>
         </article>
         <article className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4">
-          <p className="text-xs uppercase tracking-wider text-slate-400">3. Seguimento</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">3. Marcar próximo passo</p>
           <strong className="mt-1 block text-white">Agendar seguimento</strong>
-          <p className="mt-2 text-sm text-slate-300">Bloquear a próxima janela útil sem perda de ritmo.</p>
+          <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
         </article>
       </div>
     </section>
@@ -218,11 +225,25 @@ export function QuickActionsBar() {
 
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/60 p-5 sm:p-6">
-      <div className="flex flex-wrap items-center gap-3">
-        {actions.map((action) => (
+      <div className="mb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Atalhos para começar
+        </p>
+        <p className="text-sm text-slate-300">
+          Se ainda não conhece o sistema, toque primeiro em <strong className="text-slate-100">Contactar agora</strong> ou{" "}
+          <strong className="text-slate-100">Abrir pipeline</strong>.
+        </p>
+      </div>
+      <div className="-mx-1 flex gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+        {actions.map((action, index) => (
           <button
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-indigo-400/45 hover:bg-slate-900"
+            className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+              index === 0
+                ? "border-indigo-400/35 bg-indigo-500/10 text-indigo-100 hover:bg-indigo-500/20"
+                : "border-slate-700 bg-slate-950/60 text-slate-100 hover:border-indigo-400/45 hover:bg-slate-900"
+            }`}
             key={action}
+            type="button"
           >
             {action}
             <ChevronRight className="h-4 w-4" />
@@ -274,7 +295,7 @@ export function DashboardErrorState({
             </div>
           </div>
           <button
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white"
+            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white"
             onClick={onRetry}
             type="button"
           >
