@@ -84,7 +84,7 @@ export function AICopilotHero({
             </button>
           </div>
           <p className="text-xs leading-relaxed text-slate-400">
-            Se é a sua primeira vez, comece por <strong className="text-slate-200">Abrir WhatsApp</strong> ou{" "}
+            Comece por <strong className="text-slate-200">Abrir WhatsApp</strong> ou{" "}
             <strong className="text-slate-200">Abrir proposta</strong>.
           </p>
         </div>
@@ -102,11 +102,11 @@ export function AICopilotHero({
               </div>
               <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3">
                 <span className="text-xs uppercase tracking-wider text-slate-400">Janela</span>
-                <strong className="mt-1 block text-lg text-white">Ainda hoje</strong>
+                <strong className="mt-1 block text-lg text-white">Hoje</strong>
               </div>
             </div>
             <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-4">
-              <p className="text-sm font-semibold text-indigo-100">Próxima ação recomendada</p>
+              <p className="text-sm font-semibold text-indigo-100">Próxima ação</p>
               <p className="mt-1 text-sm leading-relaxed text-slate-200">{recommendation}</p>
             </div>
           </div>
@@ -132,13 +132,11 @@ export function PriorityActionCard({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-200">Passo 1, 2, 3</p>
-          <h2 className="text-xl font-semibold text-white">O caminho mais rápido para começar</h2>
+          <h2 className="text-xl font-semibold text-white">Comece aqui</h2>
         </div>
       </div>
       <p className="mt-2 text-sm text-slate-300">
-        {leadName
-          ? `Estas ações aplicam-se ao lead em foco: ${leadName}.`
-          : "Um utilizador novo consegue avançar sem procurar menus nem aprender o sistema."}
+        {leadName ? `Ações para ${leadName}.` : "Comece por aqui."}
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <button
@@ -146,33 +144,33 @@ export function PriorityActionCard({
           onClick={onOpenWhatsApp}
           type="button"
         >
-          <p className="text-xs uppercase tracking-wider text-slate-400">1. Responder já</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">1. WhatsApp</p>
           <strong className="mt-1 block text-white">
             {leadName ? `Abrir WhatsApp de ${leadName}` : "Abrir WhatsApp"}
           </strong>
-          <p className="mt-2 text-sm text-slate-300">Abre a conversa direta com o lead em foco.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre a conversa.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
           onClick={onOpenProposal}
           type="button"
         >
-          <p className="text-xs uppercase tracking-wider text-slate-400">2. Mostrar valor</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">2. Proposta</p>
           <strong className="mt-1 block text-white">
             {leadName ? `Abrir proposta de ${leadName}` : "Abrir proposta"}
           </strong>
-          <p className="mt-2 text-sm text-slate-300">Mostra a proposta e o argumento comercial.</p>
+          <p className="mt-2 text-sm text-slate-300">Abre a proposta.</p>
         </button>
         <button
           className="rounded-2xl border border-slate-700 bg-slate-950/55 p-4 text-left transition hover:border-indigo-400/45"
           onClick={onScheduleFollowUp}
           type="button"
         >
-          <p className="text-xs uppercase tracking-wider text-slate-400">3. Garantir seguimento</p>
+          <p className="text-xs uppercase tracking-wider text-slate-400">3. Seguimento</p>
           <strong className="mt-1 block text-white">
             {leadName ? `Agendar seguimento de ${leadName}` : "Agendar seguimento"}
           </strong>
-          <p className="mt-2 text-sm text-slate-300">Evita que a oportunidade arrefeça.</p>
+          <p className="mt-2 text-sm text-slate-300">Marca o próximo contacto.</p>
         </button>
       </div>
     </section>
@@ -266,30 +264,23 @@ export function KPIOverviewRow({ kpis }: { kpis: KpiItem[] }) {
 export function QuickActionsBar({
   onOpenPipeline,
   onOpenWhatsApp,
-  onScheduleFollowUp,
-  leadName,
 }: {
   onOpenPipeline?: () => void;
   onOpenWhatsApp?: () => void;
-  onScheduleFollowUp?: () => void;
-  leadName?: string;
 }) {
   const actions = [
-    { label: leadName ? `Abrir WhatsApp` : "Abrir WhatsApp", onClick: onOpenWhatsApp },
-    { label: "Abrir pipeline", onClick: onOpenPipeline },
-    { label: leadName ? `Abrir proposta` : "Abrir proposta", onClick: onOpenPipeline },
-    { label: "Agendar seguimento", onClick: onScheduleFollowUp },
+    { label: "WhatsApp", onClick: onOpenWhatsApp },
+    { label: "Pipeline", onClick: onOpenPipeline },
+    { label: "Proposta", onClick: onOpenPipeline },
   ];
 
   return (
     <section className="rounded-3xl border border-slate-700/70 bg-slate-900/60 p-5 sm:p-6">
       <div className="mb-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Atalhos para começar
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Atalhos</p>
         <p className="text-sm text-slate-300">
-          Se ainda não conhece o sistema, toque primeiro em <strong className="text-slate-100">Abrir WhatsApp</strong> ou{" "}
-          <strong className="text-slate-100">Abrir pipeline</strong>.
+          Toque primeiro em <strong className="text-slate-100">WhatsApp</strong> ou{" "}
+          <strong className="text-slate-100">Pipeline</strong>.
         </p>
       </div>
       <div className="-mx-1 flex gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">

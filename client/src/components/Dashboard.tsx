@@ -58,17 +58,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const heroData = {
     greeting: "Bom dia, Carlos.",
-    summary: `Tem ${Math.max(3, stats.urgent_actions || 0)} oportunidades que exigem atenção hoje.`,
+    summary: `Tem ${Math.max(3, stats.urgent_actions || 0)} oportunidades urgentes hoje.`,
     bestOpportunityTitle: bestLead ? bestLead.name : "Sem lead prioritário",
     bestOpportunity: bestLead
-      ? `A mais promissora neste momento é ${bestLead.name}.`
-      : "A oportunidade mais promissora será destacada assim que houver novos leads.",
+      ? `A melhor oportunidade é ${bestLead.name}.`
+      : "A melhor oportunidade aparece aqui assim que houver novos leads.",
     recommendation: bestLead
-      ? "Recomendo enviar o valor de mercado agora e agendar seguimento ainda hoje."
-      : "Recomendo abrir o pipeline e preparar a próxima sequência de contacto.",
+      ? "Envie o valor de mercado agora."
+      : "Abra o pipeline.",
     justification: bestLead
-      ? `O lead tem score IA ${bestLead.aiScore} e já está numa fase crítica de decisão comercial.`
-      : "Não há leads quentes suficientes para priorização automática neste momento.",
+      ? `O lead tem score IA ${bestLead.aiScore}.`
+      : "Ainda não há leads quentes suficientes.",
     primaryCta: bestLead ? `Abrir WhatsApp de ${bestLead.name}` : "Abrir WhatsApp",
     secondaryCta: bestLead ? `Abrir proposta de ${bestLead.name}` : "Abrir proposta",
     tertiaryCta: bestLead ? `Agendar seguimento de ${bestLead.name}` : "Agendar seguimento",
@@ -91,7 +91,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         property: "Cockpit sem nova oportunidade",
         score: 0,
         value: formatEuro(0),
-        nextStep: "Abra o pipeline para validar novas entradas.",
+        nextStep: "Abra o pipeline.",
         channel: "WhatsApp",
         reasoning: "Sem dados suficientes para recomendar uma ação específica.",
       };
@@ -110,7 +110,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     {
       label: "Ações urgentes",
       value: String(urgentCount),
-      detail: `${followUpQueue.length} follow-ups ativos`,
+      detail: `${followUpQueue.length} follow-ups`,
     },
   ];
 
@@ -134,8 +134,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <QuickActionsBar
           onOpenPipeline={onOpenPipeline}
           onOpenWhatsApp={onOpenWhatsApp}
-          onScheduleFollowUp={onScheduleFollowUp}
-          leadName={priorityLead.name}
         />
       </div>
     </div>
