@@ -2778,6 +2778,10 @@ export async function getAllLeads(scope?: WorkspaceScope) {
 }
 
 export async function createLead(data: CreateLeadInput, scope?: WorkspaceScope) {
+  if (!scope || scope.role === "consultant") {
+    throw new Error("Sem permissao para criar leads.");
+  }
+
   const planId = resolvePlanId(scope?.planId || data.planId);
   const plan = getPlanConfig(planId);
   const baseLead = {
@@ -2808,15 +2812,11 @@ export async function createLead(data: CreateLeadInput, scope?: WorkspaceScope) 
   const officeName =
     scope && scope.role !== "admin" ? scope.officeName : detectedOffice.name;
   const assignedTeam =
-    scope?.role === "consultant"
-      ? scope.teamName
-      : scope?.role === "manager" && detectedOffice.name !== scope.officeName
+    scope?.role === "manager" && detectedOffice.name !== scope.officeName
         ? scope.teamName
         : computedTeam;
   const assignedOwner =
-    scope?.role === "consultant"
-      ? scope.userName
-      : pickOwner(
+    pickOwner(
           assignedTeam,
           officeName,
           getPreferredLanguage(countryCode, baseLead.preferredLanguage),
@@ -2954,6 +2954,10 @@ export async function updateLeadWorkflow(
   input: UpdateLeadWorkflowInput,
   scope?: WorkspaceScope
 ) {
+  if (!scope || scope.role === "consultant") {
+    throw new Error("Sem permissao para alterar leads.");
+  }
+
   return useDatabase(
     async (activePool) => {
       const currentResult = await activePool.query(

@@ -1881,6 +1881,7 @@ function App() {
   const canAccessAdmin = session?.user.role === "admin";
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
+  const canManageLeads = session?.user.role !== "consultant";
   const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
   const planAllowsAI = Boolean(activePlan?.advancedAI);
   const planAllowsAutoContact = Boolean(activePlan?.autoContact);
@@ -2124,9 +2125,27 @@ function App() {
       },
     };
   });
-  const visibleNavItems = canAccessAdmin
-    ? NAV_ITEMS
-    : NAV_ITEMS.filter((item) => item.id !== "admin");
+  const visibleNavItems = (canAccessAdmin ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.id !== "admin")).filter(
+    (item) => {
+      if (!activePlan) {
+        return true;
+      }
+
+      if (item.id === "automation" && !planAllowsAutoContact) {
+        return false;
+      }
+
+      if (item.id === "reports" && !planAllowsAI) {
+        return false;
+      }
+
+      if (item.id === "teams" && !planAllowsMultiLocation) {
+        return false;
+      }
+
+      return true;
+    }
+  );
 
   function updateLandingGuidance(title: string, detail: string) {
     setLandingGuidance({
@@ -2599,6 +2618,18 @@ function App() {
     },
   ];
 
+  const filteredSidebarNav = sidebarNav.filter((item) => {
+    if (item.id === "automation" && !planAllowsAutoContact) {
+      return false;
+    }
+
+    if (item.id === "pricing" && !canSwitchPlan) {
+      return false;
+    }
+
+    return true;
+  });
+
   const secondaryNav = visibleNavItems
     .filter((item) => !["dashboard", "pipeline", "automation", "pricing"].includes(item.id))
     .map((item) => ({
@@ -2777,9 +2808,16 @@ function App() {
           />
         </label>
 
-        <button className="primary-button" type="submit" disabled={submitting}>
-          {submitting ? "A analisar..." : "Criar e distribuir lead"}
+        <button className="primary-button" type="submit" disabled={submitting || !canManageLeads}>
+          {submitting
+            ? "A analisar..."
+            : canManageLeads
+              ? "Criar e distribuir lead"
+              : "Sem permissão para criar leads"}
         </button>
+        {!canManageLeads ? (
+          <p className="feedback">O perfil atual apenas pode consultar. Fala com um admin para criar leads.</p>
+        ) : null}
       </form>
     );
   }
@@ -3237,6 +3275,7 @@ function App() {
                 <button
                   className="ghost-button"
                   type="button"
+                  disabled={!canManageLeads}
                   onClick={() =>
                     void handleQuickWorkflowAction(
                       communicationLead,
@@ -3250,7 +3289,7 @@ function App() {
                     )
                   }
                 >
-                  Marcar contactado
+                  {canManageLeads ? "Marcar contactado" : "Sem permissão"}
                 </button>
               </div>
             ) : null}
@@ -4093,7 +4132,7 @@ function App() {
                       <button
                         className="ghost-button"
                         type="button"
-                        disabled={savingLeadId === lead.id}
+                        disabled={savingLeadId === lead.id || !canManageLeads}
                         onClick={() =>
                           void handleQuickWorkflowAction(
                             lead,
@@ -4124,7 +4163,7 @@ function App() {
                           )
                         }
                       >
-                        Marcar contactado
+                        {canManageLeads ? "Marcar contactado" : "Sem permissão"}
                       </button>
                     </div>
                   </article>
@@ -4392,10 +4431,14 @@ function App() {
                           <button
                             className="secondary-button"
                             type="button"
-                            disabled={savingLeadId === lead.id}
+                            disabled={savingLeadId === lead.id || !canManageLeads}
                             onClick={() => void handleWorkflowSave(lead.id)}
                           >
-                            {savingLeadId === lead.id ? "A guardar..." : "Atualizar workflow"}
+                            {savingLeadId === lead.id
+                              ? "A guardar..."
+                              : canManageLeads
+                                ? "Atualizar workflow"
+                                : "Sem permissão"}
                           </button>
                         </article>
                       );
@@ -8231,7 +8274,7 @@ function App() {
         </div>
 
         <nav className="space-y-1">
-          {sidebarNav.map((item) => {
+          {filteredSidebarNav.map((item) => {
             const isActive = item.view === activeView;
             const Icon = item.icon;
             return (
