@@ -1882,6 +1882,10 @@ function App() {
   const canReassignOwners = session?.user.role !== "consultant";
   const canSwitchPlan = !session;
   const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
+  const planAllowsAI = Boolean(activePlan?.advancedAI);
+  const planAllowsAutoContact = Boolean(activePlan?.autoContact);
+  const planAllowsMultiLocation = Boolean(activePlan?.multiLocation);
+  const planAllowsMultiLanguage = Boolean(activePlan?.multiLanguage);
   const dominantSource = sourceMix[0]?.[0] || "Manual";
   const coverageLabel = activePlan?.includedMarkets.join(" · ") || "Portugal · Espanha";
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
@@ -2066,6 +2070,18 @@ function App() {
         "Sim. O plano define cobertura geográfica, nível do agente, relatórios e capacidade operacional entregue ao cliente.",
     },
   ];
+  const planGateCopy = {
+    ai: planAllowsAI ? "IA avançada ativa neste plano." : "IA avançada indisponível neste plano.",
+    autoContact: planAllowsAutoContact
+      ? "Auto-contacto ativo neste plano."
+      : "Auto-contacto indisponível neste plano.",
+    multiLocation: planAllowsMultiLocation
+      ? "Multi-loja ativa neste plano."
+      : "Multi-loja indisponível neste plano.",
+    multiLanguage: planAllowsMultiLanguage
+      ? "Multi-idioma ativo neste plano."
+      : "Multi-idioma indisponível neste plano.",
+  };
   const planPermissionSummary = plans
     .map((plan) => ({
       id: plan.id,
@@ -3329,7 +3345,7 @@ function App() {
               </button>
             </div>
 
-            {communicationLead ? (
+            {planAllowsAutoContact && communicationLead ? (
               <div className="dashboard-communication-grid">
                 <article className="dashboard-note-card dashboard-compact-note-card">
                   <span>Email pronto</span>
@@ -3395,8 +3411,10 @@ function App() {
                   </div>
                 </article>
               </div>
-            ) : (
+            ) : planAllowsAutoContact ? (
               <p className="feedback">Sem leads para gerar comunicação nesta fase.</p>
+            ) : (
+              <p className="feedback">O plano ativo não inclui auto-contacto. Faz upgrade para desbloquear esta mesa.</p>
             )}
           </article>
 
@@ -3411,52 +3429,75 @@ function App() {
               </button>
             </div>
 
-            <div className="dashboard-followup-list">
-              {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
-              {followUpQueue.slice(0, 4).map((lead) => (
-                <article className="dashboard-list-card" key={lead.id}>
-                  <div>
-                    <strong>{lead.name}</strong>
-                    <p>{lead.nextStep}</p>
-                  </div>
-                  <div className="dashboard-list-meta dashboard-compact-meta">
-                    <span>{lead.assignedOwner}</span>
-                    <span>{formatDate(lead.followUpAt)}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
-
-          <article className="shell-panel dashboard-agent-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Agente AI</p>
-                <h3>Capacidades ativas</h3>
-              </div>
-              <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
-                Ver planos
-              </button>
-            </div>
-
-            <div className="dashboard-capability-list">
-              {activeAgentCapabilities.length === 0 ? (
-                <article className="dashboard-note-card">
-                  <span>Capacidade</span>
-                  <strong>Agente em preparação</strong>
-                  <p>Ativa um plano comercial para desbloquear guidance, radar e outreach.</p>
-                </article>
-              ) : (
-                activeAgentCapabilities.map((capability) => (
-                  <article className="dashboard-note-card" key={capability}>
-                    <span>Capacidade</span>
-                    <strong>{capability}</strong>
-                    <p>Ligado ao plano ativo e a leitura comercial do workspace.</p>
+            {planAllowsMultiLocation ? (
+              <div className="dashboard-followup-list">
+                {followUpQueue.length === 0 ? <p className="feedback">Sem follow-ups agendados.</p> : null}
+                {followUpQueue.slice(0, 4).map((lead) => (
+                  <article className="dashboard-list-card" key={lead.id}>
+                    <div>
+                      <strong>{lead.name}</strong>
+                      <p>{lead.nextStep}</p>
+                    </div>
+                    <div className="dashboard-list-meta dashboard-compact-meta">
+                      <span>{lead.assignedOwner}</span>
+                      <span>{formatDate(lead.followUpAt)}</span>
+                    </div>
                   </article>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="feedback">Este plano não inclui multi-loja para esta mesa de seguimento.</p>
+            )}
           </article>
+
+          {planAllowsAI ? (
+            <article className="shell-panel dashboard-agent-panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Agente AI</p>
+                  <h3>Capacidades ativas</h3>
+                </div>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
+                  Ver planos
+                </button>
+              </div>
+
+              <div className="dashboard-capability-list">
+                {activeAgentCapabilities.length === 0 ? (
+                  <article className="dashboard-note-card">
+                    <span>Capacidade</span>
+                    <strong>Agente em preparação</strong>
+                    <p>Ativa um plano comercial para desbloquear guidance, radar e outreach.</p>
+                  </article>
+                ) : (
+                  activeAgentCapabilities.map((capability) => (
+                    <article className="dashboard-note-card" key={capability}>
+                      <span>Capacidade</span>
+                      <strong>{capability}</strong>
+                      <p>Ligado ao plano ativo e a leitura comercial do workspace.</p>
+                    </article>
+                  ))
+                )}
+              </div>
+            </article>
+          ) : (
+            <article className="shell-panel dashboard-agent-panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Agente AI</p>
+                  <h3>Bloqueado pelo plano ativo</h3>
+                </div>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
+                  Fazer upgrade
+                </button>
+              </div>
+              <div className="dashboard-note-card">
+                <span>Restrição</span>
+                <strong>IA avançada indisponível</strong>
+                <p>{planGateCopy.ai}</p>
+              </div>
+            </article>
+          )}
         </section>
       </div>
     );
