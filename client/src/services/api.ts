@@ -410,14 +410,18 @@ export async function getCompliance() {
 
 export async function getLeads() {
   const response = await apiFetch("/api/leads");
-  const payload = await readJson<any>(response);
+  const payload = await readJson<unknown>(response);
 
   if (Array.isArray(payload)) {
     return payload as Lead[];
   }
 
-  if (payload && Array.isArray(payload.data)) {
-    return payload.data as Lead[];
+  if (payload && typeof payload === "object" && "data" in payload) {
+    const { data } = payload as { data?: unknown };
+
+    if (Array.isArray(data)) {
+      return data as Lead[];
+    }
   }
 
   return [] as Lead[];

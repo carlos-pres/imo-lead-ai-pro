@@ -1118,6 +1118,8 @@ function App() {
 
   useEffect(() => {
     void bootstrap();
+    // bootstrap é chamado apenas no arranque da app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -3700,10 +3702,9 @@ function App() {
     );
   }
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   void renderOperationalDashboardView;
+  void renderDecisionDashboardView;
 
-  // @ts-ignore - Antigo dashboard, substituído por DashboardPage moderna
   function renderDecisionDashboardView() {
     const marketRadarCards =
       strategistOpportunities.length > 0
