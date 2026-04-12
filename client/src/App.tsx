@@ -2066,6 +2066,48 @@ function App() {
         "Sim. O plano define cobertura geográfica, nível do agente, relatórios e capacidade operacional entregue ao cliente.",
     },
   ];
+  const planPermissionSummary = plans
+    .map((plan) => ({
+      id: plan.id,
+      name: plan.publicName,
+      basePlanId: plan.basePlanId,
+      users: plan.includedUsers,
+      leads: plan.leadLimit >= 999999 ? "Ilimitado" : `${plan.leadLimit}`,
+      ai: plan.advancedAI ? "Sim" : "Não",
+      autoContact: plan.autoContact ? "Sim" : "Não",
+      multiLocation: plan.multiLocation ? "Sim" : "Não",
+      multiLanguage: plan.multiLanguage ? "Sim" : "Não",
+      messages: plan.maxMessagesPerMonth >= 999999 ? "Ilimitadas" : `${plan.maxMessagesPerMonth}/mês`,
+      support: plan.supportLabel,
+      reports: plan.reportsLabel,
+      agent: plan.agentLabel,
+    }))
+    .sort((left, right) => left.basePlanId.localeCompare(right.basePlanId));
+  const workspacePermissionMatrix = adminUsers.map((user) => {
+    const plan = plans.find((entry) => entry.basePlanId === user.planId) || activePlan || plans[0];
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      officeName: user.officeName,
+      teamName: user.teamName,
+      planName: user.planName || plan?.publicName || "Sem plano",
+      isActive: user.isActive,
+      permissions: {
+        canAdmin: user.role === "admin",
+        canManagePlans: user.role === "admin",
+        canManageLeads: user.role !== "consultant",
+        canUseAI: Boolean(plan?.advancedAI),
+        canAutoContact: Boolean(plan?.autoContact),
+        canWorkMultiLocation: Boolean(plan?.multiLocation),
+        canWorkMultiLanguage: Boolean(plan?.multiLanguage),
+        maxLeads: plan?.leadLimit >= 999999 ? "Ilimitado" : `${plan?.leadLimit || 0}`,
+        includedUsers: `${plan?.includedUsers || 0}`,
+      },
+    };
+  });
   const visibleNavItems = canAccessAdmin
     ? NAV_ITEMS
     : NAV_ITEMS.filter((item) => item.id !== "admin");
@@ -5277,6 +5319,90 @@ function App() {
               >
                 {portalSubmitting ? "A abrir portal..." : "Gerir subscrição"}
               </button>
+            </div>
+          </article>
+
+          <article className="shell-panel admin-plan-card">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Variáveis de acesso</p>
+                <h3>Permissões por plano e por utilizador</h3>
+              </div>
+            </div>
+
+            <div className="signal-grid">
+              {planPermissionSummary.map((plan) => (
+                <article className="signal-card" key={plan.id}>
+                  <span>{plan.name}</span>
+                  <strong>{plan.basePlanId.toUpperCase()}</strong>
+                  <p>
+                    {plan.users} utilizadores · {plan.leads} leads · {plan.messages}
+                  </p>
+                  <p>
+                    AI {plan.ai} · Auto-contacto {plan.autoContact} · Multi-loja {plan.multiLocation}
+                  </p>
+                  <p>
+                    Multi-idioma {plan.multiLanguage} · {plan.support} · {plan.reports}
+                  </p>
+                  <p>Agente: {plan.agent}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className="admin-permission-list">
+              {workspacePermissionMatrix.map((user) => (
+                <article className="admin-permission-card" key={user.id}>
+                  <div className="admin-permission-head">
+                    <div>
+                      <strong>{user.name}</strong>
+                      <p>{user.email}</p>
+                    </div>
+                    <span>{user.role.toUpperCase()}</span>
+                  </div>
+
+                  <div className="mini-tags">
+                    <span>{user.planName}</span>
+                    <span>{user.officeName}</span>
+                    <span>{user.teamName}</span>
+                    <span>{user.isActive ? "Ativo" : "Bloqueado"}</span>
+                  </div>
+
+                  <div className="admin-permission-grid">
+                    <article>
+                      <span>Admin</span>
+                      <strong>{user.permissions.canAdmin ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Planos</span>
+                      <strong>{user.permissions.canManagePlans ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Leads</span>
+                      <strong>{user.permissions.canManageLeads ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>AI</span>
+                      <strong>{user.permissions.canUseAI ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Auto-contacto</span>
+                      <strong>{user.permissions.canAutoContact ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Multi-loja</span>
+                      <strong>{user.permissions.canWorkMultiLocation ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Multi-idioma</span>
+                      <strong>{user.permissions.canWorkMultiLanguage ? "Sim" : "Não"}</strong>
+                    </article>
+                    <article>
+                      <span>Limite leads</span>
+                      <strong>{user.permissions.maxLeads}</strong>
+                    </article>
+                  </div>
+                </article>
+              ))}
             </div>
           </article>
 
