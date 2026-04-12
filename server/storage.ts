@@ -2164,6 +2164,7 @@ export async function createWorkspaceUser(
   const planId = resolvePlanId(input.planId || "pro");
   const planName = getPlanConfig(planId).publicName;
   const isActive = input.isActive !== false;
+  const planConfig = getPlanConfig(planId);
 
   if (!name || name.length < 2) {
     throw new Error("Nome invalido para criar utilizador.");
@@ -2201,6 +2202,16 @@ export async function createWorkspaceUser(
 
   return useDatabase(
     async (activePool) => {
+      const userCountResult = await activePool.query(
+        `SELECT COUNT(*)::text AS count FROM workspace_users WHERE plan_id = $1 AND is_active = true`,
+        [planId]
+      );
+      const activeUserCount = Number(userCountResult.rows[0]?.count || 0);
+
+      if (!planConfig.allowsExtraUsers && activeUserCount >= planConfig.includedUsers) {
+        throw new Error("Este plano nao permite mais utilizadores ativos.");
+      }
+
       const duplicate = await activePool.query(
         `SELECT id FROM workspace_users WHERE LOWER(email) = $1 LIMIT 1`,
         [normalizedEmail]
@@ -2856,6 +2867,16 @@ export async function createLead(data: CreateLeadInput, scope?: WorkspaceScope) 
 
   return useDatabase(
     async (activePool) => {
+      const leadCountResult = await activePool.query(
+        `SELECT COUNT(*)::text AS count FROM leads WHERE plan_id = $1`,
+        [planId]
+      );
+      const activeLeadCount = Number(leadCountResult.rows[0]?.count || 0);
+
+      if (plan.leadLimit < 999999 && activeLeadCount >= plan.leadLimit) {
+        throw new Error("Este plano atingiu o limite de leads permitidos.");
+      }
+
       const result = await activePool.query(
         `
           INSERT INTO leads (
