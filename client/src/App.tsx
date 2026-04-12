@@ -493,20 +493,20 @@ function toAdminUserUpdatePayload(draft: AdminUserDraft): UpdateAdminUserInput {
 const DEMO_ACCESS = [
   {
     role: "Admin",
-    email: "admin@imolead.ai",
-    password: "45681200",
+    email: "carlospsantos19820@gmail.com",
+    password: "@Carlos775",
     description: "ADM geral com controlo total da rede e do catalogo comercial.",
   },
   {
     role: "Manager",
     email: "lucas@imolead.ai",
-    password: "45681200",
+    password: "@Carlos775",
     description: "Desk Europa com foco em Iberia e expansao.",
   },
   {
     role: "Consultor",
     email: "ana@imolead.ai",
-    password: "45681200",
+    password: "@Carlos775",
     description: "Operação comercial limitada a equipa e carteira própria.",
   },
 ] as const;
