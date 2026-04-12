@@ -1,6 +1,6 @@
 import React from "react";
 import type { Lead, LeadStats } from "../services/api";
-import { selectAverageAIScore, selectCoolingLeads, selectHeatingLeads, selectPipelineValue, selectPriorityLead, selectRecommendedNextAction, selectUrgentLeadCount } from "../lib/selectors";
+import { selectAverageAIScore, selectCoolingLeads, selectHeatingLeads, selectPipelineValue, selectPriorityLead, selectRecommendedNextAction, selectRoiMetrics, selectUrgentLeadCount } from "../lib/selectors";
 import { formatEuro } from "../lib/utils";
 import {
   AICopilotHero,
@@ -12,13 +12,16 @@ import {
   QuickActionsBar,
 } from "./DashboardCockpit";
 import { ActivityFeed } from "./ActivityFeed";
+import { OnboardingPanel } from "./OnboardingPanel";
 import { PipelineSummaryPanel } from "./PipelineSummaryPanel";
+import { RoiPanel } from "./RoiPanel";
 import { TasksPanel } from "./TasksPanel";
 
 interface DashboardProps {
   stats: LeadStats;
   topHotLeads: Lead[];
   followUpQueue: Lead[];
+  allLeads?: Lead[];
   isLoading?: boolean;
   error?: string;
   onRetry?: () => void;
@@ -29,12 +32,15 @@ interface DashboardProps {
   onOpenWhatsApp?: () => void;
   onOpenProposal?: () => void;
   onScheduleFollowUp?: () => void;
+  onImportCsv?: (file: File) => void | Promise<void>;
+  onSyncApi?: () => void | Promise<void>;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   stats,
   topHotLeads,
   followUpQueue,
+  allLeads = [],
   isLoading = false,
   error,
   onRetry,
@@ -44,6 +50,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenWhatsApp,
   onOpenProposal,
   onScheduleFollowUp,
+  onImportCsv,
+  onSyncApi,
 }) => {
   if (isLoading) return <DashboardSkeleton />;
   if (error) return <DashboardErrorState message={error} onRetry={onRetry} />;
@@ -54,6 +62,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const avgScore = selectAverageAIScore(topHotLeads.length ? topHotLeads : followUpQueue);
   const heatingLeads = selectHeatingLeads(topHotLeads.length ? topHotLeads : followUpQueue);
   const coolingLeads = selectCoolingLeads(topHotLeads.length ? topHotLeads : followUpQueue);
+  const roiMetrics = selectRoiMetrics(allLeads.length ? allLeads : [...topHotLeads, ...followUpQueue]);
   const nextAction = selectRecommendedNextAction(priorityLead);
 
   const heroData = {
@@ -116,6 +125,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           onSecondaryAction={onOpenProposal}
           onTertiaryAction={onOpenPipeline}
         />
+        <OnboardingPanel
+          totalLeads={stats.total}
+          priorityLeadName={priorityLeadCard.name !== "Sem lead prioritário" ? priorityLeadCard.name : undefined}
+          hasFollowUp={followUpQueue.length > 0}
+          hasAutomation={stats.urgent_actions > 0}
+          onImportCsv={onImportCsv}
+          onSyncApi={onSyncApi}
+          onOpenPipeline={onOpenPipeline}
+          onOpenAutomation={onOpenAutomation}
+          onScheduleFollowUp={onScheduleFollowUp}
+        />
+        <RoiPanel metrics={roiMetrics} />
         <KPIOverviewRow kpis={kpis} />
         <PriorityActionCard
           onOpenWhatsApp={onOpenWhatsApp}

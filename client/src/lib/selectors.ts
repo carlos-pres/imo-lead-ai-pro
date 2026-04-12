@@ -1,5 +1,12 @@
 import type { Lead, LeadStats } from "../services/api";
 
+export type RoiMetrics = {
+  averageResponseHours: number;
+  contactRate: number;
+  conversionRate: number;
+  recoveredPotentialValue: number;
+};
+
 export function selectPriorityLead(leads: Lead[]) {
   return [...leads]
     .sort((a, b) => computeLeadPriorityScore(b) - computeLeadPriorityScore(a))
@@ -74,3 +81,46 @@ export function getLeadMomentum(lead: Lead) {
   return "A arrefecer";
 }
 
+export function selectRoiMetrics(leads: Lead[]): RoiMetrics {
+  if (!leads.length) {
+    return {
+      averageResponseHours: 0,
+      contactRate: 0,
+      conversionRate: 0,
+      recoveredPotentialValue: 0,
+    };
+  }
+
+  const contactedLeads = leads.filter((lead) => Boolean(lead.lastContactAt));
+  const convertedLeads = leads.filter(
+    (lead) => lead.pipelineStage === "visita" || lead.pipelineStage === "proposta"
+  );
+
+  const responseHours = contactedLeads
+    .map((lead) => {
+      const createdAt = new Date(lead.createdAt).getTime();
+      const lastContactAt = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+
+      if (!createdAt || !lastContactAt || Number.isNaN(createdAt) || Number.isNaN(lastContactAt)) {
+        return 0;
+      }
+
+      return Math.max(0, (lastContactAt - createdAt) / (1000 * 60 * 60));
+    })
+    .filter((value) => value > 0);
+
+  const averageResponseHours = responseHours.length
+    ? Math.round(responseHours.reduce((sum, value) => sum + value, 0) / responseHours.length)
+    : 0;
+
+  const contactRate = Math.round((contactedLeads.length / leads.length) * 100);
+  const conversionRate = Math.round((convertedLeads.length / leads.length) * 100);
+  const recoveredPotentialValue = convertedLeads.reduce((sum, lead) => sum + (lead.price || 0), 0);
+
+  return {
+    averageResponseHours,
+    contactRate,
+    conversionRate,
+    recoveredPotentialValue,
+  };
+}

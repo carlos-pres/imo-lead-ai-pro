@@ -342,6 +342,98 @@ function splitLines(value: string) {
     .filter(Boolean);
 }
 
+function normalizeCsvHeader(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function parseCsvLine(line: string, delimiter: string) {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === "\"") {
+      if (inQuotes && next === "\"") {
+        current += "\"";
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function parseCsvLeadInputs(content: string): CreateLeadInput[] {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const delimiter = lines[0].includes(";") ? ";" : ",";
+  const headers = parseCsvLine(lines[0], delimiter).map(normalizeCsvHeader);
+
+  return lines
+    .slice(1)
+    .map((line, index) => {
+      const values = parseCsvLine(line, delimiter);
+      const read = (keys: string[]) => {
+        for (const key of keys) {
+          const headerIndex = headers.findIndex((item) => item === key);
+          if (headerIndex >= 0 && values[headerIndex]) {
+            return values[headerIndex];
+          }
+        }
+        return "";
+      };
+
+      const name = read(["nome", "name", "lead", "cliente", "proprietario"]) || `Lead importado ${index + 1}`;
+      const location = read(["localizacao", "location", "cidade", "zona"]) || "Portugal";
+      const priceRaw = read(["preco", "price", "valor"]);
+      const normalizedPrice = priceRaw
+        .replace(/[^\d,.-]/g, "")
+        .replace(/\.(?=\d{3}(\D|$))/g, "")
+        .replace(",", ".");
+      const numericPrice = Number(normalizedPrice);
+
+      return {
+        name,
+        property: read(["imovel", "property", "interesse"]) || "Imóvel por validar",
+        location,
+        price: String(Number.isFinite(numericPrice) ? numericPrice : 0),
+        area: read(["area"]),
+        source: read(["origem", "source", "canal"]) || "Importação CSV",
+        contact: read(["contacto", "contact", "telefone", "email"]),
+        notes: read(["notas", "notes", "obs"]),
+        countryCode: read(["pais", "country"]) || "PT",
+        preferredLanguage: read(["idioma", "language"]) || "pt-PT",
+      } satisfies CreateLeadInput;
+    })
+    .filter((lead) => Boolean(lead.name) && Boolean(lead.location));
+}
+
 function createEmptyAdminPlanDraft(): AdminPlanDraft {
   return {
     basePlanId: "pro",
@@ -1622,6 +1714,132 @@ function App() {
     }
   }
 
+  function buildImportedLeadFallback(input: CreateLeadInput) {
+    const nowIso = new Date().toISOString();
+    const followUpIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    return {
+      id: `local-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      name: input.name || "Lead importado",
+      property: input.property || "Imóvel por validar",
+      location: input.location || "Portugal",
+      price: Number(input.price || 0),
+      area: input.area ? Number(input.area) : null,
+      source: input.source || "Importação CSV",
+      status: "morno" as const,
+      aiScore: 62,
+      reasoning: "Lead importado em modo rápido. A IA recalcula prioridade após sincronização completa.",
+      recommendedAction: "Validar contacto e iniciar seguimento.",
+      routingBucket: "growth" as const,
+      slaHours: 24,
+      assignedTeam: "Equipa de crescimento",
+      assignedOwner: session?.user.name || "Equipa comercial",
+      officeName: session?.user.officeName || "Lisboa HQ",
+      pipelineStage: "novo" as const,
+      nextStep: "Validar dados e abrir primeiro contacto.",
+      followUpAt: followUpIso,
+      lastContactAt: null,
+      strategyGoal: "Conversão",
+      outreachChannel: "WhatsApp",
+      outreachMessage: `Olá ${input.name || "cliente"}, partilho já os próximos passos para avançarmos com esta oportunidade.`,
+      market: input.location || "Portugal",
+      countryCode: input.countryCode || "PT",
+      preferredLanguage: input.preferredLanguage || "pt-PT",
+      currencyCode: "EUR",
+      contact: input.contact,
+      notes: input.notes,
+      planId: session?.user.planId || activePlanId,
+      planName: session?.user.planName || activePlan?.publicName || "Plano ativo",
+      agentLabel: resolvedAgentLabel,
+      createdAt: nowIso,
+    } satisfies Lead;
+  }
+
+  async function handleImportCsvLeads(file: File) {
+    setApiState("Importação CSV em curso");
+    setError("");
+
+    try {
+      const content = await file.text();
+      const inputs = parseCsvLeadInputs(content);
+
+      if (!inputs.length) {
+        publishWorkspaceFeedback("O ficheiro CSV não trouxe leads válidas.");
+        return;
+      }
+
+      const importedLeads: Lead[] = [];
+
+      for (const input of inputs) {
+        if (canManageLeads) {
+          try {
+            const created = await createLead({
+              ...input,
+              planId: session?.user.planId || activePlanId,
+            });
+            importedLeads.push(created);
+            continue;
+          } catch {
+            importedLeads.push(buildImportedLeadFallback(input));
+            continue;
+          }
+        }
+
+        importedLeads.push(buildImportedLeadFallback(input));
+      }
+
+      const nextLeads = [...importedLeads, ...leads];
+
+      startTransition(() => {
+        setLeads(nextLeads);
+        setStats(deriveStats(nextLeads));
+        setWorkflowDrafts((current) => ({
+          ...current,
+          ...Object.fromEntries(
+            importedLeads.map((lead) => [lead.id, buildWorkflowDraftFromLead(lead)])
+          ),
+        }));
+      });
+
+      refreshDashboardInsights(nextLeads, false);
+      publishWorkspaceFeedback(`${importedLeads.length} leads importadas do CSV.`);
+      navigateTo("dashboard");
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "Falha ao importar o CSV");
+    } finally {
+      setApiState("API online");
+    }
+  }
+
+  async function handleSyncLeadsFromApi() {
+    setApiState("Sincronização da API em curso");
+    setError("");
+
+    try {
+      const [leadData, statsData] = await Promise.all([
+        getLeads(),
+        getStats().catch(() => null),
+      ]);
+
+      const nextStats = statsData || deriveStats(leadData);
+
+      startTransition(() => {
+        setLeads(leadData);
+        setStats(nextStats);
+        setWorkflowDrafts(
+          Object.fromEntries(leadData.map((lead) => [lead.id, buildWorkflowDraftFromLead(lead)]))
+        );
+      });
+
+      refreshDashboardInsights(leadData, false);
+      publishWorkspaceFeedback(`${leadData.length} leads sincronizadas da API.`);
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : "Falha ao sincronizar a API");
+    } finally {
+      setApiState("API online");
+    }
+  }
+
   function buildWorkflowDraftFromLead(lead: Lead): UpdateLeadWorkflowInput {
     return {
       pipelineStage: lead.pipelineStage,
@@ -1798,16 +2016,18 @@ function App() {
     );
   }
 
-  function refreshDashboardInsights() {
-    const priority = selectPriorityLead(leads);
+  function refreshDashboardInsights(sourceLeads: Lead[] = leads, showFeedback = true) {
+    const priority = selectPriorityLead(sourceLeads);
     setAiInsights([
       priority
         ? `Lead prioritário: ${priority.name} com score IA ${priority.aiScore}.`
         : "Sem lead prioritário definido.",
-      `Leads a aquecer: ${selectHeatingLeads(leads).length}. Leads a arrefecer: ${selectCoolingLeads(leads).length}.`,
+      `Leads a aquecer: ${selectHeatingLeads(sourceLeads).length}. Leads a arrefecer: ${selectCoolingLeads(sourceLeads).length}.`,
       `Ação recomendada agora: ${selectRecommendedNextAction(priority)}.`,
     ]);
-    publishWorkspaceFeedback("Insights do dashboard atualizados.");
+    if (showFeedback) {
+      publishWorkspaceFeedback("Insights do dashboard atualizados.");
+    }
   }
 
   function activateAutomation(automationId: string) {
@@ -4441,7 +4661,7 @@ function App() {
                 <p className="eyebrow">Aprovações pendentes</p>
                 <h3>Itens que precisam de decisão da equipa</h3>
               </div>
-              <button className="ghost-button" type="button" onClick={refreshDashboardInsights}>
+              <button className="ghost-button" type="button" onClick={() => refreshDashboardInsights()}>
                 Atualizar insights
               </button>
             </div>
@@ -8533,6 +8753,7 @@ function App() {
           stats={dashboardStats}
           topHotLeads={topHotLeads}
           followUpQueue={followUpQueue}
+          allLeads={leads}
           isLoading={loading}
           error={error}
           onRetry={loadWorkspace}
@@ -8543,6 +8764,8 @@ function App() {
           onOpenWhatsApp={() => navigateTo("automation")}
           onOpenProposal={() => navigateTo("pipeline")}
           onScheduleFollowUp={() => navigateTo("automation")}
+          onImportCsv={handleImportCsvLeads}
+          onSyncApi={handleSyncLeadsFromApi}
         />
       );
     }
@@ -8576,6 +8799,7 @@ function App() {
         stats={dashboardStats}
         topHotLeads={topHotLeads}
         followUpQueue={followUpQueue}
+        allLeads={leads}
         isLoading={loading}
         error={error}
         onRetry={loadWorkspace}
@@ -8586,6 +8810,8 @@ function App() {
         onOpenWhatsApp={() => navigateTo("automation")}
         onOpenProposal={() => navigateTo("pipeline")}
         onScheduleFollowUp={() => navigateTo("automation")}
+        onImportCsv={handleImportCsvLeads}
+        onSyncApi={handleSyncLeadsFromApi}
       />
     );
   }
