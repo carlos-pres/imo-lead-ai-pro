@@ -5040,6 +5040,19 @@ function App() {
           />
         </label>
 
+        <div className="admin-span">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Permissões do plano</p>
+              <h4>Altera o que este plano desbloqueia</h4>
+            </div>
+          </div>
+          <p className="hero-text">
+            Estas variáveis controlam o que cada utilizador vê e pode fazer quando está associado a
+            este plano.
+          </p>
+        </div>
+
         <div className="admin-boolean-grid admin-span">
           <label className="admin-toggle">
             <input
@@ -5047,7 +5060,7 @@ function App() {
               checked={draft.advancedAI}
               onChange={(event) => onChange({ advancedAI: event.target.checked })}
             />
-            <span>AI avancada</span>
+            <span>IA avançada</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -5055,7 +5068,7 @@ function App() {
               checked={draft.autoContact}
               onChange={(event) => onChange({ autoContact: event.target.checked })}
             />
-            <span>Auto contact</span>
+            <span>Auto-contacto</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -5071,7 +5084,7 @@ function App() {
               checked={draft.multiLocation}
               onChange={(event) => onChange({ multiLocation: event.target.checked })}
             />
-            <span>Multi-location</span>
+            <span>Multi-loja</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -5079,7 +5092,7 @@ function App() {
               checked={draft.multiLanguage}
               onChange={(event) => onChange({ multiLanguage: event.target.checked })}
             />
-            <span>Multi-language</span>
+            <span>Multi-idioma</span>
           </label>
           <label className="admin-toggle">
             <input
@@ -5513,6 +5526,29 @@ function App() {
                     {renderAdminPlanFields(draft, (patch) =>
                       handleAdminDraftChange(plan.id, patch)
                     )}
+                  </div>
+
+                  <div className="signal-grid">
+                    <article className="signal-card">
+                      <span>IA</span>
+                      <strong>{draft.advancedAI ? "Ativa" : "Inativa"}</strong>
+                      <p>Permite recomendações e classificação avançada.</p>
+                    </article>
+                    <article className="signal-card">
+                      <span>Auto-contacto</span>
+                      <strong>{draft.autoContact ? "Ativo" : "Inativo"}</strong>
+                      <p>Permite cadências automáticas e follow-up assistido.</p>
+                    </article>
+                    <article className="signal-card">
+                      <span>Utilizadores</span>
+                      <strong>{draft.includedUsers}</strong>
+                      <p>Licenças incluídas no plano ativo.</p>
+                    </article>
+                    <article className="signal-card">
+                      <span>Limite de leads</span>
+                      <strong>{draft.leadLimit}</strong>
+                      <p>Capacidade comercial visível para a equipa.</p>
+                    </article>
                   </div>
 
                   <div className="admin-plan-actions">
