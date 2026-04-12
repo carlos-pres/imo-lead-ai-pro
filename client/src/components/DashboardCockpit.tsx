@@ -16,9 +16,9 @@ export function AICopilotHero({
   primaryCta,
   secondaryCta,
   tertiaryCta,
-  onOpenPipeline,
-  onOpenAutomation,
-  onOpenReports,
+  onPrimaryAction,
+  onSecondaryAction,
+  onTertiaryAction,
 }: {
   greeting: string;
   summary: string;
@@ -29,9 +29,9 @@ export function AICopilotHero({
   primaryCta: string;
   secondaryCta: string;
   tertiaryCta: string;
-  onOpenPipeline?: () => void;
-  onOpenAutomation?: () => void;
-  onOpenReports?: () => void;
+  onPrimaryAction?: () => void;
+  onSecondaryAction?: () => void;
+  onTertiaryAction?: () => void;
 }) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-cyan-400/15 bg-slate-950 p-6 shadow-2xl shadow-slate-950/40 sm:p-8 lg:p-10">
@@ -59,7 +59,7 @@ export function AICopilotHero({
           <div className="grid gap-3 sm:flex sm:flex-wrap">
             <button
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-950/25 transition hover:brightness-110"
-              onClick={onOpenPipeline}
+              onClick={onPrimaryAction}
               type="button"
             >
               {primaryCta}
@@ -67,7 +67,7 @@ export function AICopilotHero({
             </button>
             <button
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm font-semibold text-slate-50 transition hover:border-cyan-400/50"
-              onClick={onOpenAutomation}
+              onClick={onSecondaryAction}
               type="button"
             >
               {secondaryCta}
@@ -75,7 +75,7 @@ export function AICopilotHero({
             </button>
             <button
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm font-semibold text-slate-50 transition hover:border-cyan-400/50"
-              onClick={onOpenReports}
+              onClick={onTertiaryAction}
               type="button"
             >
               {tertiaryCta}
@@ -108,7 +108,7 @@ export function AICopilotHero({
             </div>
             <button
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-cyan-400/50"
-              onClick={onOpenPipeline}
+              onClick={onTertiaryAction}
               type="button"
             >
               Ver pipeline

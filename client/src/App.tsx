@@ -62,6 +62,15 @@ import {
   type WorkspaceRole,
 } from "./services/api";
 import { LEGAL_POLICY_VERSION, LEGAL_SECTIONS, PRIVACY_CONTACT_EMAIL } from "./legal";
+import { getLeadMomentum, getLeadRiskLevel, selectCoolingLeads, selectHeatingLeads, selectPriorityLead, selectRecommendedNextAction } from "./lib/selectors";
+import { CrmStoreContext, createCrmStoreSelectors, type CrmAutomation, type CrmTask } from "./lib/crm-store";
+import { ActionButton } from "./components/ActionButton";
+import { AutomationCard } from "./components/AutomationCard";
+import { AutomationOverview } from "./components/AutomationOverview";
+import { EmptyState } from "./components/EmptyState";
+import { LoadingSkeleton } from "./components/LoadingSkeleton";
+import { ScoreBadge } from "./components/ScoreBadge";
+import { StatusBadge } from "./components/StatusBadge";
 
 declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
@@ -271,7 +280,7 @@ const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
   },
   {
     id: "pricing",
-    label: "Precos",
+    label: "Preços",
     eyebrow: "Oferta",
     description: "Planos, trial, utilizadores e progressao comercial.",
   },
@@ -501,7 +510,7 @@ const DEMO_ACCESS = [
     role: "Manager",
     email: "lucas@imolead.ai",
     password: "@Carlos775",
-    description: "Desk Europa com foco em Iberia e expansao.",
+    description: "Equipa Europa com foco na Ibéria e expansão.",
   },
   {
     role: "Consultor",
@@ -658,14 +667,14 @@ function truncateText(value: string, maxLength: number) {
 
 function getBucketLabel(bucket: RoutingBucket) {
   if (bucket === "flagship") {
-    return "Desk Flagship";
+    return "Equipa prioritária";
   }
 
   if (bucket === "growth") {
-    return "Desk Growth";
+    return "Equipa de crescimento";
   }
 
-  return "Desk Nurture";
+  return "Equipa de nutrição";
 }
 
 function localizeAgentLabel(label: string) {
@@ -708,6 +717,22 @@ function getStageLabel(stage: PipelineStage) {
   }
 
   return "Nurture";
+}
+
+function getNextPipelineStage(stage: PipelineStage): PipelineStage {
+  const index = STAGE_ORDER.indexOf(stage);
+  if (index < 0 || index >= STAGE_ORDER.length - 1) {
+    return stage;
+  }
+
+  return STAGE_ORDER[index + 1];
+}
+
+function getContactWindowLabel(slaHours: number) {
+  if (slaHours <= 8) return "Imediata";
+  if (slaHours <= 24) return "Hoje";
+  if (slaHours <= 48) return "Próximas 48h";
+  return "Esta semana";
 }
 
 function formatLeadLimit(limit: number) {
@@ -827,7 +852,7 @@ function buildLeadEmailBody(lead: Lead) {
     lead.outreachMessage,
     "",
     `Próxima melhor ação: ${lead.recommendedAction}.`,
-    `Desk sugerida: ${getBucketLabel(lead.routingBucket)}.`,
+    `Equipa sugerida: ${getBucketLabel(lead.routingBucket)}.`,
     `Mercado: ${lead.market}. Fonte: ${lead.source}.`,
     "",
     "Cumprimentos,",
@@ -1001,7 +1026,7 @@ function App() {
   const [officeFilter, setOfficeFilter] = useState("all");
   const [form, setForm] = useState<CreateLeadInput>(initialForm);
   const [landingGuidance, setLandingGuidance] = useState<LandingGuidance>({
-    title: "Entra numa demo ja preparada para a tua realidade",
+    title: "Entra numa demo já preparada para a tua realidade",
     detail:
       "Escolhe o plano, usamos o perfil demo certo e levamos-te diretamente ao ponto onde a plataforma te poupa tempo.",
   });
@@ -1030,8 +1055,66 @@ function App() {
   );
   const [checkoutFeedbackKind, setCheckoutFeedbackKind] = useState<CheckoutFeedbackKind>("idle");
   const [workspaceFeedback, setWorkspaceFeedback] = useState("");
+  const [focusLeadId, setFocusLeadId] = useState<string | null>(null);
+  const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
+  const [crmAutomations, setCrmAutomations] = useState<CrmAutomation[]>([
+    {
+      id: "auto-followup",
+      name: "Follow-up automático de leads sem resposta",
+      status: "ativa",
+      trigger: "24h sem resposta",
+      objective: "Evitar perda de oportunidades por atraso no contacto.",
+      lastRun: "Hoje",
+    },
+    {
+      id: "auto-hot-alert",
+      name: "Alerta para leads quentes sem contacto",
+      status: "ativa",
+      trigger: "Score IA elevado",
+      objective: "Priorizar leads com maior intenção comercial.",
+      lastRun: "Hoje",
+    },
+    {
+      id: "auto-proposal",
+      name: "Envio de proposta após qualificação",
+      status: "rascunho",
+      trigger: "Entrada em qualificação",
+      objective: "Garantir proposta na janela ideal de contacto.",
+      lastRun: "Ainda não executada",
+    },
+  ]);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
 
   const deferredSearch = useDeferredValue(search);
+
+  useEffect(() => {
+    const nextTasks = leads
+      .filter((lead) => lead.status !== "frio" || Boolean(lead.followUpAt))
+      .slice(0, 8)
+      .map((lead) => ({
+        id: `task-${lead.id}`,
+        title: lead.nextStep || lead.recommendedAction,
+        done: false,
+        leadId: lead.id,
+      }));
+
+    setCrmTasks(nextTasks);
+
+    const priorityLead = selectPriorityLead(leads);
+    const nextInsights = [
+      priorityLead
+        ? `Lead prioritário: ${priorityLead.name} com score IA ${priorityLead.aiScore}.`
+        : "Sem lead prioritário definido para esta janela.",
+      `Há ${selectHeatingLeads(leads).length} leads a aquecer e ${selectCoolingLeads(leads).length} a arrefecer.`,
+      `Ação recomendada agora: ${selectRecommendedNextAction(priorityLead)}.`,
+    ];
+
+    setAiInsights(nextInsights);
+
+    if (!focusLeadId && priorityLead) {
+      setFocusLeadId(priorityLead.id);
+    }
+  }, [leads, focusLeadId]);
 
   useEffect(() => {
     void bootstrap();
@@ -1115,7 +1198,7 @@ function App() {
     if (checkoutState === "cancel") {
       setCheckoutFeedbackTitle("Checkout interrompido");
       setCheckoutFeedback(
-        "A ativação não foi concluida. Podes rever o plano, manter os dados ja preenchidos e retomar o checkout quando quiseres."
+        "A ativação não foi concluída. Podes rever o plano, manter os dados já preenchidos e retomar o checkout quando quiseres."
       );
       setCheckoutFeedbackTone("error");
       setCheckoutFeedbackKind("cancel");
@@ -1423,7 +1506,7 @@ function App() {
       });
       updateLandingGuidance(
         "Trial reservado com proteção anti-reutilização",
-        "O email e o telefone ficaram validados como identificadores unicos do trial. A progressao natural continua a apontar para Pro e Enterprise."
+        "O email e o telefone ficaram validados como identificadores únicos do trial. A progressão natural continua a apontar para Pro e Enterprise."
       );
     } catch (trialError) {
       setTrialFeedbackTone("error");
@@ -1664,6 +1747,81 @@ function App() {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function updateLeadStatus(leadId: string, status: Lead["status"]) {
+    setLeads((current) =>
+      current.map((lead) => (lead.id === leadId ? { ...lead, status } : lead))
+    );
+    publishWorkspaceFeedback("Estado do lead atualizado.");
+  }
+
+  function completeTask(taskId: string) {
+    setCrmTasks((current) =>
+      current.map((task) => (task.id === taskId ? { ...task, done: true } : task))
+    );
+    publishWorkspaceFeedback("Tarefa concluída.");
+  }
+
+  function setFocusLead(leadId: string | null) {
+    setFocusLeadId(leadId);
+    if (leadId) {
+      focusAgentPanel();
+      publishWorkspaceFeedback("Lead em foco atualizada no cockpit.");
+    }
+  }
+
+  async function moveLead(leadId: string, stage: PipelineStage) {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+
+    await handleQuickWorkflowAction(
+      lead,
+      {
+        pipelineStage: stage,
+        lastContactAt: new Date().toISOString(),
+      },
+      "Lead movido na pipeline com sucesso."
+    );
+  }
+
+  async function scheduleFollowUp(leadId: string, followUpAt: string) {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+
+    await handleQuickWorkflowAction(
+      lead,
+      {
+        followUpAt,
+      },
+      "Seguimento agendado com sucesso."
+    );
+  }
+
+  function refreshDashboardInsights() {
+    const priority = selectPriorityLead(leads);
+    setAiInsights([
+      priority
+        ? `Lead prioritário: ${priority.name} com score IA ${priority.aiScore}.`
+        : "Sem lead prioritário definido.",
+      `Leads a aquecer: ${selectHeatingLeads(leads).length}. Leads a arrefecer: ${selectCoolingLeads(leads).length}.`,
+      `Ação recomendada agora: ${selectRecommendedNextAction(priority)}.`,
+    ]);
+    publishWorkspaceFeedback("Insights do dashboard atualizados.");
+  }
+
+  function activateAutomation(automationId: string) {
+    setCrmAutomations((current) =>
+      current.map((item) => (item.id === automationId ? { ...item, status: "ativa", lastRun: "Agora" } : item))
+    );
+    publishWorkspaceFeedback("Automação ativada.");
+  }
+
+  function pauseAutomation(automationId: string) {
+    setCrmAutomations((current) =>
+      current.map((item) => (item.id === automationId ? { ...item, status: "pausada" } : item))
+    );
+    publishWorkspaceFeedback("Automação pausada.");
+  }
+
   function handleAdminDraftChange(
     planId: string,
     patch: Partial<AdminPlanDraft>
@@ -1900,12 +2058,12 @@ function App() {
   const hotLeadRatio =
     dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
   const routingMix = [
-    { label: "Flagship", value: dashboardStats.flagship_queue, tone: "flagship" },
-    { label: "Growth", value: dashboardStats.growth_queue, tone: "growth" },
-    { label: "Nurture", value: dashboardStats.nurture_queue, tone: "nurture" },
+    { label: "Prioritária", value: dashboardStats.flagship_queue, tone: "flagship" },
+    { label: "Crescimento", value: dashboardStats.growth_queue, tone: "growth" },
+    { label: "Nutrição", value: dashboardStats.nurture_queue, tone: "nurture" },
   ];
   const dominantDeskLabel =
-    routingMix.slice().sort((left, right) => right.value - left.value)[0]?.label || "Growth";
+    routingMix.slice().sort((left, right) => right.value - left.value)[0]?.label || "Crescimento";
   const strategistModeLabel =
     strategistRadar?.mode === "hybrid" ? "Estrategista AI ativo" : "Estrategista heurístico";
   const strategistHeadline =
@@ -1939,7 +2097,7 @@ function App() {
           : "Carteira a aguardar novo sinal comercial",
     },
     {
-      label: "Desk dominante",
+      label: "Equipa dominante",
       value: dominantDeskLabel,
       detail: `${dashboardStats.active_teams} desks operacionais e ${dashboardStats.active_offices} lojas ativas`,
     },
@@ -1956,7 +2114,7 @@ function App() {
       eyebrow: "Prospecção",
       title: "Captação e triagem com sinal comercial imediato",
       description:
-        "O sistema organiza leads, calcula prioridade e separa flagship, growth e nurture sem depender de folhas dispersas.",
+        "O sistema organiza leads, calcula prioridade e separa equipas de prioridade, crescimento e nutrição sem depender de folhas dispersas.",
     },
     {
       eyebrow: "Automação",
@@ -2052,7 +2210,7 @@ function App() {
     "Landing comercial que transmite confiança antes do primeiro clique.",
     "Cockpit interno com leads, pipeline, equipas, mercado e ADM no mesmo workspace.",
     "Planos com agente por nível, relatórios e cobertura geográfica coerente.",
-    "Arquitetura pronta para apresentar Portugal hoje e Europa como próxima fase credivel.",
+    "Arquitetura pronta para apresentar Portugal hoje e Europa como próxima fase credível.",
   ];
   const landingFaqs = [
     {
@@ -2063,7 +2221,7 @@ function App() {
     {
       question: "Serve so para Portugal?",
       answer:
-        "Portugal e o mercado de entrada. A estrutura ja nasce preparada para Iberia, idiomas e crescimento europeu.",
+        "Portugal é o mercado de entrada. A estrutura já nasce preparada para a Ibéria, idiomas e crescimento europeu.",
     },
     {
       question: "O agente AI muda por plano?",
@@ -2284,7 +2442,7 @@ function App() {
       openLandingLogin(
         getPlanForDemoEntry(entry),
         "Demo assistida recomendada",
-        "A demo pública esta desativada em producao. Usa credenciais reais ou pede uma sessão assistida para percorrer o fluxo completo."
+        "A demo pública está desativada em produção. Usa credenciais reais ou pede uma sessão assistida para percorrer o fluxo completo."
       );
       return;
     }
@@ -2596,8 +2754,8 @@ function App() {
     },
     {
       id: "ai-panel",
-      label: "AI Panel",
-      hint: "Assistente",
+      label: "Lead prioritário",
+      hint: "Agora",
       icon: Bot,
       view: "dashboard" as ViewId,
       anchor: "agent-panel",
@@ -2921,7 +3079,7 @@ function App() {
             <strong>{dashboardStats.european_markets}</strong>
           </article>
           <article className="summary-card hot">
-            <span>Desk flagship</span>
+            <span>Equipa prioritária</span>
             <strong>{dashboardStats.flagship_queue}</strong>
           </article>
         </section>
@@ -3192,7 +3350,7 @@ function App() {
               <p>{strategistModeLabel}</p>
             </article>
             <article className="dashboard-glance-card">
-              <span>Desk dominante</span>
+              <span>Equipa dominante</span>
               <strong>{dominantDeskLabel}</strong>
               <p>{dashboardStats.active_offices} lojas ativas</p>
             </article>
@@ -3213,7 +3371,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Ataque prioritario</p>
-                <h3>Quem merece ação ja</h3>
+                <h3>Quem merece ação já</h3>
               </div>
               <span className="status-chip muted">{topHotLeads.length} leads quentes</span>
             </div>
@@ -3738,7 +3896,7 @@ function App() {
                     <strong>{communicationLead ? `${communicationLead.slaHours}h` : "n/a"}</strong>
                   </div>
                   <div>
-                    <small>Desk</small>
+                    <small>Equipa</small>
                     <strong>{communicationLead?.routingBucket || dominantDeskLabel}</strong>
                   </div>
                 </div>
@@ -3970,14 +4128,24 @@ function App() {
 
   function renderAutomationView() {
     const automationCards = automationFocusLeads.slice(0, 5);
+    const activeAutomationsCount = crmAutomations.filter((item) => item.status === "ativa").length;
+    const pausedAutomationsCount = crmAutomations.filter((item) => item.status === "pausada").length;
+    const draftAutomationsCount = crmAutomations.filter((item) => item.status === "rascunho").length;
     const automationSummary = [
-      { label: "Automações ativas", value: "3", detail: "em produção" },
-      { label: "Rascunhos", value: "1", detail: "a validar" },
-      { label: "Últimas execuções", value: "3", detail: "registos visíveis" },
-      { label: "Leads acionáveis", value: String(automationCards.length), detail: "prontos a atacar" },
+      { label: "Automações ativas", value: String(activeAutomationsCount), detail: "em produção" },
+      { label: "Pausadas", value: String(pausedAutomationsCount), detail: "pendentes de decisão" },
+      { label: "Rascunhos", value: String(draftAutomationsCount), detail: "a validar" },
+      { label: "Leads acionáveis", value: String(automationCards.length), detail: "a acompanhar" },
       { label: "Radar dominante", value: topMarket?.market || "Portugal", detail: topRadarSources },
     ];
-    const automationRecommendations = [
+    const automationRecommendations: Array<{
+      title: string;
+      objective: string;
+      state: "ativa" | "pausada" | "rascunho";
+      trigger: string;
+      lastRun: string;
+      nextStep: string;
+    }> = [
       {
         title: "Follow-up automático de leads sem resposta",
         objective: "Evitar que leads quentes arrefeçam sem resposta.",
@@ -4063,15 +4231,7 @@ function App() {
               </p>
             </article>
 
-            <div className="command-surface-grid">
-              {automationSummary.map((item) => (
-                <article className="command-surface-card" key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <p>{item.detail}</p>
-                </article>
-              ))}
-            </div>
+            <AutomationOverview totals={automationSummary} />
           </div>
         </section>
 
@@ -4096,7 +4256,12 @@ function App() {
 
             <div className="automation-list">
               {automationCards.length === 0 ? (
-                <p className="feedback">Ainda não há automações acionáveis para esta conta.</p>
+                <EmptyState
+                  title="Sem automações acionáveis"
+                  description="Ainda não existem leads com trigger imediato para automação nesta conta."
+                  ctaLabel="Ver pipeline"
+                  onCta={() => navigateTo("pipeline")}
+                />
               ) : null}
 
               {automationCards.map((lead) => {
@@ -4192,7 +4357,7 @@ function App() {
                           )
                         }
                       >
-                        Pausar
+                        Agendar seguimento
                       </button>
                       <button
                         className="ghost-button"
@@ -4211,7 +4376,7 @@ function App() {
                           )
                         }
                       >
-                        {canManageLeads ? "Ativar" : "Sem permissão"}
+                        {canManageLeads ? "Atualizar estado" : "Sem permissão"}
                       </button>
                     </div>
                   </article>
@@ -4233,30 +4398,19 @@ function App() {
 
             <div className="automation-list">
               {automationRecommendations.map((item) => (
-                <article className="automation-card" key={item.title}>
-                  <div className="automation-card-head">
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.objective}</p>
-                    </div>
-                    <div className="automation-meta">
-                      <span>{item.state}</span>
-                      <span>{item.trigger}</span>
-                    </div>
-                  </div>
-                  <div className="automation-pill-row">
-                    <span>Última execução {item.lastRun}</span>
-                    <span>Próximo passo {item.nextStep}</span>
-                  </div>
-                  <div className="automation-action-row">
-                    <button className="primary-button" type="button" onClick={() => navigateTo("pipeline")}>
-                      Editar
-                    </button>
-                    <button className="ghost-button" type="button" onClick={() => navigateTo("dashboard")}>
-                      Duplicar
-                    </button>
-                  </div>
-                </article>
+                <AutomationCard
+                  key={item.title}
+                  name={item.title}
+                  objective={item.objective}
+                  status={item.state}
+                  trigger={item.trigger}
+                  lastRun={item.lastRun}
+                  nextStep={item.nextStep}
+                  primaryLabel="Editar"
+                  secondaryLabel="Duplicar"
+                  onPrimaryAction={() => navigateTo("pipeline")}
+                  onSecondaryAction={() => navigateTo("dashboard")}
+                />
               ))}
             </div>
           </article>
@@ -4277,6 +4431,35 @@ function App() {
                   <strong>{item.detail}</strong>
                 </div>
               ))}
+            </div>
+          </article>
+
+          <article className="shell-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Aprovações pendentes</p>
+                <h3>Itens que precisam de decisão da equipa</h3>
+              </div>
+              <button className="ghost-button" type="button" onClick={refreshDashboardInsights}>
+                Atualizar insights
+              </button>
+            </div>
+            <div className="space-y-3">
+              {crmAutomations
+                .filter((item) => item.status !== "ativa")
+                .map((item) => (
+                  <div className="dashboard-note-card" key={item.id}>
+                    <span>{item.name}</span>
+                    <strong>{item.objective}</strong>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <ActionButton onClick={() => activateAutomation(item.id)}>Ativar automação</ActionButton>
+                      <ActionButton onClick={() => pauseAutomation(item.id)}>Pausar automação</ActionButton>
+                    </div>
+                  </div>
+                ))}
+              {crmAutomations.filter((item) => item.status !== "ativa").length === 0 ? (
+                <p className="feedback">Sem aprovações pendentes nesta fase.</p>
+              ) : null}
             </div>
           </article>
 
@@ -4323,8 +4506,8 @@ function App() {
           <aside className="shell-panel intake-panel">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Entrada operacional</p>
-                <h3>Novo lead enterprise</h3>
+                <p className="eyebrow">Negócios</p>
+                <h3>Novo lead na pipeline</h3>
               </div>
             </div>
             {renderPipelineForm()}
@@ -4333,8 +4516,16 @@ function App() {
           <section className="shell-panel board-panel">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Fila comercial</p>
-                <h3>Pipeline com foco em execução</h3>
+                <p className="eyebrow">Pipeline</p>
+                <h3>Pipeline com foco em decisão e execução</h3>
+              </div>
+              <div className="flex gap-2">
+                <button className="ghost-button" type="button" onClick={() => navigateTo("dashboard")}>
+                  Ver dashboard
+                </button>
+                <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                  Abrir automações
+                </button>
               </div>
             </div>
 
@@ -4343,7 +4534,7 @@ function App() {
                 className="search-input"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Filtrar por cidade, owner, loja, market ou ação"
+                placeholder="Filtrar por cidade, lead, equipa, etapa ou ação"
               />
 
               <select
@@ -4374,10 +4565,16 @@ function App() {
             </div>
 
             {error ? <p className="feedback error">{error}</p> : null}
-            {loading ? <p className="feedback">A carregar leads...</p> : null}
+            {loading ? <LoadingSkeleton rows={4} /> : null}
+            {workspaceFeedback ? <p className="feedback success">{workspaceFeedback}</p> : null}
 
             {!loading && visibleLeads.length === 0 ? (
-              <p className="feedback">Nenhum lead encontrado para o filtro atual.</p>
+              <EmptyState
+                title="Sem leads para este filtro"
+                description="Ajuste os filtros ou adicione novos leads para voltar a ver oportunidades nesta fase."
+                ctaLabel="Criar lead"
+                onCta={() => setSearch("")}
+              />
             ) : null}
 
             <div className="kanban-board">
@@ -4388,7 +4585,7 @@ function App() {
                       <span>{column.label}</span>
                       <strong>{column.leads.length}</strong>
                     </div>
-                    <small>{column.averageScore} AI médio</small>
+                    <small>{column.averageScore} IA média</small>
                   </header>
 
                   <div className="kanban-stack">
@@ -4424,9 +4621,9 @@ function App() {
                           <div className="pipeline-card-head">
                             <div>
                               <strong>{lead.name}</strong>
-                              <p>{lead.property || "Carteira sem titulo"}</p>
+                              <p>{lead.property || "Carteira sem título"}</p>
                             </div>
-                            <span className={`badge ${lead.status}`}>{lead.status}</span>
+                            <StatusBadge status={lead.status} />
                           </div>
 
                           <div className="pipeline-card-meta">
@@ -4435,7 +4632,7 @@ function App() {
                           </div>
 
                           <div className="mini-tags">
-                            <span>AI {lead.aiScore}</span>
+                            <ScoreBadge score={lead.aiScore} />
                             <span>{getBucketLabel(lead.routingBucket)}</span>
                             <span>{lead.officeName}</span>
                             <span>{lead.planName}</span>
@@ -4443,6 +4640,12 @@ function App() {
 
                           <p className="pipeline-action">{lead.recommendedAction}</p>
                           <p className="pipeline-reasoning">{lead.reasoning}</p>
+                          <div className="automation-pill-row">
+                            <span>Momentum {getLeadMomentum(lead)}</span>
+                            <span>Risco de perda {getLeadRiskLevel(lead)}</span>
+                            <span>Janela ideal de contacto {getContactWindowLabel(lead.slaHours)}</span>
+                            <span>Valor potencial {formatCurrency(lead.price, lead.currencyCode)}</span>
+                          </div>
 
                           <div className="workflow-compact">
                             <label>
@@ -4508,7 +4711,7 @@ function App() {
                             </label>
 
                             <label>
-                              Ultimo contacto
+                              Último contacto
                               <input
                                 type="datetime-local"
                                 value={draft.lastContactAt || ""}
@@ -4524,6 +4727,43 @@ function App() {
                           <div className="pipeline-footer">
                             <span>{lead.assignedTeam}</span>
                             <span>SLA {lead.slaHours}h</span>
+                          </div>
+
+                          <div className="automation-action-row">
+                            <ActionButton onClick={() => setFocusLead(lead.id)}>Focar este lead</ActionButton>
+                            <ActionButton
+                              onClick={() =>
+                                handleOpenExternal(
+                                  extractPhoneFromContact(lead.contact)
+                                    ? `https://wa.me/${extractPhoneFromContact(lead.contact)}?text=${encodeURIComponent(buildLeadWhatsAppMessage(lead))}`
+                                    : buildSalesWhatsAppUrl(`Olá, preciso de apoio para ${lead.name}.`),
+                                  "Não foi possível abrir o WhatsApp neste momento."
+                                )
+                              }
+                            >
+                              Abrir WhatsApp
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() =>
+                                void scheduleFollowUp(lead.id, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
+                              }
+                            >
+                              Agendar seguimento
+                            </ActionButton>
+                            <ActionButton onClick={() => void moveLead(lead.id, getNextPipelineStage(lead.pipelineStage))}>
+                              Mover lead na pipeline
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() =>
+                                updateLeadStatus(
+                                  lead.id,
+                                  lead.status === "quente" ? "morno" : lead.status === "morno" ? "frio" : "quente"
+                                )
+                              }
+                            >
+                              Atualizar estado
+                            </ActionButton>
+                            <ActionButton onClick={focusAgentPanel}>Ver lead</ActionButton>
                           </div>
 
                           <button
@@ -4607,7 +4847,7 @@ function App() {
               <article className="stack-item">
                 <div>
                   <strong>{dashboardStats.active_teams} desks ativos</strong>
-                  <p>Distribuicao real entre flagship, growth e nurture.</p>
+                  <p>Distribuição real entre equipas de prioridade, crescimento e nutrição.</p>
                 </div>
               </article>
               <article className="stack-item">
@@ -5780,7 +6020,7 @@ function App() {
 
               <div className="marketing-nav-links">
                 <a href="#landing-features">Funcionalidades</a>
-                <a href="#landing-pricing">Precos</a>
+                <a href="#landing-pricing">Preços</a>
                 <a href="#landing-contact">Contacto</a>
               </div>
 
@@ -5864,7 +6104,7 @@ function App() {
                 </div>
 
                 <div className="marketing-float-card marketing-float-main">
-                  <span>Desk dominante</span>
+                  <span>Equipa dominante</span>
                   <strong>{dominantDeskLabel}</strong>
                   <p>{dashboardStats.urgent_actions} ações urgentes sob monitorização.</p>
                 </div>
@@ -6007,7 +6247,7 @@ function App() {
 
                 <div className="marketing-results-grid">
                   <article>
-                    <span>Desk</span>
+                    <span>Equipa</span>
                     <strong>{dominantDeskLabel}</strong>
                   </article>
                   <article>
@@ -6061,7 +6301,7 @@ function App() {
                     openLandingPricing(
                       activePlanId,
                       "Rever a oferta antes de decidir",
-                      "Mantemos o plano atual em foco para comparares sem perder o contexto do que ja viste."
+                      "Mantemos o plano atual em foco para comparares sem perder o contexto do que já viste."
                     )
                   }
                 >
@@ -6288,7 +6528,7 @@ function App() {
               <article className="marketing-final-card">
                 <span>Contacto RGPD</span>
                 <strong>{privacyContactEmail}</strong>
-                <p>Versao de politica ativa {policyVersion} com consentimento explicito no trial.</p>
+                <p>Versão de política ativa {policyVersion} com consentimento explícito no trial.</p>
               </article>
             </div>
           </section>
@@ -6307,7 +6547,7 @@ function App() {
             <p>
               {PUBLIC_DEMO_ENABLED
                 ? "Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo por perfil."
-                : "A demo pública fica desativada em producao. O login abaixo serve para utilizadores reais e demonstrações assistidas."}
+                : "A demo pública fica desativada em produção. O login abaixo serve para utilizadores reais e demonstrações assistidas."}
             </p>
           </div>
 
@@ -6484,7 +6724,7 @@ function App() {
                 </label>
 
                 <p className="trial-legal-note">
-                  Versao de politica {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
+                  Versão de política {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
                 </p>
 
                 {trialFeedback ? (
@@ -6584,7 +6824,7 @@ function App() {
           <div className="auth-legal-stack">
             <article className="auth-legal-card">
               <span>Politica ativa</span>
-              <strong>Versao {policyVersion}</strong>
+              <strong>Versão {policyVersion}</strong>
               <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
             </article>
             <article className="auth-legal-card">
@@ -6787,12 +7027,12 @@ function App() {
           <div className="public-stage-cluster public-stage-cluster-compact">
             <article className="public-stage-card">
               <span>Validação</span>
-              <strong>Email e telefone unicos no trial</strong>
+              <strong>Email e telefone únicos no trial</strong>
               <p>Reduz reutilização e protege o plano de entrada antes da conversão para Pro.</p>
             </article>
             <article className="public-stage-card">
               <span>Governance</span>
-              <strong>Perfis, lojas e desks ja condicionam o acesso</strong>
+              <strong>Perfis, lojas e equipas já condicionam o acesso</strong>
               <p>Admin, manager e consultant entram com contexto operacional e escopo real.</p>
             </article>
             <article className="public-stage-card">
@@ -6922,7 +7162,7 @@ function App() {
             <p className="eyebrow">Planos</p>
             <h3>Oferta comercial clara, europeia e pronta para venda</h3>
             <p className="hero-text">
-              Os CTAs estao sincronizados: demo guiada para ver fluxo completo, checkout seguro para quem ja decidiu.
+              Os CTAs estão sincronizados: demo guiada para ver fluxo completo, checkout seguro para quem já decidiu.
             </p>
           </div>
 
@@ -7391,7 +7631,7 @@ function App() {
               <strong>{activePlan?.publicName || "ImoLead Pro"} com {featuredPlan?.agentLabel || marketingAiLabel}</strong>
               <p>
                 O acesso fica ligado ao plano, ao agente e ao mercado certos. A entrada deixa de
-                parecer tecnica e passa a parecer parte da venda.
+                parecer técnica e passa a parecer parte da venda.
               </p>
               <div className="mini-tags">
                 <span>{coverageLabel}</span>
@@ -7403,8 +7643,8 @@ function App() {
             <div className="public-login-stage-grid">
               <article className="public-login-stage-card">
                 <span>Trial protegido</span>
-                <strong>Email e telefone unicos controlam a oferta inicial</strong>
-                <p>Reduz abuso, filtra curiosos e mantem o Starter credivel antes da subida para Pro.</p>
+                <strong>Email e telefone únicos controlam a oferta inicial</strong>
+                <p>Reduz abuso, filtra curiosos e mantém o Starter credível antes da subida para Pro.</p>
               </article>
 
               <article className="public-login-stage-card">
@@ -7446,7 +7686,7 @@ function App() {
           <p>
             {PUBLIC_DEMO_ENABLED
               ? "Usa um dos perfis demo para validar escopo, desks, agente por plano e controlo por perfil."
-              : "A demo pública fica desativada em producao. O login abaixo serve para utilizadores reais e demonstrações assistidas."}
+              : "A demo pública fica desativada em produção. O login abaixo serve para utilizadores reais e demonstrações assistidas."}
           </p>
         </div>
 
@@ -7673,7 +7913,7 @@ function App() {
               </label>
 
               <p className="trial-legal-note">
-                Versao de politica {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
+                Versão de política {policyVersion}. Contacto de privacidade: {privacyContactEmail}.
               </p>
 
               {trialFeedback ? (
@@ -7735,7 +7975,7 @@ function App() {
         <div className="auth-legal-stack">
           <article className="auth-legal-card">
             <span>Politica ativa</span>
-            <strong>Versao {policyVersion}</strong>
+            <strong>Versão {policyVersion}</strong>
             <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
           </article>
           <article className="auth-legal-card">
@@ -7902,7 +8142,7 @@ function App() {
 
               <div className="marketing-results-grid">
                 <article>
-                  <span>Desk</span>
+                  <span>Equipa</span>
                   <strong>{dominantDeskLabel}</strong>
                 </article>
                 <article>
@@ -8105,7 +8345,7 @@ function App() {
 
               <div className="marketing-results-grid">
                 <article>
-                  <span>Desk</span>
+                  <span>Equipa</span>
                   <strong>{dominantDeskLabel}</strong>
                 </article>
                 <article>
@@ -8212,7 +8452,7 @@ function App() {
             <p>Tratamento de dados, direitos do titular e processos RGPD com contacto explicito.</p>
           </article>
           <article className="public-contact-card">
-            <span>Versao legal</span>
+            <span>Versão legal</span>
             <strong>{policyVersion}</strong>
             <p>Politicas visíveis, trial com consentimento e uso de IA explicado sem esconder riscos.</p>
           </article>
@@ -8353,9 +8593,35 @@ function App() {
     return renderLoginView();
   }
 
+  const crmStoreSelectors = createCrmStoreSelectors(leads, dashboardStats);
+  const crmStoreValue = {
+    leads,
+    pipelineStages: STAGE_ORDER,
+    tasks: crmTasks,
+    aiInsights,
+    automations: crmAutomations,
+    focusLeadId,
+    recommendations: aiInsights,
+    stats: dashboardStats,
+    moveLead: (leadId: string, stage: PipelineStage) => {
+      void moveLead(leadId, stage);
+    },
+    updateLeadStatus,
+    setFocusLead,
+    completeTask,
+    scheduleFollowUp: (leadId: string, followUpAt: string) => {
+      void scheduleFollowUp(leadId, followUpAt);
+    },
+    refreshDashboardInsights,
+    activateAutomation,
+    pauseAutomation,
+    ...crmStoreSelectors,
+  };
+
   const activeContent = renderActiveView();
 
   return (
+    <CrmStoreContext.Provider value={crmStoreValue}>
     <div className="min-h-screen bg-slate-950 text-slate-100 flex">
       <div className="version-badge" title={BUILD_META.title}>
         {BUILD_META.label}
@@ -8538,14 +8804,15 @@ function App() {
         <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">
             {loading && leads.length === 0 ? (
-              <p className="text-sm text-slate-400">A carregar workspace...</p>
+              <p className="text-sm text-slate-200">A carregar workspace...</p>
             ) : null}
-            {error && !loading ? <p className="text-sm text-red-400">{error}</p> : null}
+            {error && !loading ? <p className="text-sm text-red-300">{error}</p> : null}
             {!loading ? activeContent : null}
           </div>
         </main>
       </div>
     </div>
+    </CrmStoreContext.Provider>
   );
 }
 

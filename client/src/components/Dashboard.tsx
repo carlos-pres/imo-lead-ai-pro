@@ -1,6 +1,6 @@
 import React from "react";
 import type { Lead, LeadStats } from "../services/api";
-import { selectAverageAIScore, selectPipelineValue, selectPriorityLead, selectRecommendedNextAction, selectUrgentLeadCount } from "../lib/selectors";
+import { selectAverageAIScore, selectCoolingLeads, selectHeatingLeads, selectPipelineValue, selectPriorityLead, selectRecommendedNextAction, selectUrgentLeadCount } from "../lib/selectors";
 import { formatEuro } from "../lib/utils";
 import {
   AICopilotHero,
@@ -11,6 +11,9 @@ import {
   PriorityLeadCard,
   QuickActionsBar,
 } from "./DashboardCockpit";
+import { ActivityFeed } from "./ActivityFeed";
+import { PipelineSummaryPanel } from "./PipelineSummaryPanel";
+import { TasksPanel } from "./TasksPanel";
 
 interface DashboardProps {
   stats: LeadStats;
@@ -37,7 +40,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onRetry,
   onOpenPipeline,
   onOpenAutomation,
-  onOpenReports,
   onFocusLead,
   onOpenWhatsApp,
   onOpenProposal,
@@ -50,6 +52,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const opportunityValue = selectPipelineValue(topHotLeads.slice(0, 3));
   const urgentCount = selectUrgentLeadCount(stats);
   const avgScore = selectAverageAIScore(topHotLeads.length ? topHotLeads : followUpQueue);
+  const heatingLeads = selectHeatingLeads(topHotLeads.length ? topHotLeads : followUpQueue);
+  const coolingLeads = selectCoolingLeads(topHotLeads.length ? topHotLeads : followUpQueue);
   const nextAction = selectRecommendedNextAction(priorityLead);
 
   const heroData = {
@@ -67,7 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       : "Ainda não há leads suficientes para recomendar um lead prioritário.",
     primaryCta: priorityLead ? `Abrir WhatsApp de ${priorityLead.name}` : "Abrir WhatsApp",
     secondaryCta: priorityLead ? `Abrir proposta de ${priorityLead.name}` : "Abrir proposta",
-    tertiaryCta: priorityLead ? `Agendar seguimento de ${priorityLead.name}` : "Agendar seguimento",
+    tertiaryCta: "Ver pipeline",
   };
 
   const priorityLeadCard = priorityLead
@@ -108,9 +112,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <AICopilotHero
           {...heroData}
-          onOpenPipeline={onOpenPipeline}
-          onOpenAutomation={onOpenAutomation}
-          onOpenReports={onOpenReports}
+          onPrimaryAction={onOpenWhatsApp}
+          onSecondaryAction={onOpenProposal}
+          onTertiaryAction={onOpenPipeline}
         />
         <KPIOverviewRow kpis={kpis} />
         <PriorityActionCard
@@ -119,33 +123,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           onScheduleFollowUp={onScheduleFollowUp}
           leadName={priorityLeadCard.name}
         />
-        <PriorityLeadCard {...priorityLeadCard} onFocusLead={onFocusLead} />
-        <QuickActionsBar onOpenPipeline={onOpenPipeline} onOpenWhatsApp={onOpenWhatsApp} />
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Resumo da pipeline</p>
-              <h2 className="text-xl font-semibold text-white">Leitura rápida da operação</h2>
-            </div>
-            <button className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-white" onClick={onOpenPipeline} type="button">
-              Ver pipeline
-            </button>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <article className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-              <p className="text-sm text-slate-200">Lead prioritário</p>
-              <strong className="mt-1 block text-lg text-white">{priorityLeadCard.name}</strong>
-            </article>
-            <article className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-              <p className="text-sm text-slate-200">Ação recomendada</p>
-              <strong className="mt-1 block text-lg text-white">{nextAction}</strong>
-            </article>
-            <article className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-              <p className="text-sm text-slate-200">Pipeline visível</p>
-              <strong className="mt-1 block text-lg text-white">{topHotLeads.length + followUpQueue.length} leads ativos</strong>
-            </article>
-          </div>
+        <div id="agent-panel">
+          <PriorityLeadCard {...priorityLeadCard} onFocusLead={onFocusLead} />
+        </div>
+        <section className="grid gap-4 lg:grid-cols-2">
+          <TasksPanel leads={followUpQueue} onScheduleFollowUp={onScheduleFollowUp} onOpenAutomation={onOpenAutomation} />
+          <ActivityFeed leads={[...heatingLeads, ...coolingLeads]} />
         </section>
+        <QuickActionsBar onOpenPipeline={onOpenPipeline} onOpenWhatsApp={onOpenWhatsApp} />
+        <PipelineSummaryPanel
+          priorityLeadName={priorityLeadCard.name}
+          recommendedAction={nextAction}
+          activeLeadCount={topHotLeads.length + followUpQueue.length}
+          onOpenPipeline={onOpenPipeline}
+        />
       </div>
     </div>
   );
