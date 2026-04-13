@@ -619,7 +619,7 @@ const SALES_WHATSAPP_DIGITS = "351927627844";
 const PUBLIC_DEMO_ENABLED =
   import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_DEMO === "true";
 const MARKETING_VISUAL_IDENTITY =
-  import.meta.env.VITE_MARKETING_VISUAL_IDENTITY === "original" ? "original" : "current";
+  import.meta.env.VITE_MARKETING_VISUAL_IDENTITY === "current" ? "current" : "original";
 const USE_ORIGINAL_MARKETING_VISUAL_IDENTITY = MARKETING_VISUAL_IDENTITY === "original";
 
 type DemoAccessEntry = (typeof DEMO_ACCESS)[number];
