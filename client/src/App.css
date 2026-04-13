@@ -4799,6 +4799,47 @@ p {
   gap: 18px;
 }
 
+.marketing-identity-original .public-login-intro {
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 187, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 249, 255, 0.95));
+  border: 1px solid rgba(19, 34, 55, 0.12);
+  box-shadow: 0 16px 34px rgba(21, 33, 48, 0.08);
+}
+
+.marketing-identity-original .public-login-copy h1 {
+  color: #132237;
+}
+
+.marketing-identity-original .public-login-lead,
+.marketing-identity-original .public-login-copy .hero-text {
+  color: #53647a;
+}
+
+.marketing-identity-original .public-login-stage-panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.marketing-identity-original .public-login-stage-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(19, 34, 55, 0.1);
+  box-shadow: 0 12px 28px rgba(21, 33, 48, 0.08);
+}
+
+.marketing-identity-original .public-login-stage-card span {
+  color: #8a6d54;
+}
+
+.marketing-identity-original .public-login-stage-card strong {
+  color: #132237;
+}
+
+.marketing-identity-original .public-login-stage-card p {
+  color: #58677c;
+}
+
 .marketing-identity-original .marketing-section,
 .marketing-identity-original .marketing-metric-ribbon,
 .marketing-identity-original .shell-panel.marketing-final-cta,
