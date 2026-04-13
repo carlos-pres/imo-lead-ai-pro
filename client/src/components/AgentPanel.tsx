@@ -26,11 +26,11 @@ const mockRecommendations: AgentRecommendation[] = [
     priority: 'high',
     score: 87,
     action: 'Contactar agora',
-    timeframe: 'Proximas 2h',
+    timeframe: 'Próximas 2h',
   },
   {
     id: '2',
-    title: 'Imovel com preco 12% abaixo do mercado',
+    title: 'Imóvel com preço 12% abaixo do mercado',
     description: 'Moradia em Cascais com margem para proposta competitiva imediata.',
     icon: 'trending',
     priority: 'high',
@@ -41,7 +41,7 @@ const mockRecommendations: AgentRecommendation[] = [
   {
     id: '3',
     title: 'Follow-up com risco de perda',
-    description: 'Sofia Nunes sem resposta ha 5 dias. Recomendado contacto por WhatsApp.',
+    description: 'Sofia Nunes sem resposta há 5 dias. Recomendado contacto por WhatsApp.',
     icon: 'alert',
     priority: 'medium',
     action: 'Reativar conversa',
@@ -50,7 +50,7 @@ const mockRecommendations: AgentRecommendation[] = [
   {
     id: '4',
     title: 'Fecho confirmado em desk flagship',
-    description: 'Pedro Oliveira avançou para assinatura apos proposta simplificada.',
+    description: 'Pedro Oliveira avançou para assinatura após proposta simplificada.',
     icon: 'check',
     priority: 'low',
   },
@@ -81,7 +81,7 @@ function getPriorityLabel(priority: AgentRecommendation['priority']) {
   }
 
   if (priority === 'medium') {
-    return 'Prioridade media';
+    return 'Prioridade média';
   }
 
   return 'Prioridade baixa';
@@ -115,7 +115,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">
-            Motor de recomendacao
+            Motor de recomendação
           </p>
           <h3 className="text-lg font-semibold text-white">Onde a equipa deve agir primeiro</h3>
         </div>
@@ -150,7 +150,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                   {rec.action}
                 </button>
               ) : (
-                <span className="text-xs text-slate-400">Sem acao manual</span>
+                <span className="text-xs text-slate-400">Sem ação manual</span>
               )}
 
               {rec.timeframe ? (
@@ -171,11 +171,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         </div>
         <div className="text-center">
           <strong className="block text-lg text-white">{recommendations.length}</strong>
-          <span className="text-xs text-slate-400">Recomendacoes</span>
+          <span className="text-xs text-slate-400">Recomendações</span>
         </div>
         <div className="text-center">
           <strong className="block text-lg text-white">{averageScore}%</strong>
-          <span className="text-xs text-slate-400">Score medio</span>
+          <span className="text-xs text-slate-400">Score médio</span>
         </div>
       </div>
     </div>

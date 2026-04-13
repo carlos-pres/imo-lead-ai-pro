@@ -1,5 +1,5 @@
 ﻿import { startTransition, useDeferredValue, useEffect, useState } from "react";
-import type { FormEvent, MouseEvent } from "react";
+import type { DragEvent, FormEvent, MouseEvent } from "react";
 import "./App.css";
 import { Dashboard } from "./components/Dashboard";
 import {
@@ -282,7 +282,7 @@ const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
     id: "pricing",
     label: "Preços",
     eyebrow: "Oferta",
-    description: "Planos, trial, utilizadores e progressao comercial.",
+    description: "Planos, trial, utilizadores e progressão comercial.",
   },
   {
     id: "contact",
@@ -832,11 +832,11 @@ function formatLeadLimit(limit: number) {
     return "Capacidade personalizada / fair use";
   }
 
-  return `Capacidade ate ${limit} leads/mes`;
+  return `Capacidade até ${limit} leads/mês`;
 }
 
 function formatIncludedUsers(count: number) {
-  return `${count} utilizador${count === 1 ? "" : "es"} incluido${count === 1 ? "" : "s"}`;
+  return `${count} utilizador${count === 1 ? "" : "es"} incluído${count === 1 ? "" : "s"}`;
 }
 
 function formatExtraUsers(plan: PlanCatalogEntry, billing: BillingMode) {
@@ -845,7 +845,7 @@ function formatExtraUsers(plan: PlanCatalogEntry, billing: BillingMode) {
   }
 
   const value = billing === "year" ? plan.extraUserYearlyPrice : plan.extraUserMonthlyPrice;
-  const suffix = billing === "year" ? "/ano" : "/mes";
+  const suffix = billing === "year" ? "/ano" : "/mês";
   return `Utilizador extra ${formatCurrency(value, "EUR", value % 1 !== 0)}${suffix}`;
 }
 
@@ -1116,6 +1116,8 @@ function App() {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<PipelineStage | "all">("all");
   const [officeFilter, setOfficeFilter] = useState("all");
+  const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
+  const [dropStageId, setDropStageId] = useState<PipelineStage | null>(null);
   const [form, setForm] = useState<CreateLeadInput>(initialForm);
   const [landingGuidance, setLandingGuidance] = useState<LandingGuidance>({
     title: "Entra numa demo já preparada para a tua realidade",
@@ -1306,7 +1308,7 @@ function App() {
     if (portalState === "return") {
       setCheckoutFeedbackTitle("Subscrição em foco");
       setCheckoutFeedback(
-        "Voltaste do portal de billing. Aqui podes rever o plano ativo, os utilizadores incluidos e decidir o passo comercial seguinte."
+        "Voltaste do portal de billing. Aqui podes rever o plano ativo, os utilizadores incluídos e decidir o passo comercial seguinte."
       );
       setCheckoutFeedbackTone("info");
       setCheckoutFeedbackKind("portal");
@@ -1412,7 +1414,7 @@ function App() {
     } catch (sessionError) {
       clearSessionToken();
       setError(
-        sessionError instanceof Error ? sessionError.message : "Não foi possivel recuperar a sessão"
+        sessionError instanceof Error ? sessionError.message : "Não foi possível recuperar a sessão"
       );
     } finally {
       setAuthBooting(false);
@@ -1605,7 +1607,7 @@ function App() {
     } catch (trialError) {
       setTrialFeedbackTone("error");
       setTrialFeedback(
-        trialError instanceof Error ? trialError.message : "Não foi possivel ativar o trial."
+        trialError instanceof Error ? trialError.message : "Não foi possível ativar o trial."
       );
     } finally {
       setTrialSubmitting(false);
@@ -1954,7 +1956,7 @@ function App() {
       await navigator.clipboard.writeText(value);
       publishWorkspaceFeedback(successMessage);
     } catch {
-      publishWorkspaceFeedback("Não foi possivel copiar agora.");
+      publishWorkspaceFeedback("Não foi possível copiar agora.");
     }
   }
 
@@ -2001,6 +2003,61 @@ function App() {
       },
       "Lead movido na pipeline com sucesso."
     );
+  }
+
+  function handleLeadDragStart(event: DragEvent<HTMLElement>, leadId: string) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/lead-id", leadId);
+    setDraggingLeadId(leadId);
+  }
+
+  function handleLeadDragEnd() {
+    setDraggingLeadId(null);
+    setDropStageId(null);
+  }
+
+  function handleStageDragOver(event: DragEvent<HTMLElement>, stage: PipelineStage) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    if (dropStageId !== stage) {
+      setDropStageId(stage);
+    }
+  }
+
+  function handleStageDragLeave(event: DragEvent<HTMLElement>, stage: PipelineStage) {
+    const relatedTarget = event.relatedTarget;
+    if (relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget)) {
+      return;
+    }
+
+    setDropStageId((current) => (current === stage ? null : current));
+  }
+
+  async function handleStageDrop(event: DragEvent<HTMLElement>, stage: PipelineStage) {
+    event.preventDefault();
+    const droppedLeadId = event.dataTransfer.getData("text/lead-id") || draggingLeadId;
+    setDropStageId(null);
+
+    if (!droppedLeadId) {
+      setDraggingLeadId(null);
+      return;
+    }
+
+    const droppedLead = leads.find((lead) => lead.id === droppedLeadId);
+    if (!droppedLead) {
+      setDraggingLeadId(null);
+      return;
+    }
+
+    if (droppedLead.pipelineStage === stage) {
+      publishWorkspaceFeedback("Lead já se encontra nesta fase.");
+      setDraggingLeadId(null);
+      return;
+    }
+
+    await moveLead(droppedLeadId, stage);
+    setDraggingLeadId(null);
   }
 
   async function scheduleFollowUp(leadId: string, followUpAt: string) {
@@ -2348,7 +2405,7 @@ function App() {
       eyebrow: "Mercado",
       title: "Relatórios de mercado pensados para rede imobiliária",
       description:
-        "Portugal primeiro, Iberia a seguir e base pronta para equipas multi-loja com leitura por mercado, origem e owner.",
+        "Portugal primeiro, Ibéria a seguir e base pronta para equipas multi-loja com leitura por mercado, origem e owner.",
     },
     {
       eyebrow: "Governance",
@@ -2358,7 +2415,7 @@ function App() {
     },
     {
       eyebrow: "Pipeline",
-      title: "Distribuicao operacional por owner, loja e fase",
+      title: "Distribuição operacional por owner, loja e fase",
       description:
         "A equipa deixa de trabalhar no improviso e passa a responder a partir de boards, SLAs e responsabilidade clara.",
     },
@@ -2397,7 +2454,7 @@ function App() {
       quote:
         "Quando a equipa ve agente, radar e follow-up no mesmo cockpit, a adesao deixa de depender de improviso.",
       author: "Gestão de Expansao",
-      role: "Mesa Iberia",
+      role: "Mesa Ibéria",
     },
     {
       quote:
@@ -2420,7 +2477,7 @@ function App() {
     {
       label: "Mercados",
       value: String(dashboardStats.european_markets || 0),
-      detail: "Portugal, Iberia e expansao",
+      detail: "Portugal, Ibéria e expansão",
     },
     {
       label: "Follow-ups",
@@ -2717,7 +2774,7 @@ function App() {
       setCheckoutFeedbackTitle("Checkout pronto");
       setCheckoutFeedbackTone("success");
       setCheckoutFeedback(
-        `O ${plan.publicName} ficou preparado para checkout no Stripe. Estamos a redirecionar para uma subscrição segura por cartao.`
+        `O ${plan.publicName} ficou preparado para checkout no Stripe. Estamos a redirecionar para uma subscrição segura por cartão.`
       );
       setCheckoutFeedbackKind("progress");
 
@@ -2730,7 +2787,7 @@ function App() {
       setCheckoutFeedback(
         checkoutError instanceof Error
           ? checkoutError.message
-          : "Não foi possivel abrir o checkout neste momento."
+          : "Não foi possível abrir o checkout neste momento."
       );
       setCheckoutFeedbackKind("idle");
     } finally {
@@ -2752,13 +2809,13 @@ function App() {
         window.location.assign(result.portalUrl);
       }
     } catch (portalError) {
-      setCheckoutFeedbackTitle("Portal indisponivel");
+      setCheckoutFeedbackTitle("Portal indisponível");
       setCheckoutFeedbackTone("error");
       setCheckoutFeedbackKind("portal");
       setCheckoutFeedback(
         portalError instanceof Error
           ? portalError.message
-          : "Não foi possivel abrir o portal de subscrição neste momento."
+          : "Não foi possível abrir o portal de subscrição neste momento."
       );
     } finally {
       setPortalSubmitting(false);
@@ -2795,7 +2852,7 @@ function App() {
       title: "Ver o Pro como workspace vendavel para a maioria das equipas",
       detail:
         "A entrada certa para mostrar owners, desks, SLA, pipeline e o agente a trabalhar como copiloto operacional.",
-      tags: ["Plano mais vendavel", "Ate 7 utilizadores", "Portugal + Iberia"],
+      tags: ["Plano mais vendável", "Até 7 utilizadores", "Portugal + Ibéria"],
       primaryLabel: "Abrir jornada Pro",
       primaryAction: () =>
         openLandingLogin(
@@ -2809,16 +2866,16 @@ function App() {
         openLandingPricing(
           "pro",
           "Oferta Pro em foco",
-          "Mantemos o Pro selecionado para veres utilizadores, relatórios e progressao de forma imediata."
+          "Mantemos o Pro selecionado para veres utilizadores, relatórios e progressão de forma imediata."
         ),
     },
     {
       id: "enterprise",
-      eyebrow: "Rede multi-loja ou direcao",
-      title: "Abrir a leitura enterprise para decisores e expansao",
+      eyebrow: "Rede multi-loja ou direção",
+      title: "Abrir a leitura enterprise para decisores e expansão",
       detail:
         "Mostra governance, cobertura geográfica, controlo ADM e estrutura preparada para Portugal hoje e Europa a seguir.",
-      tags: ["25 utilizadores", "ADM e governance", "Expansao europeia"],
+      tags: ["25 utilizadores", "ADM e governance", "Expansão europeia"],
       primaryLabel: "Abrir jornada Enterprise",
       primaryAction: () =>
         openLandingLogin(
@@ -2831,7 +2888,7 @@ function App() {
       secondaryAction: () =>
         handleOpenExternal(
           salesWhatsAppProposalUrl,
-          "Não foi possivel abrir o WhatsApp comercial neste momento."
+          "Não foi possível abrir o WhatsApp comercial neste momento."
         ),
     },
   ];
@@ -3081,7 +3138,7 @@ function App() {
           </label>
 
           <label>
-            Preco pedido
+            Preço pedido
             <input
               type="number"
               min="1"
@@ -3310,7 +3367,7 @@ function App() {
           <article className="shell-panel">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Ataque prioritario</p>
+                <p className="eyebrow">Ataque prioritário</p>
                 <h3>Leads quentes a proteger</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("pipeline")}>
@@ -3592,7 +3649,7 @@ function App() {
           <article className="shell-panel dashboard-priority-panel">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Ataque prioritario</p>
+                <p className="eyebrow">Ataque prioritário</p>
                 <h3>Quem merece ação já</h3>
               </div>
               <span className="status-chip muted">{topHotLeads.length} leads quentes</span>
@@ -3608,7 +3665,7 @@ function App() {
                 <p>{communicationLead.recommendedAction}</p>
               </article>
             ) : (
-              <p className="feedback">Sem lead prioritario nesta fase.</p>
+              <p className="feedback">Sem lead prioritário nesta fase.</p>
             )}
 
             <div className="dashboard-lead-list">
@@ -3634,7 +3691,7 @@ function App() {
                   onClick={() =>
                     handleOpenExternal(
                       communicationEmailLaunchUrl,
-                      "Não foi possivel abrir o email neste momento."
+                      "Não foi possível abrir o email neste momento."
                     )
                   }
                 >
@@ -3646,7 +3703,7 @@ function App() {
                   onClick={() =>
                     handleOpenExternal(
                       communicationWhatsAppLaunchUrl,
-                      "Não foi possivel abrir o WhatsApp neste momento."
+                      "Não foi possível abrir o WhatsApp neste momento."
                     )
                   }
                 >
@@ -3777,7 +3834,7 @@ function App() {
                       onClick={() =>
                         handleOpenExternal(
                           communicationEmailLaunchUrl,
-                          "Não foi possivel abrir o email neste momento."
+                          "Não foi possível abrir o email neste momento."
                         )
                       }
                     >
@@ -3809,7 +3866,7 @@ function App() {
                       onClick={() =>
                         handleOpenExternal(
                           communicationWhatsAppLaunchUrl,
-                          "Não foi possivel abrir o WhatsApp neste momento."
+                          "Não foi possível abrir o WhatsApp neste momento."
                         )
                       }
                     >
@@ -4226,7 +4283,7 @@ function App() {
                       onClick={() =>
                         handleOpenExternal(
                           communicationEmailLaunchUrl,
-                          "Não foi possivel abrir o email neste momento."
+                          "Não foi possível abrir o email neste momento."
                         )
                       }
                     >
@@ -4258,7 +4315,7 @@ function App() {
                       onClick={() =>
                         handleOpenExternal(
                           communicationWhatsAppLaunchUrl,
-                          "Não foi possivel abrir o WhatsApp neste momento."
+                          "Não foi possível abrir o WhatsApp neste momento."
                         )
                       }
                     >
@@ -4800,7 +4857,15 @@ function App() {
 
             <div className="kanban-board">
               {stageColumns.map((column) => (
-                <section className="kanban-column" key={column.id}>
+                <section
+                  className={`kanban-column${dropStageId === column.id ? " is-drop-target" : ""}`}
+                  key={column.id}
+                  onDragOver={(event) => handleStageDragOver(event, column.id)}
+                  onDragLeave={(event) => handleStageDragLeave(event, column.id)}
+                  onDrop={(event) => {
+                    void handleStageDrop(event, column.id);
+                  }}
+                >
                   <header className="kanban-header">
                     <div>
                       <span>{column.label}</span>
@@ -4838,7 +4903,14 @@ function App() {
                       );
 
                       return (
-                        <article className="pipeline-card" key={lead.id}>
+                        <article
+                          className={`pipeline-card${draggingLeadId === lead.id ? " is-dragging" : ""}`}
+                          key={lead.id}
+                          draggable
+                          onDragStart={(event) => handleLeadDragStart(event, lead.id)}
+                          onDragEnd={handleLeadDragEnd}
+                          aria-grabbed={draggingLeadId === lead.id}
+                        >
                           <div className="pipeline-card-head">
                             <div>
                               <strong>{lead.name}</strong>
@@ -5074,7 +5146,7 @@ function App() {
               <article className="stack-item">
                 <div>
                   <strong>{dashboardStats.contacted_today} leads contactados hoje</strong>
-                  <p>Indicador rapido de atividade comercial diaria.</p>
+                  <p>Indicador rápido de atividade comercial diária.</p>
                 </div>
               </article>
               <article className="stack-item">
@@ -5091,7 +5163,7 @@ function App() {
           <div className="section-head">
             <div>
               <p className="eyebrow">Lojas e desks</p>
-              <h3>Base pronta para Portugal e expansao europeia</h3>
+              <h3>Base pronta para Portugal e expansão europeia</h3>
             </div>
           </div>
 
@@ -5227,7 +5299,7 @@ function App() {
           <div className="section-head">
             <div>
               <p className="eyebrow">Cadência por plano</p>
-              <h3>Relatórios de mercado incluidos</h3>
+              <h3>Relatórios de mercado incluídos</h3>
             </div>
           </div>
 
@@ -5265,7 +5337,7 @@ function App() {
           <div className="section-head">
             <div>
               <p className="eyebrow">Oferta comercial</p>
-              <h3>Planos pensados para Portugal e escalaveis para Europa</h3>
+              <h3>Planos pensados para Portugal e escaláveis para Europa</h3>
             </div>
 
             <div className="billing-toggle">
@@ -5289,7 +5361,7 @@ function App() {
           <div className="billing-management-panel billing-management-panel-inline">
             <div>
               <p className="eyebrow">Billing e ativação</p>
-              <h3>Checkout por cartao, trial controlado e gestão de subscrição no portal seguro</h3>
+              <h3>Checkout por cartão, trial controlado e gestão de subscrição no portal seguro</h3>
               <p className="pricing-note">
                 O {activePlan?.publicName || "plano ativo"} usa checkout Stripe para ativação e o
                 portal de billing para faturas, método de pagamento e gestão da subscrição.
@@ -5347,7 +5419,7 @@ function App() {
                 billingMode === "month"
                   ? formatCurrency(plan.monthlyPrice)
                   : formatCurrency(plan.yearlyPrice, "EUR", true);
-              const period = billingMode === "month" ? "/mes" : "/ano";
+              const period = billingMode === "month" ? "/mês" : "/ano";
               const equivalentMonthly = formatCurrency(plan.yearlyPrice / 12, "EUR", true);
 
               return (
@@ -5408,7 +5480,7 @@ function App() {
 
                   {billingMode === "year" ? (
                     <p className="pricing-note">
-                      Equivale a {equivalentMonthly}/mes com desconto anual fixo de{" "}
+                      Equivale a {equivalentMonthly}/mês com desconto anual fixo de{" "}
                       {plan.annualDiscountPercent}%.
                     </p>
                   ) : null}
@@ -5443,7 +5515,7 @@ function App() {
                   </div>
 
                   <div className="pricing-section">
-                    <p className="pricing-section-title">Mercados incluidos</p>
+                    <p className="pricing-section-title">Mercados incluídos</p>
                     <div className="mini-tags">
                       {plan.includedMarkets.map((market) => (
                         <span key={market}>{market}</span>
@@ -5509,7 +5581,7 @@ function App() {
         </label>
 
         <label>
-          Preco mensal
+          Preço mensal
           <input
             type="number"
             min="0"
@@ -5520,7 +5592,7 @@ function App() {
         </label>
 
         <label>
-          Preco anual
+          Preço anual
           <input
             type="number"
             min="0"
@@ -5541,7 +5613,7 @@ function App() {
         </label>
 
         <label>
-          Capacidade leads/mes
+          Capacidade leads/mês
           <input
             type="number"
             min="0"
@@ -5551,7 +5623,7 @@ function App() {
         </label>
 
         <label>
-          Utilizadores incluidos
+          Utilizadores incluídos
           <input
             type="number"
             min="1"
@@ -5561,7 +5633,7 @@ function App() {
         </label>
 
         <label>
-          Utilizador extra /mes
+          Utilizador extra /mês
           <input
             type="number"
             min="0"
@@ -5585,7 +5657,7 @@ function App() {
         </label>
 
         <label>
-          Max messages/mes
+          Max messages/mês
           <input
             type="number"
             min="0"
@@ -5609,7 +5681,7 @@ function App() {
           <input
             value={draft.reportsLabel}
             onChange={(event) => onChange({ reportsLabel: event.target.value })}
-            placeholder="Relatorio executivo semanal"
+            placeholder="Relatório executivo semanal"
           />
         </label>
 
@@ -5627,12 +5699,12 @@ function App() {
           <input
             value={draft.supportLabel}
             onChange={(event) => onChange({ supportLabel: event.target.value })}
-            placeholder="Suporte prioritario e onboarding"
+            placeholder="Suporte prioritário e onboarding"
           />
         </label>
 
         <label className="admin-span">
-          Paises incluidos
+          Países incluídos
           <textarea
             rows={3}
             value={draft.includedCountryCodes}
@@ -5642,12 +5714,12 @@ function App() {
         </label>
 
         <label className="admin-span">
-          Mercados incluidos
+          Mercados incluídos
           <textarea
             rows={3}
             value={draft.includedMarkets}
             onChange={(event) => onChange({ includedMarkets: event.target.value })}
-            placeholder={"Portugal\nIberia\nEuropa"}
+            placeholder={"Portugal\nIbéria\nEuropa"}
           />
         </label>
 
@@ -5657,7 +5729,7 @@ function App() {
             rows={4}
             value={draft.marketReports}
             onChange={(event) => onChange({ marketReports: event.target.value })}
-            placeholder={"Relatorio semanal por cidade\nRadar executivo europeu"}
+            placeholder={"Relatório semanal por cidade\nRadar executivo europeu"}
           />
         </label>
 
@@ -5678,7 +5750,7 @@ function App() {
             value={draft.features}
             onChange={(event) => onChange({ features: event.target.value })}
             placeholder={
-              "Capacidade ate 250 leads geridas/analisadas por mes\n7 utilizadores incluidos\nUtilizador extra: 17â‚¬/mes ou 163,20â‚¬/ano"
+              "Capacidade até 250 leads geridas/analisadas por mês\n7 utilizadores incluídos\nUtilizador extra: 17€/mês ou 163,20€/ano"
             }
           />
         </label>
@@ -6509,7 +6581,7 @@ function App() {
                     openLandingLogin(
                       activePlanId,
                       "Entrar agora e ver o ganho de tempo na pratica",
-                      "Ja escolhemos um perfil demo compativel com este plano para reduzires atrito e entrares direto na experiência certa."
+                      "Já escolhemos um perfil demo compatível com este plano para reduzires atrito e entrares direto na experiência certa."
                     )
                   }
                 >
@@ -6561,7 +6633,7 @@ function App() {
               {plans.map((plan) => {
                 const isYear = billingMode === "year";
                 const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
-                const suffix = isYear ? "/ano" : "/mes";
+                const suffix = isYear ? "/ano" : "/mês";
                 const featured = plan.basePlanId === "pro";
 
                 return (
@@ -7145,7 +7217,7 @@ function App() {
         <div className="public-stage public-stage-pricing">
           <div className="public-stage-head">
             <span>Escada comercial</span>
-            <strong>Planos com progressao clara, trial protegido e margem para crescer</strong>
+            <strong>Planos com progressão clara, trial protegido e margem para crescer</strong>
           </div>
 
           <div className="public-plan-ladder">
@@ -7210,7 +7282,7 @@ function App() {
             <article className="public-stage-card">
               <span>Mercados</span>
               <strong>{coverageLabel}</strong>
-              <p>Portugal como entrada, Iberia como próximo passo e base pronta para Europa.</p>
+              <p>Portugal como entrada, Ibéria como próximo passo e base pronta para Europa.</p>
             </article>
 
             <article className="public-stage-card">
@@ -7346,7 +7418,7 @@ function App() {
                 onClick={() =>
                   handleOpenExternal(
                     salesWhatsAppDemoUrl,
-                    "Não foi possivel abrir o WhatsApp comercial neste momento."
+                    "Não foi possível abrir o WhatsApp comercial neste momento."
                   )
                 }
               >
@@ -7452,8 +7524,8 @@ function App() {
                 <strong>Cartao online via Stripe Checkout</strong>
                 <p>
                   MB WAY e Multibanco ficam na camada assistida enquanto fechamos um fluxo real e
-                  compativel com subscricoes. Para venda imediata, o checkout robusto hoje e por
-                  cartao.
+                  compatível com subscrições. Para venda imediata, o checkout robusto hoje e por
+                  cartão.
                 </p>
 
                 <div className="mini-tags">
@@ -7510,14 +7582,14 @@ function App() {
             {plans.map((plan) => {
               const isYear = billingMode === "year";
               const price = isYear ? plan.yearlyPrice : plan.monthlyPrice;
-              const suffix = isYear ? "/ano" : "/mes";
+              const suffix = isYear ? "/ano" : "/mês";
               const featured = plan.basePlanId === "pro";
               const secondaryAction =
                 plan.basePlanId === "custom"
                   ? () =>
                       handleOpenExternal(
                         salesWhatsAppProposalUrl,
-                        "Não foi possivel abrir o WhatsApp comercial neste momento."
+                        "Não foi possível abrir o WhatsApp comercial neste momento."
                       )
                   : () => navigatePublicPage("pricing", "landing-pricing");
               const secondaryLabel =
@@ -7527,7 +7599,7 @@ function App() {
                 ? "Entrada sugerida: trial protegido com validação e caminho claro de upgrade."
                 : plan.basePlanId === "pro"
                   ? "Entrada sugerida: demonstração de equipa com pipeline, owners e desks em ação."
-                  : "Entrada sugerida: leitura executiva com governance, ADM e expansao multi-loja.";
+                  : "Entrada sugerida: leitura executiva com governance, ADM e expansão multi-loja.";
 
             return (
               <article className={featured ? "pricing-card featured" : "pricing-card"} key={plan.id}>
@@ -7542,7 +7614,7 @@ function App() {
                 <p className="pricing-note">{plan.agentLabel}</p>
                 <p className="hero-text">{plan.reportsLabel}</p>
                 <p className="pricing-note">
-                  {formatCurrency(plan.monthlyPrice, "EUR", plan.monthlyPrice % 1 !== 0)}/mes ou{" "}
+                  {formatCurrency(plan.monthlyPrice, "EUR", plan.monthlyPrice % 1 !== 0)}/mês ou{" "}
                   {formatCurrency(plan.yearlyPrice, "EUR", plan.yearlyPrice % 1 !== 0)}/ano com{" "}
                   {plan.annualDiscountPercent}% de desconto anual fixo.
                 </p>
@@ -7733,7 +7805,7 @@ function App() {
               onClick={() =>
                 handleOpenExternal(
                   salesWhatsAppDemoUrl,
-                  "Não foi possivel abrir o WhatsApp comercial neste momento."
+                  "Não foi possível abrir o WhatsApp comercial neste momento."
                 )
               }
             >
@@ -7765,7 +7837,7 @@ function App() {
           <article className="marketing-final-card">
             <span>WhatsApp comercial</span>
             <strong>{SALES_WHATSAPP_LABEL}</strong>
-            <p>Canal mais rapido para demo, proposta e alinhamento comercial sem atrito.</p>
+            <p>Canal mais rápido para demo, proposta e alinhamento comercial sem atrito.</p>
           </article>
           <article className="marketing-final-card">
             <span>Contacto comercial</span>
@@ -7775,12 +7847,12 @@ function App() {
           <article className="marketing-final-card">
             <span>Plano em foco</span>
             <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
-            <p>{resolvedAgentLabel} com progressao clara para Enterprise.</p>
+            <p>{resolvedAgentLabel} com progressão clara para Enterprise.</p>
           </article>
           <article className="marketing-final-card">
             <span>Mercados</span>
             <strong>{coverageLabel}</strong>
-            <p>Portugal como entrada, Iberia como expansao natural e Europa como próximo passo.</p>
+            <p>Portugal como entrada, Ibéria como expansão natural e Europa como próximo passo.</p>
           </article>
           <article className="marketing-final-card">
             <span>Compliance</span>
@@ -7829,7 +7901,7 @@ function App() {
                 onClick={() =>
                   handleOpenExternal(
                     salesWhatsAppDemoUrl,
-                    "Não foi possivel abrir o WhatsApp comercial neste momento."
+                    "Não foi possível abrir o WhatsApp comercial neste momento."
                   )
                 }
               >
@@ -7940,7 +8012,7 @@ function App() {
               onClick={() =>
                 handleOpenExternal(
                   salesWhatsAppDemoUrl,
-                  "Não foi possivel abrir o WhatsApp comercial neste momento."
+                  "Não foi possível abrir o WhatsApp comercial neste momento."
                 )
               }
             >
@@ -8404,7 +8476,7 @@ function App() {
                   openLandingLogin(
                     activePlanId,
                     "Entrar agora e ver o ganho de tempo na pratica",
-                    "Ja escolhemos um perfil demo compativel com este plano para reduzires atrito e entrares direto na experiência certa."
+                    "Já escolhemos um perfil demo compatível com este plano para reduzires atrito e entrares direto na experiência certa."
                   )
                 }
               >
@@ -8419,7 +8491,7 @@ function App() {
                 onClick={() =>
                   handleOpenExternal(
                     salesWhatsAppDemoUrl,
-                    "Não foi possivel abrir o WhatsApp comercial neste momento."
+                    "Não foi possível abrir o WhatsApp comercial neste momento."
                   )
                 }
               >
@@ -8647,7 +8719,7 @@ function App() {
           onPrimaryClick: () =>
             handleOpenExternal(
               salesWhatsAppDemoUrl,
-              "Não foi possivel abrir o WhatsApp comercial neste momento."
+              "Não foi possível abrir o WhatsApp comercial neste momento."
             ),
           onSecondaryClick: () =>
             openLandingLogin(
@@ -8660,7 +8732,7 @@ function App() {
           <article className="public-contact-card public-contact-card-featured">
             <span>WhatsApp comercial</span>
             <strong>{SALES_WHATSAPP_LABEL}</strong>
-            <p>Canal rapido para marcar demo, alinhar proposta e acelerar a conversa comercial.</p>
+            <p>Canal rápido para marcar demo, alinhar proposta e acelerar a conversa comercial.</p>
           </article>
           <article className="public-contact-card">
             <span>Contacto comercial</span>

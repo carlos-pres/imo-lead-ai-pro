@@ -1841,6 +1841,13 @@
   border-radius: 22px;
   background: rgba(19, 34, 55, 0.04);
   border: 1px solid rgba(19, 34, 55, 0.06);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.kanban-column.is-drop-target {
+  border-color: rgba(19, 34, 55, 0.3);
+  background: rgba(19, 34, 55, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(19, 34, 55, 0.08);
 }
 
 .kanban-header {
@@ -1879,6 +1886,19 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  cursor: grab;
+  user-select: none;
+  transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+}
+
+.pipeline-card:active {
+  cursor: grabbing;
+}
+
+.pipeline-card.is-dragging {
+  opacity: 0.68;
+  transform: scale(0.99);
+  box-shadow: 0 10px 24px rgba(19, 34, 55, 0.14);
 }
 
 .pipeline-card-head,
