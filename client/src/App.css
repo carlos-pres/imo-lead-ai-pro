@@ -4855,3 +4855,84 @@ p {
     max-width: none;
   }
 }
+
+/* App authenticated area also follows original identity when enabled. */
+.app-identity-original {
+  background:
+    radial-gradient(circle at 0 0, rgba(201, 124, 68, 0.14), transparent 24%),
+    radial-gradient(circle at 100% 6%, rgba(127, 166, 214, 0.16), transparent 26%),
+    linear-gradient(180deg, #f7efe4 0%, #efe4d3 100%);
+  color: #132237;
+}
+
+.app-identity-original [class*="from-slate-950"][class*="to-slate-900"] {
+  --tw-gradient-from: #f7efe4 var(--tw-gradient-from-position) !important;
+  --tw-gradient-via: #f2e7d7 var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: #efe4d3 var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+}
+
+.app-identity-original [class*="bg-slate-950"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  background-image: none !important;
+}
+
+.app-identity-original [class*="bg-slate-900"] {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  background-image: none !important;
+}
+
+.app-identity-original [class*="bg-slate-800"] {
+  background-color: rgba(238, 243, 249, 0.92) !important;
+  background-image: none !important;
+}
+
+.app-identity-original [class*="border-slate-900"],
+.app-identity-original [class*="border-slate-800"],
+.app-identity-original [class*="border-slate-700"],
+.app-identity-original [class*="border-slate-600"] {
+  border-color: rgba(19, 34, 55, 0.14) !important;
+}
+
+.app-identity-original [class*="text-white"],
+.app-identity-original [class*="text-slate-50"],
+.app-identity-original [class*="text-slate-100"],
+.app-identity-original [class*="text-slate-200"] {
+  color: #132237 !important;
+}
+
+.app-identity-original [class*="text-slate-300"],
+.app-identity-original [class*="text-slate-400"],
+.app-identity-original [class*="text-slate-500"] {
+  color: #5a6b81 !important;
+}
+
+.app-identity-original [class*="from-purple-500"][class*="to-blue-500"],
+.app-identity-original [class*="from-purple-500"][class*="via-indigo-500"],
+.app-identity-original [class*="from-cyan-500"][class*="to-blue-600"] {
+  background-image: linear-gradient(135deg, #174dbb, #235fda) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 26px rgba(23, 77, 187, 0.2) !important;
+}
+
+.app-identity-original [class*="bg-cyan-500"],
+.app-identity-original [class*="bg-cyan-400"] {
+  background-color: rgba(23, 77, 187, 0.12) !important;
+}
+
+.app-identity-original [class*="border-cyan-400"],
+.app-identity-original [class*="border-cyan-500"] {
+  border-color: rgba(23, 77, 187, 0.32) !important;
+}
+
+.app-identity-original [class*="text-cyan-100"],
+.app-identity-original [class*="text-cyan-200"],
+.app-identity-original [class*="text-cyan-300"] {
+  color: #174dbb !important;
+}
+
+.app-identity-original .version-badge {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(19, 34, 55, 0.16);
+  color: #132237;
+}

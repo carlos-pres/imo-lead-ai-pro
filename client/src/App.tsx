@@ -8925,10 +8925,11 @@ function App() {
   };
 
   const activeContent = renderActiveView();
+  const appIdentityClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY ? " app-identity-original" : "";
 
   return (
     <CrmStoreContext.Provider value={crmStoreValue}>
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+    <div className={`min-h-screen bg-slate-950 text-slate-100 flex${appIdentityClass}`}>
       <div className="version-badge" title={BUILD_META.title}>
         {BUILD_META.label}
       </div>
