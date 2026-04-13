@@ -4740,3 +4740,118 @@ p {
     padding: 14px;
   }
 }
+
+/* Optional legacy-inspired public identity (opt-in via VITE_MARKETING_VISUAL_IDENTITY=original). */
+.marketing-identity-original.public-marketing-shell,
+.marketing-identity-original.public-login-shell {
+  background: #f2f4f7;
+}
+
+.marketing-identity-original .public-route-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(105deg, rgba(11, 18, 32, 0.8) 0%, rgba(11, 18, 32, 0.62) 45%, rgba(11, 18, 32, 0.4) 100%),
+    url("/identity/hero-original.png") center / cover no-repeat;
+  border: 0;
+  box-shadow: none;
+}
+
+.marketing-identity-original .public-route-hero-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.marketing-identity-original .public-route-copy h1,
+.marketing-identity-original .public-route-copy .hero-text,
+.marketing-identity-original .public-route-copy .eyebrow {
+  color: #ffffff;
+}
+
+.marketing-identity-original .public-stage {
+  background: linear-gradient(160deg, rgba(12, 24, 37, 0.82), rgba(15, 28, 45, 0.74));
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 40px rgba(10, 18, 30, 0.3);
+}
+
+.marketing-identity-original .marketing-nav {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom-color: rgba(19, 34, 55, 0.12);
+}
+
+.marketing-identity-original .marketing-nav .primary-button,
+.marketing-identity-original .primary-button {
+  background: linear-gradient(135deg, #174dbb, #235fda);
+  border: 1px solid rgba(23, 77, 187, 0.32);
+  box-shadow: 0 16px 32px rgba(23, 77, 187, 0.2);
+  color: #ffffff;
+}
+
+.marketing-identity-original .marketing-nav .ghost-button,
+.marketing-identity-original .ghost-button {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(19, 34, 55, 0.14);
+  color: #132237;
+}
+
+.marketing-identity-original .marketing-main.public-marketing-main,
+.marketing-identity-original .marketing-main.public-login-main {
+  gap: 18px;
+}
+
+.marketing-identity-original .marketing-section,
+.marketing-identity-original .marketing-metric-ribbon,
+.marketing-identity-original .shell-panel.marketing-final-cta,
+.marketing-identity-original .auth-panel,
+.marketing-identity-original .public-sales-card,
+.marketing-identity-original .public-plan-summary-card,
+.marketing-identity-original .public-contact-card,
+.marketing-identity-original .marketing-feature-card,
+.marketing-identity-original .marketing-scenario-card,
+.marketing-identity-original .marketing-showcase-card,
+.marketing-identity-original .marketing-legal-card,
+.marketing-identity-original .marketing-story-card,
+.marketing-identity-original .shell-panel.marketing-results-copy,
+.marketing-identity-original .shell-panel.marketing-results-visual {
+  background: #ffffff;
+  border: 1px solid rgba(19, 34, 55, 0.1);
+  box-shadow: 0 14px 34px rgba(21, 33, 48, 0.08);
+  color: #132237;
+}
+
+.marketing-identity-original .section-head h3,
+.marketing-identity-original .marketing-showcase-copy strong,
+.marketing-identity-original .marketing-feature-card strong,
+.marketing-identity-original .marketing-scenario-card strong,
+.marketing-identity-original .marketing-story-card strong,
+.marketing-identity-original .public-sales-card strong,
+.marketing-identity-original .public-plan-summary-card strong,
+.marketing-identity-original .public-contact-card strong {
+  color: #132237;
+}
+
+.marketing-identity-original .section-head p,
+.marketing-identity-original .marketing-showcase-copy p,
+.marketing-identity-original .marketing-feature-card p,
+.marketing-identity-original .marketing-scenario-card p,
+.marketing-identity-original .marketing-story-card p,
+.marketing-identity-original .public-sales-card p,
+.marketing-identity-original .public-plan-summary-card p,
+.marketing-identity-original .public-contact-card p {
+  color: #53647a;
+}
+
+.marketing-identity-original .marketing-feature-card span,
+.marketing-identity-original .marketing-scenario-card span,
+.marketing-identity-original .marketing-showcase-copy span,
+.marketing-identity-original .public-sales-card span,
+.marketing-identity-original .public-plan-summary-card span,
+.marketing-identity-original .public-contact-card span {
+  color: #7f6f5c;
+}
+
+@media (max-width: 980px) {
+  .marketing-identity-original .public-route-copy h1 {
+    max-width: none;
+  }
+}

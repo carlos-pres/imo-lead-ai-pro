@@ -618,6 +618,9 @@ const SALES_WHATSAPP_DIGITS = "351927627844";
 
 const PUBLIC_DEMO_ENABLED =
   import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_DEMO === "true";
+const MARKETING_VISUAL_IDENTITY =
+  import.meta.env.VITE_MARKETING_VISUAL_IDENTITY === "original" ? "original" : "current";
+const USE_ORIGINAL_MARKETING_VISUAL_IDENTITY = MARKETING_VISUAL_IDENTITY === "original";
 
 type DemoAccessEntry = (typeof DEMO_ACCESS)[number];
 
@@ -8757,9 +8760,13 @@ function App() {
   }
 
   function renderPublicSite() {
+    const marketingIdentityClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY
+      ? " marketing-identity-original"
+      : "";
+
     if (isAuthPage(publicPage)) {
       return (
-        <main className="auth-shell marketing-auth-shell public-login-shell">
+        <main className={`auth-shell marketing-auth-shell public-login-shell${marketingIdentityClass}`}>
           <div className="marketing-main public-login-main">
             {renderLoginEntryHero()}
           </div>
@@ -8770,7 +8777,7 @@ function App() {
     }
 
     return (
-      <main className="public-marketing-shell">
+      <main className={`public-marketing-shell${marketingIdentityClass}`}>
         <div className="marketing-main public-marketing-main">
           {publicPage === "contact"
             ? renderContactPage()
