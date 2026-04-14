@@ -4906,7 +4906,38 @@ p {
   color: #132237;
 }
 
+.app-identity-original > aside,
+.app-identity-original > .flex-1,
+.app-identity-original > .flex-1 > header,
+.app-identity-original > .flex-1 > .copilot-bar,
+.app-identity-original > .flex-1 > main {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+  color: #132237;
+}
+
+.app-identity-original > .flex-1 > main {
+  background:
+    radial-gradient(circle at 0 0, rgba(201, 124, 68, 0.08), transparent 24%),
+    radial-gradient(circle at 100% 0, rgba(127, 166, 214, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+}
+
 .app-identity-original [class*="from-slate-950"][class*="to-slate-900"] {
+  --tw-gradient-from: #f7efe4 var(--tw-gradient-from-position) !important;
+  --tw-gradient-via: #f2e7d7 var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: #efe4d3 var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+}
+
+.app-identity-original [class*="from-slate-950"][class*="via-slate-950"][class*="to-slate-900"],
+.app-identity-original .bg-gradient-to-br.from-slate-950.via-slate-950.to-slate-900,
+.app-identity-original .min-h-screen.bg-gradient-to-br.from-slate-950.via-slate-950.to-slate-900 {
+  background:
+    radial-gradient(circle at 0 0, rgba(201, 124, 68, 0.08), transparent 24%),
+    radial-gradient(circle at 100% 0, rgba(127, 166, 214, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94)) !important;
   --tw-gradient-from: #f7efe4 var(--tw-gradient-from-position) !important;
   --tw-gradient-via: #f2e7d7 var(--tw-gradient-via-position) !important;
   --tw-gradient-to: #efe4d3 var(--tw-gradient-to-position) !important;
@@ -4975,6 +5006,56 @@ p {
 .app-identity-original .version-badge {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(19, 34, 55, 0.16);
+  color: #132237;
+}
+
+.app-identity-original .copilot-bar {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 28%),
+    linear-gradient(90deg, rgba(255, 250, 244, 0.98), rgba(247, 250, 255, 0.94));
+  border-color: rgba(19, 34, 55, 0.1);
+  color: #132237;
+}
+
+.app-identity-original .copilot-bar strong {
+  color: #132237;
+}
+
+.app-identity-original .copilot-bar .hero-text {
+  color: #5c6b80;
+}
+
+.app-identity-original .dashboard-ai-surface,
+.app-identity-original .dashboard-priority-panel,
+.app-identity-original .dashboard-rail-card-focus,
+.app-identity-original .dashboard-overview-panel,
+.app-identity-original .command-panel {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+  color: #132237;
+}
+
+.app-identity-original .command-surface-card,
+.app-identity-original .floating-card,
+.app-identity-original .dashboard-glance-card.active,
+.app-identity-original .dashboard-priority-hero,
+.app-identity-original .dashboard-note-card.accent,
+.app-identity-original .summary-card.hot,
+.app-identity-original .summary-card.warm,
+.app-identity-original .summary-card.cold {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94));
+  color: #132237;
+}
+
+.app-identity-original .dashboard-priority-hero span,
+.app-identity-original .dashboard-priority-hero strong,
+.app-identity-original .dashboard-priority-hero p,
+.app-identity-original .floating-card span,
+.app-identity-original .floating-card strong,
+.app-identity-original .floating-card p {
   color: #132237;
 }
 
