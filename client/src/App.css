@@ -5176,3 +5176,8 @@ p {
     linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94)) !important;
   color: #132237 !important;
 }
+
+.app-identity-original .dashboard-page-stack .dashboard-ai-surface::after {
+  background: radial-gradient(circle, rgba(201, 124, 68, 0.08), transparent 64%) !important;
+  opacity: 0.55 !important;
+}

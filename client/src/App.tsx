@@ -8926,10 +8926,13 @@ function App() {
 
   const activeContent = renderActiveView();
   const appIdentityClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY ? " app-identity-original" : "";
+  const shellToneClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY
+    ? "bg-[#f7efe4] text-[#132237]"
+    : "bg-slate-950 text-slate-100";
 
   return (
     <CrmStoreContext.Provider value={crmStoreValue}>
-    <div className={`min-h-screen bg-slate-950 text-slate-100 flex${appIdentityClass}`}>
+    <div className={`min-h-screen flex ${shellToneClass}${appIdentityClass}`}>
       <div className="version-badge" title={BUILD_META.title}>
         {BUILD_META.label}
       </div>
