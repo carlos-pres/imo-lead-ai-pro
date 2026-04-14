@@ -8925,10 +8925,48 @@ function App() {
   };
 
   const activeContent = renderActiveView();
-  const appIdentityClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY ? " app-identity-original" : "";
-  const shellToneClass = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY
-    ? "bg-[#f7efe4] text-[#132237]"
-    : "bg-slate-950 text-slate-100";
+  const useOriginalIdentity = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY;
+  const appIdentityClass = useOriginalIdentity ? " app-identity-original" : "";
+  const shellToneClass = useOriginalIdentity ? "bg-[#f7efe4] text-[#132237]" : "bg-slate-950 text-slate-100";
+  const shellSidebarClass = useOriginalIdentity
+    ? "hidden lg:flex w-72 flex-col border-r border-[#1322371a] bg-white/90 backdrop-blur-2xl px-4 py-6 space-y-6"
+    : "hidden lg:flex w-72 flex-col border-r border-slate-800 bg-slate-900/70 backdrop-blur-2xl px-4 py-6 space-y-6";
+  const shellHeaderClass = useOriginalIdentity
+    ? "sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#1322371a] bg-white/90 backdrop-blur-xl"
+    : "sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 bg-slate-900/70 backdrop-blur-xl";
+  const shellMainClass = useOriginalIdentity
+    ? "flex-1 overflow-y-auto bg-gradient-to-br from-[#fffaf4] via-[#f7faff] to-[#efe4d3]"
+    : "flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900";
+  const shellCardClass = useOriginalIdentity
+    ? "rounded-2xl border border-[#1322371a] bg-white/90 p-4 space-y-3"
+    : "rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3";
+  const shellCardLabelClass = useOriginalIdentity ? "text-xs text-[#5c6b80] uppercase tracking-wide" : "text-xs text-slate-400 uppercase tracking-wide";
+  const shellCardTextClass = useOriginalIdentity ? "text-sm font-semibold text-[#132237]" : "text-sm font-semibold text-white";
+  const shellMutedTextClass = useOriginalIdentity ? "text-xs text-[#5c6b80]" : "text-xs text-slate-400";
+  const shellNavButtonBase = "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150";
+  const shellNavButtonClass = (isActive: boolean) =>
+    useOriginalIdentity
+      ? `${shellNavButtonBase} ${
+          isActive
+            ? "bg-[#fffaf4] border border-[#13223724] text-[#132237] shadow-lg shadow-[#15213014]"
+            : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
+        }`
+      : `${shellNavButtonBase} ${
+          isActive
+            ? "bg-gradient-to-r from-purple-600/20 via-indigo-500/15 to-blue-500/15 border border-purple-500/60 text-white shadow-lg shadow-purple-900/30"
+            : "border border-slate-800 bg-slate-900/60 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
+        }`;
+  const shellIconWrapClass = (isActive: boolean) =>
+    useOriginalIdentity
+      ? `h-9 w-9 rounded-lg flex items-center justify-center ${
+          isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"
+        }`
+      : `h-9 w-9 rounded-lg flex items-center justify-center ${
+          isActive ? "bg-gradient-to-br from-purple-500 to-blue-500 text-white" : "bg-slate-800 text-slate-300"
+        }`;
+  const shellTopBadgeClass = useOriginalIdentity
+    ? "px-2 py-1 text-xs rounded-full bg-[#174dbb1f] text-[#174dbb] border border-[#174dbb52]"
+    : "px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30";
 
   return (
     <CrmStoreContext.Provider value={crmStoreValue}>
@@ -8936,14 +8974,20 @@ function App() {
       <div className="version-badge" title={BUILD_META.title}>
         {BUILD_META.label}
       </div>
-      <aside className="hidden lg:flex w-72 flex-col border-r border-slate-800 bg-slate-900/70 backdrop-blur-2xl px-4 py-6 space-y-6">
+      <aside className={shellSidebarClass}>
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-900/30">
+          <div
+            className={
+              useOriginalIdentity
+                ? "h-11 w-11 rounded-xl bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-[#174dbb33]"
+                : "h-11 w-11 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-900/30"
+            }
+          >
             IL
           </div>
           <div className="leading-tight">
-            <p className="text-xs text-slate-400">ImoLead AI Pro</p>
-            <p className="text-sm font-semibold text-white">Agente imobiliário inteligente</p>
+            <p className={shellMutedTextClass}>ImoLead AI Pro</p>
+            <p className={shellCardTextClass}>Agente imobiliário inteligente</p>
           </div>
         </div>
 
@@ -8956,19 +9000,9 @@ function App() {
                 key={item.id}
                 type="button"
                 onClick={() => (item.anchor ? focusAgentPanel() : navigateTo(item.view))}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150 ${
-                  isActive
-                    ? "bg-gradient-to-r from-purple-600/20 via-indigo-500/15 to-blue-500/15 border border-purple-500/60 text-white shadow-lg shadow-purple-900/30"
-                    : "border border-slate-800 bg-slate-900/60 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
-                }`}
+                className={shellNavButtonClass(isActive)}
               >
-                <div
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                    isActive
-                      ? "bg-gradient-to-br from-purple-500 to-blue-500 text-white"
-                      : "bg-slate-800 text-slate-300"
-                  }`}
-                >
+                <div className={shellIconWrapClass(isActive)}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex flex-col">
@@ -8991,16 +9025,30 @@ function App() {
                   key={item.id}
                   type="button"
                   onClick={() => navigateTo(item.id as ViewId)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150 ${
-                    isActive
-                      ? "bg-slate-900 border border-purple-500/50 text-white shadow-lg shadow-purple-900/25"
-                      : "border border-slate-800 bg-slate-900/50 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
-                  }`}
+                  className={
+                    useOriginalIdentity
+                      ? `${shellNavButtonBase} ${
+                          isActive
+                            ? "bg-[#fffaf4] border border-[#174dbb52] text-[#132237] shadow-lg shadow-[#15213014]"
+                            : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
+                        }`
+                      : `${shellNavButtonBase} ${
+                          isActive
+                            ? "bg-slate-900 border border-purple-500/50 text-white shadow-lg shadow-purple-900/25"
+                            : "border border-slate-800 bg-slate-900/50 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
+                        }`
+                  }
                 >
                   <div
-                    className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                      isActive ? "text-purple-200" : "text-slate-400"
-                    }`}
+                    className={
+                      useOriginalIdentity
+                        ? `h-9 w-9 rounded-lg flex items-center justify-center ${
+                            isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"
+                          }`
+                        : `h-9 w-9 rounded-lg flex items-center justify-center ${
+                            isActive ? "text-purple-200" : "text-slate-400"
+                          }`
+                    }
                   >
                     <Icon className="h-5 w-5" />
                   </div>
@@ -9014,17 +9062,17 @@ function App() {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3">
+        <div className={shellCardClass}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide">Plano</p>
-              <p className="text-sm font-semibold text-white">{session.user.planName}</p>
+              <p className={shellCardLabelClass}>Plano</p>
+              <p className={shellCardTextClass}>{session.user.planName}</p>
             </div>
-            <span className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30">
+            <span className={shellTopBadgeClass}>
               {resolvedAgentLabel}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
+          <div className={`grid grid-cols-2 gap-2 ${useOriginalIdentity ? "text-xs text-[#5c6b80]" : "text-xs text-slate-400"}`}>
             <p>{activePlan?.includedMarkets.join(" · ") || coverageLabel}</p>
             <p>{dashboardStats.total} leads ativas</p>
             <p>{dashboardStats.overdue_followups} follow-ups</p>
@@ -9032,17 +9080,19 @@ function App() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-2">
-          <p className="text-xs text-slate-400 uppercase tracking-wide">Workspace</p>
-          <p className="text-sm font-semibold text-white">{session.user.name}</p>
-          <p className="text-xs text-slate-400">{session.user.email}</p>
-          <p className="text-xs text-slate-400">
+        <div className={shellCardClass}>
+          <p className={shellCardLabelClass}>Workspace</p>
+          <p className={shellCardTextClass}>{session.user.name}</p>
+          <p className={shellMutedTextClass}>{session.user.email}</p>
+          <p className={shellMutedTextClass}>
             {getRoleLabel(session.user.role)} · {session.user.officeName}
           </p>
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            className={`mt-2 inline-flex items-center gap-2 text-xs font-semibold transition-colors ${
+              useOriginalIdentity ? "text-[#5c6b80] hover:text-[#132237]" : "text-slate-300 hover:text-white"
+            }`}
           >
             <LogOut className="h-4 w-4" />
             Terminar sessão
@@ -9051,33 +9101,37 @@ function App() {
       </aside>
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 bg-slate-900/70 backdrop-blur-xl">
+        <header className={shellHeaderClass}>
           <div className="flex flex-col">
-            <div className="flex items-center gap-2 text-xs text-slate-400 uppercase tracking-wide">
-              <Sparkles className="h-4 w-4 text-purple-400" />
+            <div className={`flex items-center gap-2 text-xs uppercase tracking-wide ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-400"}`}>
+              <Sparkles className={useOriginalIdentity ? "h-4 w-4 text-[#174dbb]" : "h-4 w-4 text-purple-400"} />
               <span>{viewMeta.eyebrow}</span>
             </div>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg md:text-xl font-semibold text-white">{viewMeta.label}</h1>
-              <p className="text-sm text-slate-400 hidden md:block">{viewMeta.description}</p>
+              <h1 className={`text-lg md:text-xl font-semibold ${useOriginalIdentity ? "text-[#132237]" : "text-white"}`}>{viewMeta.label}</h1>
+              <p className={`text-sm hidden md:block ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-400"}`}>{viewMeta.description}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="relative h-10 w-10 rounded-full border border-slate-800 bg-slate-900 hover:border-purple-500/60 hover:text-purple-200 transition-colors"
+              className={
+                useOriginalIdentity
+                  ? "relative h-10 w-10 rounded-full border border-[#1322371a] bg-white/90 hover:border-[#174dbb52] hover:text-[#174dbb] transition-colors"
+                  : "relative h-10 w-10 rounded-full border border-slate-800 bg-slate-900 hover:border-purple-500/60 hover:text-purple-200 transition-colors"
+              }
             >
-              <Bell className="h-5 w-5 m-auto text-slate-300" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-purple-400" />
+              <Bell className={useOriginalIdentity ? "h-5 w-5 m-auto text-[#5a6b81]" : "h-5 w-5 m-auto text-slate-300"} />
+              <span className={`absolute top-2 right-2 h-2 w-2 rounded-full ${useOriginalIdentity ? "bg-[#174dbb]" : "bg-purple-400"}`} />
             </button>
-            <div className="flex items-center gap-3 rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2">
-              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold">
+            <div className={useOriginalIdentity ? "flex items-center gap-3 rounded-full border border-[#1322371a] bg-white/90 px-3 py-2" : "flex items-center gap-3 rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2"}>
+              <div className={useOriginalIdentity ? "h-9 w-9 rounded-full bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white" : "h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold"}>
                 {session.user.name.slice(0, 1).toUpperCase()}
               </div>
               <div className="leading-tight">
-                <p className="text-sm font-semibold text-white">{session.user.name}</p>
-                <p className="text-xs text-slate-400">{getRoleLabel(session.user.role)}</p>
+                <p className={shellCardTextClass}>{session.user.name}</p>
+                <p className={shellMutedTextClass}>{getRoleLabel(session.user.role)}</p>
               </div>
             </div>
           </div>
@@ -9111,12 +9165,12 @@ function App() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
+        <main className={shellMainClass}>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">
             {loading && leads.length === 0 ? (
-              <p className="text-sm text-slate-200">A carregar workspace...</p>
+              <p className={`text-sm ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-200"}`}>A carregar workspace...</p>
             ) : null}
-            {error && !loading ? <p className="text-sm text-red-300">{error}</p> : null}
+            {error && !loading ? <p className={`text-sm ${useOriginalIdentity ? "text-[#a43d2a]" : "text-red-300"}`}>{error}</p> : null}
             {!loading ? activeContent : null}
           </div>
         </main>
