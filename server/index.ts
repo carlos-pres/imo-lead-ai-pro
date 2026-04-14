@@ -71,6 +71,7 @@ const clientBuildPath = clientBuildCandidates.find((candidate) =>
 
 if (clientBuildPath) {
   app.use(express.static(clientBuildPath));
+  app.use(express.static(path.join(process.cwd(), "attached_assets")));
 
   const spaRoutes = [
     "/",
