@@ -1,30 +1,36 @@
-// Google Calendar Integration - Connected via Replit Connector
+// Google Calendar integration via an optional connector runtime.
 import { google } from 'googleapis';
 
 let connectionSettings: any;
+
+function getConnectorConfig() {
+  const hostname = process.env.CONNECTORS_HOSTNAME;
+  const connectorToken = process.env.CONNECTORS_TOKEN;
+
+  if (!hostname || !connectorToken) {
+    return null;
+  }
+
+  return { hostname, connectorToken };
+}
 
 async function getAccessToken() {
   if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
     return connectionSettings.settings.access_token;
   }
   
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  const connectorConfig = getConnectorConfig();
+  if (!connectorConfig) {
+    throw new Error('Google Calendar connector not configured');
   }
 
+  const { hostname, connectorToken } = connectorConfig;
   connectionSettings = await fetch(
     'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-calendar',
     {
       headers: {
         'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+        'X_CONNECTOR_TOKEN': connectorToken
       }
     }
   ).then(res => res.json()).then(data => data.items?.[0]);
@@ -52,23 +58,18 @@ export async function getGoogleCalendarClient() {
 
 export async function isGoogleCalendarConnected(): Promise<boolean> {
   try {
-    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-    const xReplitToken = process.env.REPL_IDENTITY 
-      ? 'repl ' + process.env.REPL_IDENTITY 
-      : process.env.WEB_REPL_RENEWAL 
-      ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-      : null;
-
-    if (!hostname || !xReplitToken) {
+    const connectorConfig = getConnectorConfig();
+    if (!connectorConfig) {
       return false;
     }
 
+    const { hostname, connectorToken } = connectorConfig;
     const response = await fetch(
       'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-calendar',
       {
         headers: {
           'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
+          'X_CONNECTOR_TOKEN': connectorToken
         }
       }
     );

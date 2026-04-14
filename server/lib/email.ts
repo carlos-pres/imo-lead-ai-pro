@@ -19,6 +19,14 @@ interface EmailOptions {
   text?: string;
 }
 
+function getAppBaseUrl() {
+  return (
+    process.env.APP_BASE_URL ||
+    process.env.PUBLIC_APP_URL ||
+    "http://localhost:3000"
+  );
+}
+
 function getEmailConfig(): EmailConfig | null {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT || '587');
@@ -96,9 +104,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 export async function sendVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'http://localhost:5000';
+  const baseUrl = getAppBaseUrl();
   
   const verificationUrl = `${baseUrl}/verificar-email?token=${token}`;
   
@@ -180,9 +186,7 @@ Se não solicitou esta verificação, pode ignorar este email.
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, token: string): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'http://localhost:5000';
+  const baseUrl = getAppBaseUrl();
   
   const resetUrl = `${baseUrl}/redefinir-senha?token=${token}`;
   
@@ -285,9 +289,7 @@ interface ReportData {
 }
 
 export async function sendWeeklyReportEmail(email: string, data: ReportData): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'http://localhost:5000';
+  const baseUrl = getAppBaseUrl();
 
   const html = `
     <!DOCTYPE html>

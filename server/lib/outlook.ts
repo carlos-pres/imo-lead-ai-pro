@@ -1,33 +1,48 @@
 // Outlook Integration using Microsoft Graph API
-// This file uses the Replit Outlook connector for OAuth-based email sending
+// This file can use a connector-provided token when the host/token are supplied
+// through Railway or another runtime. Without them, Outlook support stays disabled.
 
 import { Client } from '@microsoft/microsoft-graph-client';
 
 let connectionSettings: any;
 
+function getConnectorConfig() {
+  const hostname = process.env.CONNECTORS_HOSTNAME;
+  const connectorToken = process.env.CONNECTORS_TOKEN;
+
+  if (!hostname || !connectorToken) {
+    return null;
+  }
+
+  return { hostname, connectorToken };
+}
+
+function getAppBaseUrl() {
+  return (
+    process.env.APP_BASE_URL ||
+    process.env.PUBLIC_APP_URL ||
+    'http://localhost:3000'
+  );
+}
+
 async function getAccessToken() {
   if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
     return connectionSettings.settings.access_token;
   }
-  
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
 
-  if (!xReplitToken || !hostname) {
+  const connectorConfig = getConnectorConfig();
+  if (!connectorConfig) {
     return null;
   }
 
   try {
+    const { hostname, connectorToken } = connectorConfig;
     const response = await fetch(
       'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=outlook',
       {
         headers: {
           'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
+          'X_CONNECTOR_TOKEN': connectorToken
         }
       }
     );
@@ -111,9 +126,7 @@ export async function sendOutlookEmail(options: OutlookEmailOptions): Promise<bo
 }
 
 export async function sendOutlookVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'http://localhost:5000';
+  const baseUrl = getAppBaseUrl();
   
   const verificationUrl = `${baseUrl}/verificar-email?token=${token}`;
   
@@ -180,9 +193,7 @@ export async function sendOutlookVerificationEmail(email: string, name: string, 
 }
 
 export async function sendOutlookPasswordResetEmail(email: string, name: string, token: string): Promise<boolean> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'http://localhost:5000';
+  const baseUrl = getAppBaseUrl();
   
   const resetUrl = `${baseUrl}/redefinir-senha?token=${token}`;
   

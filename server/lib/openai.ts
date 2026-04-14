@@ -36,8 +36,8 @@ async function retry<T>(
     }
   }
 }
-// Using Replit's AI Integrations service with OpenRouter for DeepSeek access
-// This does not require your own API key - charges are billed to your Replit credits
+// Optional OpenRouter integration for DeepSeek access.
+// Falls back to OpenAI when OpenRouter is not configured.
 const hasOpenRouterConfig = !!(process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL && process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY);
 
 const openrouter = hasOpenRouterConfig ? new OpenAI({
