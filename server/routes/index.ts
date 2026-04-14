@@ -6,6 +6,12 @@ import { getComplianceSummary, getPrivacyContactEmail, LEGAL_POLICY_VERSION } fr
 import * as storage from "../storage";
 import { generateToken, verifyToken } from "../auth";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email";
+import {
+  getAuthUrl as getGoogleCalendarAuthUrl,
+  handleCallback as handleGoogleCalendarCallback,
+  isGoogleOAuthConfigured,
+  validateSignedState as validateGoogleCalendarState,
+} from "../lib/googleCalendarOAuth";
 import { stripeService } from "../lib/stripeService";
 import { authRateLimiter } from "../middleware/rateLimit";
 import { validateContact, validateLogin, validateTrialRequest } from "../middleware/validation";
@@ -531,6 +537,50 @@ router.get("/auth/me", async (req, res) => {
     return;
   }
   res.json({ user });
+});
+
+router.get("/calendar/google/status", requireAuth(async (_req, res, user) => {
+  res.json({
+    ok: true,
+    configured: isGoogleOAuthConfigured(),
+    connected: Boolean(await storage.getWorkspaceUserGoogleAccessToken(user.id)),
+  });
+}));
+
+router.get("/calendar/google/connect", requireAuth(async (_req, res, user) => {
+  if (!isGoogleOAuthConfigured()) {
+    res.status(503).json({ ok: false, message: "Google Calendar nao configurado" });
+    return;
+  }
+
+  res.json({
+    ok: true,
+    connectUrl: getGoogleCalendarAuthUrl(user.id),
+  });
+}));
+
+router.get("/calendar/google/callback", async (req, res) => {
+  const code = typeof req.query.code === "string" ? req.query.code : "";
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const baseUrl = process.env.APP_BASE_URL || req.get("origin") || "http://localhost:3000";
+
+  if (!code || !state) {
+    res.redirect(`${baseUrl}/app/automation?calendar=0&error=missing`);
+    return;
+  }
+
+  try {
+    const payload = validateGoogleCalendarState(state);
+    if (!payload.valid) {
+      throw new Error("Token invalido");
+    }
+
+    const success = await handleGoogleCalendarCallback(code, payload.userId);
+    res.redirect(`${baseUrl}/app/automation?calendar=${success ? "1" : "0"}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Nao foi possivel ligar o calendario";
+    res.redirect(`${baseUrl}/app/automation?calendar=0&error=${encodeURIComponent(message)}`);
+  }
 });
 
 export { router };

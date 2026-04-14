@@ -62,6 +62,7 @@ export type WorkspaceUser = {
 
 type WorkspaceUserRecord = WorkspaceUser & {
   passwordHash: string;
+  googleAccessToken?: string | null;
 };
 
 export type WorkspaceScope = {
@@ -1566,6 +1567,7 @@ async function initializeDatabase() {
         email TEXT NOT NULL UNIQUE,
         phone TEXT,
         normalized_phone TEXT,
+        google_access_token TEXT,
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL,
         office_name TEXT NOT NULL,
@@ -1585,6 +1587,7 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
       ADD COLUMN IF NOT EXISTS phone TEXT,
       ADD COLUMN IF NOT EXISTS normalized_phone TEXT,
+      ADD COLUMN IF NOT EXISTS google_access_token TEXT,
       ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ
     `);
@@ -1946,7 +1949,7 @@ export async function createTrialRequest(input: {
             requested_plan_id, source, privacy_accepted, terms_accepted,
             ai_disclosure_accepted, policy_version, consented_at, status, created_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           RETURNING
             id, name, email, normalized_email, phone, normalized_phone,
             requested_plan_id, source, privacy_accepted, terms_accepted,
@@ -2016,6 +2019,7 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
     email: String(row.email),
     phone: row.phone ? String(row.phone) : undefined,
     normalizedPhone: row.normalized_phone ? String(row.normalized_phone) : undefined,
+    googleAccessToken: row.google_access_token ? String(row.google_access_token) : undefined,
     role: String(row.role) as WorkspaceRole,
     officeName: String(row.office_name),
     teamName: String(row.team_name),
@@ -2173,7 +2177,7 @@ export async function getWorkspaceUserById(id: string) {
       const result = await activePool.query(
         `
           SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
           FROM workspace_users
           WHERE id = $1
           LIMIT 1
@@ -2201,7 +2205,7 @@ export async function getWorkspaceUserByIdentifier(identifier: string) {
       const result = await activePool.query(
         `
           SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
           FROM workspace_users
           WHERE LOWER(email) = $1 OR normalized_phone = $2
           LIMIT 1
@@ -2233,7 +2237,7 @@ export async function markWorkspaceUserEmailVerified(userId: string) {
           SET email_verified_at = NOW()
           WHERE id = $1
           RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
         `,
         [userId]
       );
@@ -2268,7 +2272,7 @@ export async function updateWorkspaceUserPassword(userId: string, password: stri
           SET password_hash = $2
           WHERE id = $1
           RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
         `,
         [userId, passwordHash]
       );
@@ -2291,13 +2295,74 @@ export async function updateWorkspaceUserPassword(userId: string, password: stri
   );
 }
 
+export async function updateWorkspaceUserGoogleAccessToken(userId: string, token: string | null) {
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          UPDATE workspace_users
+          SET google_access_token = $2
+          WHERE id = $1
+          RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
+        `,
+        [userId, token]
+      );
+
+      const row = result.rows[0];
+      return row ? sanitizeWorkspaceUser(mapWorkspaceUserRow(row)) : null;
+    },
+    async () => {
+      const currentIndex = fallbackWorkspaceUsers.findIndex((user) => user.id === userId);
+      if (currentIndex < 0) {
+        return null;
+      }
+
+      fallbackWorkspaceUsers[currentIndex] = {
+        ...fallbackWorkspaceUsers[currentIndex],
+        googleAccessToken: token,
+      };
+
+      return sanitizeWorkspaceUser(fallbackWorkspaceUsers[currentIndex]);
+    }
+  );
+}
+
+export async function hasWorkspaceUserGoogleAccessToken(userId: string) {
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `SELECT google_access_token FROM workspace_users WHERE id = $1 LIMIT 1`,
+        [userId]
+      );
+
+      return Boolean(result.rows[0]?.google_access_token);
+    },
+    async () => Boolean(fallbackWorkspaceUsers.find((user) => user.id === userId)?.googleAccessToken)
+  );
+}
+
+export async function getWorkspaceUserGoogleAccessToken(userId: string) {
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `SELECT google_access_token FROM workspace_users WHERE id = $1 LIMIT 1`,
+        [userId]
+      );
+
+      return result.rows[0]?.google_access_token ? String(result.rows[0].google_access_token) : null;
+    },
+    async () => fallbackWorkspaceUsers.find((user) => user.id === userId)?.googleAccessToken ?? null
+  );
+}
+
 export async function listWorkspaceUsers(scope?: WorkspaceScope) {
   const users = await useDatabase(
     async (activePool) => {
       const result = await activePool.query(
         `
           SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
           FROM workspace_users
           ORDER BY name ASC
         `
@@ -2364,6 +2429,7 @@ export async function createWorkspaceUser(
     email: normalizedEmail,
     phone: normalizedPhone,
     normalizedPhone,
+    googleAccessToken: null,
     role,
     officeName,
     teamName,
@@ -2400,11 +2466,11 @@ export async function createWorkspaceUser(
         `
           INSERT INTO workspace_users (
             id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-            preferred_language, plan_id, plan_name, is_active, email_verified_at
+            preferred_language, plan_id, plan_name, is_active, email_verified_at, google_access_token
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
         `,
         [
           nextUser.id,
@@ -2421,6 +2487,7 @@ export async function createWorkspaceUser(
           nextUser.planName,
           nextUser.isActive,
           nextUser.emailVerifiedAt ?? null,
+          nextUser.googleAccessToken ?? null,
         ]
       );
 
@@ -2455,7 +2522,7 @@ export async function updateWorkspaceUser(
       const currentResult = await activePool.query(
         `
           SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
           FROM workspace_users
           WHERE id = $1
           LIMIT 1
@@ -2502,6 +2569,7 @@ export async function updateWorkspaceUser(
         email: nextEmail,
         phone: nextPhone ?? current.phone,
         normalizedPhone: normalizedPhone ?? current.normalizedPhone,
+        googleAccessToken: current.googleAccessToken ?? null,
         role: input.role || current.role,
         officeName: normalizeOptionalString(input.officeName) || current.officeName,
         teamName: normalizeOptionalString(input.teamName) || current.teamName,
@@ -2533,7 +2601,7 @@ export async function updateWorkspaceUser(
             is_active = $13
           WHERE id = $1
           RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
         `,
         [
           id,
@@ -2646,7 +2714,7 @@ export async function authenticateWorkspaceUser(identifier: string, password: st
       const result = await activePool.query(
         `
           SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at, google_access_token
           FROM workspace_users
           WHERE LOWER(email) = $1 OR normalized_phone = $2
           LIMIT 1

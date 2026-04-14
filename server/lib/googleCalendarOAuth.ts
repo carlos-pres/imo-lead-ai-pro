@@ -1,17 +1,16 @@
-// Google Calendar Per-User OAuth Integration
-
-import { google } from "googleapis";
 import crypto from "crypto";
+import { google } from "googleapis";
 import * as storage from "../storage.js";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret";
+const APP_BASE_URL = process.env.APP_BASE_URL || process.env.PUBLIC_APP_URL || "http://localhost:3000";
 
 const REDIRECT_URI =
   process.env.NODE_ENV === "production"
-    ? "https://imoleadaipro.com/api/google-calendar/callback"
-    : "http://localhost:5000/api/google-calendar/callback";
+    ? `${APP_BASE_URL}/api/calendar/google/callback`
+    : "http://localhost:5000/api/calendar/google/callback";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
@@ -21,32 +20,25 @@ const SCOPES = [
 const STATE_EXPIRY_MS = 10 * 60 * 1000;
 
 export function isGoogleOAuthConfigured(): boolean {
-  return !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+  return Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
 }
 
-export function getOAuth2Client() {
+function getOAuth2Client() {
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     throw new Error("Google OAuth not configured");
   }
 
-  return new google.auth.OAuth2(
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    REDIRECT_URI
-  );
+  return new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
 }
 
-/* ================= STATE ================= */
-
-function generateSignedState(customerId: string): string {
+function generateSignedState(userId: string): string {
   const timestamp = Date.now();
-  const payload = `${customerId}:${timestamp}`;
-
+  const payload = `${userId}:${timestamp}`;
   const signature = crypto
     .createHmac("sha256", SESSION_SECRET)
     .update(payload)
     .digest("hex")
-    .substring(0, 16);
+    .slice(0, 16);
 
   return Buffer.from(`${payload}:${signature}`).toString("base64url");
 }
@@ -54,78 +46,66 @@ function generateSignedState(customerId: string): string {
 export function validateSignedState(state: string) {
   try {
     const decoded = Buffer.from(state, "base64url").toString();
-    const [customerId, timestampStr, signature] = decoded.split(":");
-
+    const [userId, timestampStr, signature] = decoded.split(":");
     const timestamp = Number(timestampStr);
 
+    if (!userId || !Number.isFinite(timestamp)) {
+      return { valid: false, userId: "" };
+    }
+
     if (Date.now() - timestamp > STATE_EXPIRY_MS) {
-      return { valid: false, customerId: "" };
+      return { valid: false, userId: "" };
     }
 
     const expectedSignature = crypto
       .createHmac("sha256", SESSION_SECRET)
-      .update(`${customerId}:${timestamp}`)
+      .update(`${userId}:${timestamp}`)
       .digest("hex")
-      .substring(0, 16);
+      .slice(0, 16);
 
-    if (signature !== expectedSignature) {
-      return { valid: false, customerId: "" };
-    }
-
-    return { valid: true, customerId };
+    return {
+      valid: signature === expectedSignature,
+      userId: signature === expectedSignature ? userId : "",
+    };
   } catch {
-    return { valid: false, customerId: "" };
+    return { valid: false, userId: "" };
   }
 }
 
-/* ================= AUTH URL ================= */
+export function getAuthUrl(userId: string) {
+  const client = getOAuth2Client();
 
-export function getAuthUrl(customerId: string) {
-  const oauth2Client = getOAuth2Client();
-
-  return oauth2Client.generateAuthUrl({
+  return client.generateAuthUrl({
     access_type: "offline",
+    prompt: "consent",
     scope: SCOPES,
-    state: generateSignedState(customerId),
+    state: generateSignedState(userId),
   });
 }
 
-/* ================= CALLBACK ================= */
-
-export async function handleCallback(code: string, customerId: string) {
+export async function handleCallback(code: string, userId: string) {
   try {
-    const oauth2Client = getOAuth2Client();
-
-    const { tokens } = await oauth2Client.getToken(code);
+    const client = getOAuth2Client();
+    const { tokens } = await client.getToken(code);
 
     if (!tokens.access_token) {
       throw new Error("No access token received");
     }
 
-    // guardamos apenas o token atual
-    await storage.updateCustomer(customerId, {
-      googleAccessToken: tokens.access_token,
-    });
-
+    await storage.updateWorkspaceUserGoogleAccessToken(userId, tokens.access_token);
     return true;
-  } catch (err) {
-    console.error("Google OAuth error:", err);
+  } catch (error) {
+    console.error("Google Calendar OAuth error:", error);
     return false;
   }
 }
 
-/* ================= CLIENT ================= */
-
-async function getAccessToken(customerId: string): Promise<string | null> {
-  const customer = await storage.getCustomer(customerId);
-
-  if (!customer) return null;
-
-  return (customer as any).googleAccessToken || null;
+async function getAccessToken(userId: string): Promise<string | null> {
+  return storage.getWorkspaceUserGoogleAccessToken(userId);
 }
 
-export async function getCalendarClientForCustomer(customerId: string) {
-  const accessToken = await getAccessToken(customerId);
+async function getCalendarClientForUser(userId: string) {
+  const accessToken = await getAccessToken(userId);
 
   if (!accessToken) {
     throw new Error("Calendar not connected");
@@ -137,58 +117,61 @@ export async function getCalendarClientForCustomer(customerId: string) {
   return google.calendar({ version: "v3", auth });
 }
 
-/* ================= EVENTS ================= */
-
 export interface CalendarEvent {
   id?: string;
   title: string;
   startTime: Date;
   endTime: Date;
   description?: string;
+  location?: string;
+  attendees?: string[];
 }
 
-export async function listEventsForCustomer(customerId: string) {
-  const calendar = await getCalendarClientForCustomer(customerId);
-
-  const res = await calendar.events.list({
+export async function listEventsForUser(userId: string) {
+  const calendar = await getCalendarClientForUser(userId);
+  const response = await calendar.events.list({
     calendarId: "primary",
     singleEvents: true,
     orderBy: "startTime",
   });
 
-  return (res.data.items || []).map((e) => ({
-    id: e.id || undefined,
-    title: e.summary || "",
-    startTime: new Date(e.start?.dateTime || ""),
-    endTime: new Date(e.end?.dateTime || ""),
-    description: e.description || undefined,
+  return (response.data.items || []).map((event) => ({
+    id: event.id || undefined,
+    title: event.summary || "Sem titulo",
+    startTime: new Date(event.start?.dateTime || event.start?.date || ""),
+    endTime: new Date(event.end?.dateTime || event.end?.date || ""),
+    description: event.description || undefined,
+    location: event.location || undefined,
+    attendees: event.attendees?.map((item) => item.email || "").filter(Boolean),
   }));
 }
 
-export async function createEventForCustomer(
-  customerId: string,
-  event: CalendarEvent
-) {
-  const calendar = await getCalendarClientForCustomer(customerId);
-
-  const res = await calendar.events.insert({
+export async function createEventForUser(userId: string, event: CalendarEvent) {
+  const calendar = await getCalendarClientForUser(userId);
+  const response = await calendar.events.insert({
     calendarId: "primary",
     requestBody: {
       summary: event.title,
       description: event.description,
+      location: event.location,
       start: {
         dateTime: event.startTime.toISOString(),
+        timeZone: "Europe/Lisbon",
       },
       end: {
         dateTime: event.endTime.toISOString(),
+        timeZone: "Europe/Lisbon",
       },
+      attendees: event.attendees?.map((email) => ({ email })),
     },
   });
 
   return {
-    id: res.data.id,
-    title: res.data.summary || "",
-    startTime: new Date(res.data.start?.dateTime || ""),
-    endTime: new Date(res.data.end?.dateTime || ""),
+    id: response.data.id || undefined,
+    title: response.data.summary || event.title,
+    startTime: new Date(response.data.start?.dateTime || response.data.start?.date || event.startTime),
+    endTime: new Date(response.data.end?.dateTime || response.data.end?.date || event.endTime),
+    description: response.data.description || event.description,
+    location: response.data.location || event.location,
   };
 }

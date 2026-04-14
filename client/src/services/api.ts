@@ -209,6 +209,17 @@ export type AdminSystemStatus = {
   database: boolean;
 };
 
+export type CalendarConnectionStatus = {
+  ok: boolean;
+  configured: boolean;
+  connected: boolean;
+};
+
+export type CalendarConnectResponse = {
+  ok: boolean;
+  connectUrl: string;
+};
+
 export type StrategistOpportunity = {
   location: string;
   market: string;
@@ -506,6 +517,16 @@ export async function getAdminUsers() {
 export async function getAdminSystemStatus() {
   const response = await apiFetch("/api/admin/system-status");
   return readJson<AdminSystemStatus>(response);
+}
+
+export async function getCalendarConnectionStatus() {
+  const response = await apiFetch("/api/calendar/google/status");
+  return readJson<CalendarConnectionStatus>(response);
+}
+
+export async function getCalendarConnectUrl() {
+  const response = await apiFetch("/api/calendar/google/connect");
+  return readJson<CalendarConnectResponse>(response);
 }
 
 export async function createAdminPlan(data: CommercialPlanInput) {

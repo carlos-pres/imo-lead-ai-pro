@@ -27,6 +27,8 @@ import {
   deleteAdminUser,
   getAdminUsers,
   getAdminSystemStatus,
+  getCalendarConnectionStatus,
+  getCalendarConnectUrl,
   getAdminPlans,
   getCompliance,
   getCurrentSession,
@@ -47,6 +49,7 @@ import {
   resetPassword,
   type AuthSession,
   type AdminSystemStatus,
+  type CalendarConnectionStatus,
   type ComplianceSummary,
   type CommercialPlanInput,
   type CreateAdminUserInput,
@@ -1132,6 +1135,9 @@ function App() {
   const [adminUserDrafts, setAdminUserDrafts] = useState<AdminUserDraftMap>({});
   const [newUserDraft, setNewUserDraft] = useState<AdminUserDraft>(() => createEmptyAdminUserDraft());
   const [adminSystemStatus, setAdminSystemStatus] = useState<AdminSystemStatus | null>(null);
+  const [calendarConnectionStatus, setCalendarConnectionStatus] =
+    useState<CalendarConnectionStatus | null>(null);
+  const [calendarConnecting, setCalendarConnecting] = useState(false);
   const [workflowDrafts, setWorkflowDrafts] = useState<WorkflowDraftMap>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -1450,6 +1456,10 @@ function App() {
     setAdminSystemStatus(null);
   }, [session]);
 
+  useEffect(() => {
+    void loadCalendarStatus();
+  }, [session]);
+
   async function bootstrap() {
     await Promise.all([loadHealth(), loadPlansCatalog(), loadCompliance(), loadPublicStats()]);
 
@@ -1553,6 +1563,20 @@ function App() {
           ? adminError.message
           : "Falha ao carregar o painel de administração"
       );
+    }
+  }
+
+  async function loadCalendarStatus() {
+    if (!session) {
+      setCalendarConnectionStatus(null);
+      return;
+    }
+
+    try {
+      const nextStatus = await getCalendarConnectionStatus();
+      setCalendarConnectionStatus(nextStatus);
+    } catch {
+      setCalendarConnectionStatus(null);
     }
   }
 
@@ -1842,6 +1866,30 @@ function App() {
       );
     } finally {
       setAuthSubmitting(false);
+    }
+  }
+
+  async function handleConnectGoogleCalendar() {
+    if (!session) {
+      setError("Inicia sessão para ligar a agenda.");
+      return;
+    }
+
+    setCalendarConnecting(true);
+    setError("");
+
+    try {
+      const response = await getCalendarConnectUrl();
+      if (typeof window !== "undefined") {
+        window.location.href = response.connectUrl;
+      }
+    } catch (calendarError) {
+      setError(
+        calendarError instanceof Error
+          ? calendarError.message
+          : "Não foi possível abrir a ligação do calendário."
+      );
+      setCalendarConnecting(false);
     }
   }
 
@@ -6158,6 +6206,29 @@ function App() {
                 Email {adminSystemStatus?.email ? "ativo" : "pendente"}, base{" "}
                 {adminSystemStatus?.database ? "ativa" : "pendente"}.
               </p>
+            </article>
+            <article className="signal-card">
+              <span>Agenda</span>
+              <strong>
+                {calendarConnectionStatus?.connected
+                  ? "Google Calendar ligado"
+                  : calendarConnectionStatus?.configured
+                    ? "Pronto para ligar"
+                    : "Configurar Google"}
+              </strong>
+              <p>
+                {calendarConnectionStatus?.connected
+                  ? "Seguimentos podem criar eventos automaticamente no calendário do utilizador."
+                  : "Liga a agenda para o agente criar reuniões e follow-ups sem passos extra."}
+              </p>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void handleConnectGoogleCalendar()}
+                disabled={calendarConnecting || !session}
+              >
+                {calendarConnecting ? "A ligar..." : "Ligar Google Calendar"}
+              </button>
             </article>
           </div>
         </section>
