@@ -23,24 +23,24 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
   email,
 }) => {
   return (
-    <section className="bg-gradient-dark px-6 py-20">
+    <section className="bg-gradient-to-br from-[#fffaf4] via-[#f7faff] to-[#efe4d3] px-6 py-20">
       <div className="mx-auto max-w-5xl">
-        <div className="relative overflow-hidden rounded-3xl border border-gold-500/30 bg-gradient-to-br from-gold-500/15 to-gold-600/15 p-12 md:p-16">
-          <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-gold-500/15 blur-3xl" />
+        <div className="relative overflow-hidden rounded-3xl border border-[#13223724] bg-gradient-to-br from-[#fffaf4] to-[#f7faff] p-12 md:p-16">
+          <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#174dbb12] blur-3xl" />
 
           <div className="relative z-10">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-500/30 bg-gold-600/20 px-4 py-2">
-              <CheckCircle2 className="h-4 w-4 text-gold-400" />
-              <span className="text-sm font-semibold text-gold-300">Pronto para começar</span>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#13223724] bg-[#174dbb18] px-4 py-2">
+              <CheckCircle2 className="h-4 w-4 text-[#174dbb]" />
+              <span className="text-sm font-semibold text-[#174dbb]">Pronto para comeÃ§ar</span>
             </div>
 
-            <h2 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl">{title}</h2>
-            <p className="mb-10 max-w-2xl text-lg leading-relaxed text-slate-300">{description}</p>
+            <h2 className="mb-6 text-4xl font-bold leading-tight text-[#132237] md:text-5xl">{title}</h2>
+            <p className="mb-10 max-w-2xl text-lg leading-relaxed text-[#7a8698]">{description}</p>
 
             <div className="mb-12 flex flex-col gap-4 sm:flex-row">
               <button
                 onClick={primaryButtonAction}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-8 py-4 text-lg font-semibold text-black-900 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-gold-500/30"
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#174dbb] to-[#2e7df6] px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#174dbb20]"
                 type="button"
               >
                 {primaryButtonLabel}
@@ -49,7 +49,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
 
               <button
                 onClick={secondaryButtonAction}
-                className="rounded-xl border border-gold-500/40 bg-black-800/50 px-8 py-4 text-lg font-semibold text-gold-400 transition-all duration-300 hover:bg-black-700/50"
+                className="rounded-xl border border-[#174dbb52] bg-white/90 px-8 py-4 text-lg font-semibold text-[#174dbb] transition-all duration-300 hover:bg-white/90"
                 type="button"
               >
                 {secondaryButtonLabel}
@@ -57,29 +57,29 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
             </div>
 
             {(whatsappNumber || email) && (
-              <div className="grid grid-cols-1 gap-6 border-t border-gold-500/20 pt-8 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 border-t border-[#1322371a] pt-8 md:grid-cols-2">
                 {whatsappNumber && (
                   <div className="flex items-start gap-4">
-                    <div className="rounded-lg bg-gold-600/20 p-3">
-                      <MessageCircle className="h-6 w-6 text-gold-400" />
+                    <div className="rounded-lg bg-[#174dbb18] p-3">
+                      <MessageCircle className="h-6 w-6 text-[#174dbb]" />
                     </div>
                     <div>
-                      <div className="mb-1 text-sm text-slate-400">Contacto rápido</div>
-                      <div className="font-semibold text-white">{whatsappNumber}</div>
-                      <div className="mt-1 text-xs text-slate-400">WhatsApp disponível 24/7</div>
+                      <div className="mb-1 text-sm text-[#8ea0b5]">Contacto rÃ¡pido</div>
+                      <div className="font-semibold text-[#132237]">{whatsappNumber}</div>
+                      <div className="mt-1 text-xs text-[#8ea0b5]">WhatsApp disponÃ­vel 24/7</div>
                     </div>
                   </div>
                 )}
 
                 {email && (
                   <div className="flex items-start gap-4">
-                    <div className="rounded-lg bg-gold-600/20 p-3">
-                      <MessageCircle className="h-6 w-6 text-gold-400" />
+                    <div className="rounded-lg bg-[#174dbb18] p-3">
+                      <MessageCircle className="h-6 w-6 text-[#174dbb]" />
                     </div>
                     <div>
-                      <div className="mb-1 text-sm text-slate-400">Email comercial</div>
-                      <div className="font-semibold text-white">{email}</div>
-                      <div className="mt-1 text-xs text-slate-400">Resposta em menos de 1h</div>
+                      <div className="mb-1 text-sm text-[#8ea0b5]">Email comercial</div>
+                      <div className="font-semibold text-[#132237]">{email}</div>
+                      <div className="mt-1 text-xs text-[#8ea0b5]">Resposta em menos de 1h</div>
                     </div>
                   </div>
                 )}
@@ -95,10 +95,10 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
             { label: "Uptime", value: "99.9%" },
             { label: "Suporte", value: "24/7" },
           ].map((badge, idx) => (
-            <div key={idx} className="rounded-xl border border-gold-500/20 bg-black-900/50 p-4 text-center">
-              <div className="mb-1 text-xs text-slate-400">{badge.label}</div>
-              <div className="text-sm font-semibold text-white">{badge.value}</div>
-            </div>
+              <div key={idx} className="rounded-xl border border-[#1322371a] bg-white/88 p-4 text-center">
+                <div className="mb-1 text-xs text-[#8ea0b5]">{badge.label}</div>
+                <div className="text-sm font-semibold text-[#132237]">{badge.value}</div>
+              </div>
           ))}
         </div>
       </div>

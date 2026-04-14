@@ -1076,11 +1076,10 @@ function getPoolConfig(): PoolConfig | null {
       const hostname = url.hostname;
       const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
       const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
-      const isInternalRailwayHost = isRailwayInternalHostname(hostname);
 
       if (sslMode === "disable") {
         ssl = undefined;
-      } else if (isLocalHost || isInternalRailwayHost) {
+      } else if (isLocalHost) {
         ssl = undefined;
       } else {
         ssl = { rejectUnauthorized: false };
@@ -1111,8 +1110,7 @@ function getPoolConfig(): PoolConfig | null {
       database: process.env.PGDATABASE,
       ssl:
         process.env.PGHOST === "localhost" ||
-        process.env.PGHOST === "127.0.0.1" ||
-        isRailwayInternalHostname(process.env.PGHOST)
+        process.env.PGHOST === "127.0.0.1"
           ? undefined
           : { rejectUnauthorized: false },
       connectionTimeoutMillis: 10_000,

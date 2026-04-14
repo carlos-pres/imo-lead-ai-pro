@@ -13,32 +13,31 @@ export function TasksPanel({ leads, onScheduleFollowUp, onOpenAutomation }: Task
     return (
       <EmptyState
         title="Sem tarefas urgentes"
-        description="A equipa está em dia. Pode abrir a automação para preparar a próxima cadência."
-        ctaLabel="Abrir automações"
+        description="A equipa estÃ¡ em dia. Pode abrir a automaÃ§Ã£o para preparar a prÃ³xima cadÃªncia."
+        ctaLabel="Abrir automaÃ§Ãµes"
         onCta={onOpenAutomation}
       />
     );
   }
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+    <section className="rounded-3xl border border-[#1322371a] bg-white/90 p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">Tarefas urgentes</p>
-          <h3 className="text-xl font-semibold text-white">Seguimentos prioritários</h3>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#174dbb]">Tarefas urgentes</p>
+          <h3 className="text-xl font-semibold text-[#132237]">Seguimentos prioritÃ¡rios</h3>
         </div>
         <ActionButton onClick={onScheduleFollowUp}>Agendar seguimento</ActionButton>
       </div>
       <div className="mt-4 space-y-3">
         {leads.slice(0, 4).map((lead) => (
-          <article className="rounded-2xl border border-slate-700 bg-slate-950 p-4" key={lead.id}>
-            <p className="text-sm font-semibold text-white">{lead.name}</p>
-            <p className="text-sm text-slate-200">{lead.nextStep || lead.recommendedAction}</p>
-            <p className="mt-1 text-xs text-slate-300">Janela ideal de contacto: {lead.slaHours}h</p>
+          <article className="rounded-2xl border border-[#13223724] bg-[#fffaf4] p-4" key={lead.id}>
+            <p className="text-sm font-semibold text-[#132237]">{lead.name}</p>
+            <p className="text-sm text-[#415066]">{lead.nextStep || lead.recommendedAction}</p>
+            <p className="mt-1 text-xs text-[#7a8698]">Janela ideal de contacto: {lead.slaHours}h</p>
           </article>
         ))}
       </div>
     </section>
   );
 }
-

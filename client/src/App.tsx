@@ -1,4 +1,4 @@
-﻿import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import type { DragEvent, FormEvent, MouseEvent } from "react";
 import "./App.css";
 import { Dashboard } from "./components/Dashboard";
@@ -1741,7 +1741,7 @@ function App() {
           "ring-2",
           "ring-purple-500",
           "ring-offset-2",
-          "ring-offset-slate-950"
+          "ring-offset-[#fffaf4]"
         );
 
         window.setTimeout(() => {
@@ -1749,7 +1749,7 @@ function App() {
             "ring-2",
             "ring-purple-500",
             "ring-offset-2",
-            "ring-offset-slate-950"
+            "ring-offset-[#fffaf4]"
           );
         }, 1200);
       }
