@@ -144,6 +144,8 @@ export type WorkspaceUser = {
   name: string;
   email: string;
   phone?: string;
+  emailVerifiedAt?: string | null;
+  phoneVerifiedAt?: string | null;
   role: WorkspaceRole;
   officeName: string;
   teamName: string;

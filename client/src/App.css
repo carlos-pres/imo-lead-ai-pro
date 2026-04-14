@@ -346,6 +346,16 @@
   text-transform: none;
 }
 
+.mini-tags .status-pill.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #216347;
+}
+
+.mini-tags .status-pill.muted {
+  background: rgba(19, 34, 55, 0.06);
+  color: #4d5d71;
+}
+
 .lead-form label {
   display: flex;
   flex-direction: column;

@@ -2673,6 +2673,9 @@ function App() {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone || "",
+      emailVerifiedAt: user.emailVerifiedAt || null,
+      phoneVerifiedAt: user.phoneVerifiedAt || null,
       role: user.role,
       officeName: user.officeName,
       teamName: user.teamName,
@@ -2691,6 +2694,10 @@ function App() {
       },
     };
   });
+
+  function getAccountVerificationLabel(user: Pick<WorkspaceUser, "emailVerifiedAt">) {
+    return user.emailVerifiedAt ? "Email confirmado" : "Email pendente";
+  }
   const visibleNavItems = (canAccessAdmin ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.id !== "admin")).filter(
     (item) => {
       if (!activePlan) {
@@ -6232,6 +6239,10 @@ function App() {
                     <span>{user.officeName}</span>
                     <span>{user.teamName}</span>
                     <span>{user.isActive ? "Ativo" : "Bloqueado"}</span>
+                    <span className={user.emailVerifiedAt ? "status-pill success" : "status-pill muted"}>
+                      {getAccountVerificationLabel(user)}
+                    </span>
+                    {user.phone ? <span>Telefone registado</span> : null}
                   </div>
 
                   <div className="admin-permission-grid">
@@ -6307,11 +6318,15 @@ function App() {
                       <h3>{user.name}</h3>
                     </div>
 
-                    <div className="mini-tags">
-                      <span>{user.officeName}</span>
-                      <span>{user.teamName}</span>
-                      <span>{user.isActive ? "Ativo" : "Bloqueado"}</span>
-                    </div>
+                  <div className="mini-tags">
+                    <span>{user.officeName}</span>
+                    <span>{user.teamName}</span>
+                    <span>{user.isActive ? "Ativo" : "Bloqueado"}</span>
+                    <span className={user.emailVerifiedAt ? "status-pill success" : "status-pill muted"}>
+                      {getAccountVerificationLabel(user)}
+                    </span>
+                    {user.phone ? <span>Telefone registado</span> : null}
+                  </div>
                   </div>
 
                   <div className="admin-plan-form">
