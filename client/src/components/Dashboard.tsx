@@ -117,7 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 pb-16 pt-6 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#fffaf4] via-[#f7faff] to-[#efe4d3] pb-16 pt-6 text-[#132237]">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <AICopilotHero
           {...heroData}
@@ -162,3 +162,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
+
