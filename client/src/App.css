@@ -5131,3 +5131,48 @@ p {
 .app-identity-original .dashboard-rail-card p {
   color: #5c6b80;
 }
+
+/* Final hard reset for the authenticated dashboard areas: keep the original light identity
+   even when legacy dark utility classes or section defaults still exist in the tree. */
+.app-identity-original .dashboard-page-stack > section,
+.app-identity-original .dashboard-page-stack .shell-panel,
+.app-identity-original .dashboard-page-stack .dashboard-panel-compact,
+.app-identity-original .dashboard-page-stack .dashboard-ai-surface,
+.app-identity-original .dashboard-page-stack .dashboard-rail-card,
+.app-identity-original .dashboard-page-stack .dashboard-rail-card-focus,
+.app-identity-original .dashboard-page-stack .dashboard-ai-command-card,
+.app-identity-original .dashboard-page-stack .dashboard-ai-signal-card,
+.app-identity-original .dashboard-page-stack .dashboard-playbook-card,
+.app-identity-original .dashboard-page-stack .dashboard-glance-card,
+.app-identity-original .dashboard-page-stack .dashboard-note-card,
+.app-identity-original .dashboard-page-stack .dashboard-list-card,
+.app-identity-original .dashboard-page-stack .dashboard-mini-stat,
+.app-identity-original .dashboard-page-stack .dashboard-priority-hero,
+.app-identity-original .dashboard-page-stack .dashboard-compact-item,
+.app-identity-original .dashboard-page-stack .dashboard-compact-note-card {
+  border-color: rgba(19, 34, 55, 0.1) !important;
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94)) !important;
+  box-shadow: 0 16px 34px rgba(21, 33, 48, 0.08) !important;
+  color: #132237 !important;
+}
+
+.app-identity-original .dashboard-page-stack .dashboard-priority-panel,
+.app-identity-original .dashboard-page-stack .dashboard-hero-shell,
+.app-identity-original .dashboard-page-stack .dashboard-hero-shell::after {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94)) !important;
+}
+
+.app-identity-original .dashboard-page-stack .dashboard-glance-card.active,
+.app-identity-original .dashboard-page-stack .dashboard-note-card.accent,
+.app-identity-original .dashboard-page-stack .summary-card.hot,
+.app-identity-original .dashboard-page-stack .summary-card.warm,
+.app-identity-original .dashboard-page-stack .summary-card.cold {
+  background:
+    radial-gradient(circle at top left, rgba(201, 124, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(247, 250, 255, 0.94)) !important;
+  color: #132237 !important;
+}
