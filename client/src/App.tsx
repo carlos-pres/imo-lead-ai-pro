@@ -8925,48 +8925,27 @@ function App() {
   };
 
   const activeContent = renderActiveView();
-  const useOriginalIdentity = USE_ORIGINAL_MARKETING_VISUAL_IDENTITY;
-  const appIdentityClass = useOriginalIdentity ? " app-identity-original" : "";
-  const shellToneClass = useOriginalIdentity ? "bg-[#f7efe4] text-[#132237]" : "bg-slate-950 text-slate-100";
-  const shellSidebarClass = useOriginalIdentity
-    ? "hidden lg:flex w-72 flex-col border-r border-[#1322371a] bg-white/90 backdrop-blur-2xl px-4 py-6 space-y-6"
-    : "hidden lg:flex w-72 flex-col border-r border-slate-800 bg-slate-900/70 backdrop-blur-2xl px-4 py-6 space-y-6";
-  const shellHeaderClass = useOriginalIdentity
-    ? "sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#1322371a] bg-white/90 backdrop-blur-xl"
-    : "sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 bg-slate-900/70 backdrop-blur-xl";
-  const shellMainClass = useOriginalIdentity
-    ? "flex-1 overflow-y-auto bg-gradient-to-br from-[#fffaf4] via-[#f7faff] to-[#efe4d3]"
-    : "flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900";
-  const shellCardClass = useOriginalIdentity
-    ? "rounded-2xl border border-[#1322371a] bg-white/90 p-4 space-y-3"
-    : "rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3";
-  const shellCardLabelClass = useOriginalIdentity ? "text-xs text-[#5c6b80] uppercase tracking-wide" : "text-xs text-slate-400 uppercase tracking-wide";
-  const shellCardTextClass = useOriginalIdentity ? "text-sm font-semibold text-[#132237]" : "text-sm font-semibold text-white";
-  const shellMutedTextClass = useOriginalIdentity ? "text-xs text-[#5c6b80]" : "text-xs text-slate-400";
+  const appIdentityClass = " app-identity-original";
+  const shellToneClass = "bg-[#f7efe4] text-[#132237]";
+  const shellSidebarClass = "hidden lg:flex w-72 flex-col border-r border-[#1322371a] bg-white/90 backdrop-blur-2xl px-4 py-6 space-y-6";
+  const shellHeaderClass = "sticky top-0 z-20 h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#1322371a] bg-white/90 backdrop-blur-xl";
+  const shellMainClass = "flex-1 overflow-y-auto bg-gradient-to-br from-[#fffaf4] via-[#f7faff] to-[#efe4d3]";
+  const shellCardClass = "rounded-2xl border border-[#1322371a] bg-white/90 p-4 space-y-3";
+  const shellCardLabelClass = "text-xs text-[#5c6b80] uppercase tracking-wide";
+  const shellCardTextClass = "text-sm font-semibold text-[#132237]";
+  const shellMutedTextClass = "text-xs text-[#5c6b80]";
   const shellNavButtonBase = "w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-150";
   const shellNavButtonClass = (isActive: boolean) =>
-    useOriginalIdentity
-      ? `${shellNavButtonBase} ${
-          isActive
-            ? "bg-[#fffaf4] border border-[#13223724] text-[#132237] shadow-lg shadow-[#15213014]"
-            : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
-        }`
-      : `${shellNavButtonBase} ${
-          isActive
-            ? "bg-gradient-to-r from-purple-600/20 via-indigo-500/15 to-blue-500/15 border border-purple-500/60 text-white shadow-lg shadow-purple-900/30"
-            : "border border-slate-800 bg-slate-900/60 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
-        }`;
+    `${shellNavButtonBase} ${
+      isActive
+        ? "bg-[#fffaf4] border border-[#13223724] text-[#132237] shadow-lg shadow-[#15213014]"
+        : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
+    }`;
   const shellIconWrapClass = (isActive: boolean) =>
-    useOriginalIdentity
-      ? `h-9 w-9 rounded-lg flex items-center justify-center ${
-          isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"
-        }`
-      : `h-9 w-9 rounded-lg flex items-center justify-center ${
-          isActive ? "bg-gradient-to-br from-purple-500 to-blue-500 text-white" : "bg-slate-800 text-slate-300"
-        }`;
-  const shellTopBadgeClass = useOriginalIdentity
-    ? "px-2 py-1 text-xs rounded-full bg-[#174dbb1f] text-[#174dbb] border border-[#174dbb52]"
-    : "px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30";
+    `h-9 w-9 rounded-lg flex items-center justify-center ${
+      isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"
+    }`;
+  const shellTopBadgeClass = "px-2 py-1 text-xs rounded-full bg-[#174dbb1f] text-[#174dbb] border border-[#174dbb52]";
 
   return (
     <CrmStoreContext.Provider value={crmStoreValue}>
@@ -8976,13 +8955,7 @@ function App() {
       </div>
       <aside className={shellSidebarClass}>
         <div className="flex items-center gap-3">
-          <div
-            className={
-              useOriginalIdentity
-                ? "h-11 w-11 rounded-xl bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-[#174dbb33]"
-                : "h-11 w-11 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-900/30"
-            }
-          >
+          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-[#174dbb33]">
             IL
           </div>
           <div className="leading-tight">
@@ -9007,7 +8980,7 @@ function App() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold">{item.label}</span>
-                  <span className="text-xs text-slate-400">{item.hint}</span>
+                  <span className="text-xs text-[#5c6b80]">{item.hint}</span>
                 </div>
               </button>
             );
@@ -9015,8 +8988,8 @@ function App() {
         </nav>
 
         {secondaryNav.length > 0 ? (
-          <div className="pt-4 mt-2 border-t border-slate-800 space-y-1">
-            <p className="text-xs uppercase text-slate-500 px-1">Operação</p>
+          <div className="pt-4 mt-2 border-t border-[#1322371a] space-y-1">
+            <p className="text-xs uppercase text-[#7f6f5c] px-1">Operação</p>
             {secondaryNav.map((item) => {
               const isActive = item.id === activeView;
               const Icon = item.icon;
@@ -9025,36 +8998,18 @@ function App() {
                   key={item.id}
                   type="button"
                   onClick={() => navigateTo(item.id as ViewId)}
-                  className={
-                    useOriginalIdentity
-                      ? `${shellNavButtonBase} ${
-                          isActive
-                            ? "bg-[#fffaf4] border border-[#174dbb52] text-[#132237] shadow-lg shadow-[#15213014]"
-                            : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
-                        }`
-                      : `${shellNavButtonBase} ${
-                          isActive
-                            ? "bg-slate-900 border border-purple-500/50 text-white shadow-lg shadow-purple-900/25"
-                            : "border border-slate-800 bg-slate-900/50 hover:border-purple-500/40 hover:bg-slate-900 text-slate-200"
-                        }`
-                  }
+                  className={`${shellNavButtonBase} ${
+                    isActive
+                      ? "bg-[#fffaf4] border border-[#174dbb52] text-[#132237] shadow-lg shadow-[#15213014]"
+                      : "border border-[#1322371a] bg-white/75 hover:border-[#174dbb52] hover:bg-white text-[#132237]"
+                  }`}
                 >
-                  <div
-                    className={
-                      useOriginalIdentity
-                        ? `h-9 w-9 rounded-lg flex items-center justify-center ${
-                            isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"
-                          }`
-                        : `h-9 w-9 rounded-lg flex items-center justify-center ${
-                            isActive ? "text-purple-200" : "text-slate-400"
-                          }`
-                    }
-                  >
+                  <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${isActive ? "bg-[#174dbb] text-white" : "bg-[#eef3f9] text-[#5a6b81]"}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">{item.label}</span>
-                    <span className="text-xs text-slate-400">{item.description}</span>
+                    <span className="text-xs text-[#5c6b80]">{item.description}</span>
                   </div>
                 </button>
               );
@@ -9072,7 +9027,7 @@ function App() {
               {resolvedAgentLabel}
             </span>
           </div>
-          <div className={`grid grid-cols-2 gap-2 ${useOriginalIdentity ? "text-xs text-[#5c6b80]" : "text-xs text-slate-400"}`}>
+          <div className="grid grid-cols-2 gap-2 text-xs text-[#5c6b80]">
             <p>{activePlan?.includedMarkets.join(" · ") || coverageLabel}</p>
             <p>{dashboardStats.total} leads ativas</p>
             <p>{dashboardStats.overdue_followups} follow-ups</p>
@@ -9090,9 +9045,7 @@ function App() {
           <button
             type="button"
             onClick={handleLogout}
-            className={`mt-2 inline-flex items-center gap-2 text-xs font-semibold transition-colors ${
-              useOriginalIdentity ? "text-[#5c6b80] hover:text-[#132237]" : "text-slate-300 hover:text-white"
-            }`}
+            className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-[#5c6b80] transition-colors hover:text-[#132237]"
           >
             <LogOut className="h-4 w-4" />
             Terminar sessão
@@ -9103,30 +9056,26 @@ function App() {
       <div className="flex-1 flex flex-col min-h-screen">
         <header className={shellHeaderClass}>
           <div className="flex flex-col">
-            <div className={`flex items-center gap-2 text-xs uppercase tracking-wide ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-400"}`}>
-              <Sparkles className={useOriginalIdentity ? "h-4 w-4 text-[#174dbb]" : "h-4 w-4 text-purple-400"} />
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-[#5c6b80]">
+              <Sparkles className="h-4 w-4 text-[#174dbb]" />
               <span>{viewMeta.eyebrow}</span>
             </div>
             <div className="flex items-center gap-3">
-              <h1 className={`text-lg md:text-xl font-semibold ${useOriginalIdentity ? "text-[#132237]" : "text-white"}`}>{viewMeta.label}</h1>
-              <p className={`text-sm hidden md:block ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-400"}`}>{viewMeta.description}</p>
+              <h1 className="text-lg md:text-xl font-semibold text-[#132237]">{viewMeta.label}</h1>
+              <p className="text-sm hidden md:block text-[#5c6b80]">{viewMeta.description}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className={
-                useOriginalIdentity
-                  ? "relative h-10 w-10 rounded-full border border-[#1322371a] bg-white/90 hover:border-[#174dbb52] hover:text-[#174dbb] transition-colors"
-                  : "relative h-10 w-10 rounded-full border border-slate-800 bg-slate-900 hover:border-purple-500/60 hover:text-purple-200 transition-colors"
-              }
+              className="relative h-10 w-10 rounded-full border border-[#1322371a] bg-white/90 hover:border-[#174dbb52] hover:text-[#174dbb] transition-colors"
             >
-              <Bell className={useOriginalIdentity ? "h-5 w-5 m-auto text-[#5a6b81]" : "h-5 w-5 m-auto text-slate-300"} />
-              <span className={`absolute top-2 right-2 h-2 w-2 rounded-full ${useOriginalIdentity ? "bg-[#174dbb]" : "bg-purple-400"}`} />
+              <Bell className="h-5 w-5 m-auto text-[#5a6b81]" />
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#174dbb]" />
             </button>
-            <div className={useOriginalIdentity ? "flex items-center gap-3 rounded-full border border-[#1322371a] bg-white/90 px-3 py-2" : "flex items-center gap-3 rounded-full border border-slate-800 bg-slate-900/80 px-3 py-2"}>
-              <div className={useOriginalIdentity ? "h-9 w-9 rounded-full bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white" : "h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold"}>
+            <div className="flex items-center gap-3 rounded-full border border-[#1322371a] bg-white/90 px-3 py-2">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#174dbb] to-[#235fda] flex items-center justify-center text-sm font-bold text-white">
                 {session.user.name.slice(0, 1).toUpperCase()}
               </div>
               <div className="leading-tight">
@@ -9168,9 +9117,9 @@ function App() {
         <main className={shellMainClass}>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-4">
             {loading && leads.length === 0 ? (
-              <p className={`text-sm ${useOriginalIdentity ? "text-[#5c6b80]" : "text-slate-200"}`}>A carregar workspace...</p>
+              <p className="text-sm text-[#5c6b80]">A carregar workspace...</p>
             ) : null}
-            {error && !loading ? <p className={`text-sm ${useOriginalIdentity ? "text-[#a43d2a]" : "text-red-300"}`}>{error}</p> : null}
+            {error && !loading ? <p className="text-sm text-[#a43d2a]">{error}</p> : null}
             {!loading ? activeContent : null}
           </div>
         </main>
