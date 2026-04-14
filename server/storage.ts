@@ -47,6 +47,8 @@ export type WorkspaceUser = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  normalizedPhone?: string;
   role: WorkspaceRole;
   officeName: string;
   teamName: string;
@@ -54,6 +56,8 @@ export type WorkspaceUser = {
   planId: PlanType;
   planName: string;
   isActive: boolean;
+  emailVerifiedAt?: string | null;
+  phoneVerifiedAt?: string | null;
 };
 
 type WorkspaceUserRecord = WorkspaceUser & {
@@ -73,6 +77,7 @@ export type WorkspaceScope = {
 export type CreateWorkspaceUserInput = {
   name: string;
   email: string;
+  phone?: string;
   password: string;
   role: WorkspaceRole;
   officeName: string;
@@ -85,6 +90,7 @@ export type CreateWorkspaceUserInput = {
 export type UpdateWorkspaceUserInput = {
   name?: string;
   email?: string;
+  phone?: string;
   password?: string;
   role?: WorkspaceRole;
   officeName?: string;
@@ -291,6 +297,8 @@ function sanitizeWorkspaceUser(user: WorkspaceUserRecord): WorkspaceUser {
     id: enforced.id,
     name: enforced.name,
     email: enforced.email,
+    phone: enforced.phone,
+    normalizedPhone: enforced.normalizedPhone,
     role: enforced.role,
     officeName: enforced.officeName,
     teamName: enforced.teamName,
@@ -298,6 +306,8 @@ function sanitizeWorkspaceUser(user: WorkspaceUserRecord): WorkspaceUser {
     planId: enforced.planId,
     planName: enforced.planName,
     isActive: enforced.isActive,
+    emailVerifiedAt: enforced.emailVerifiedAt,
+    phoneVerifiedAt: enforced.phoneVerifiedAt,
   };
 }
 
@@ -320,6 +330,7 @@ function enforcePrimaryAdminRecord(user: WorkspaceUserRecord): WorkspaceUserReco
     planId: "custom",
     planName: getPlanConfig("custom").publicName,
     isActive: true,
+    emailVerifiedAt: user.emailVerifiedAt || new Date().toISOString(),
   };
 }
 
@@ -437,6 +448,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     id: "workspace-user-admin",
     name: PRIMARY_ADMIN_NAME,
     email: PRIMARY_ADMIN_EMAIL,
+    emailVerifiedAt: new Date().toISOString(),
     role: "admin",
     officeName: "Lisboa HQ",
     teamName: "Prime Desk Lisboa",
@@ -450,6 +462,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     id: "workspace-user-manager",
     name: "Lucas Martin",
     email: "lucas@imolead.ai",
+    phone: "+351912345678",
     role: "manager",
     officeName: "Europe Expansion Desk",
     teamName: "Growth Europe",
@@ -463,6 +476,7 @@ const fallbackWorkspaceUsers: WorkspaceUserRecord[] = [
     id: "workspace-user-consultant",
     name: "Ana Pires",
     email: "ana@imolead.ai",
+    phone: "+351923456789",
     role: "consultant",
     officeName: "Lisboa HQ",
     teamName: "Inside Sales Nurture",
@@ -492,6 +506,11 @@ function normalizePhoneNumber(value: string) {
 
   const digits = cleaned.replace(/\D/g, "");
   return digits.startsWith("351") ? `+${digits}` : `+351${digits}`;
+}
+
+function identifierLooksLikePhone(value: string) {
+  const trimmed = value.trim();
+  return /^[+\d][\d\s()-]{7,}$/.test(trimmed) && !trimmed.includes("@");
 }
 
 function normalizeStringList(values: string[] | undefined | null, fallback: string[] = []) {
@@ -1545,6 +1564,8 @@ async function initializeDatabase() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
+        phone TEXT,
+        normalized_phone TEXT,
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL,
         office_name TEXT NOT NULL,
@@ -1553,13 +1574,29 @@ async function initializeDatabase() {
         plan_id TEXT NOT NULL DEFAULT 'pro',
         plan_name TEXT NOT NULL DEFAULT 'ImoLead Pro',
         is_active BOOLEAN NOT NULL DEFAULT true,
+        email_verified_at TIMESTAMPTZ,
+        phone_verified_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
 
     await activePool.query(`
       ALTER TABLE workspace_users
-      ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true
+      ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+      ADD COLUMN IF NOT EXISTS phone TEXT,
+      ADD COLUMN IF NOT EXISTS normalized_phone TEXT,
+      ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ
+    `);
+
+    await activePool.query(`
+      UPDATE workspace_users
+      SET normalized_phone = CASE
+        WHEN phone IS NULL OR TRIM(phone) = '' THEN NULL
+        WHEN phone ~ '^\+' THEN regexp_replace(phone, '[^0-9+]', '', 'g')
+        ELSE CONCAT('+', regexp_replace(phone, '[^0-9]', '', 'g'))
+      END
+      WHERE normalized_phone IS NULL AND phone IS NOT NULL
     `);
 
     await activePool.query(`
@@ -1684,6 +1721,12 @@ async function initializeDatabase() {
     await activePool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS trial_requests_normalized_email_idx
       ON trial_requests (normalized_email)
+    `);
+
+    await activePool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS workspace_users_normalized_phone_idx
+      ON workspace_users (normalized_phone)
+      WHERE normalized_phone IS NOT NULL AND normalized_phone <> ''
     `);
 
     await activePool.query(`
@@ -1971,6 +2014,8 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
     id: String(row.id),
     name: String(row.name),
     email: String(row.email),
+    phone: row.phone ? String(row.phone) : undefined,
+    normalizedPhone: row.normalized_phone ? String(row.normalized_phone) : undefined,
     role: String(row.role) as WorkspaceRole,
     officeName: String(row.office_name),
     teamName: String(row.team_name),
@@ -1979,6 +2024,8 @@ function mapWorkspaceUserRow(row: any): WorkspaceUserRecord {
     planName: String(row.plan_name || getPlanConfig(planId).publicName),
     isActive: row.is_active === undefined ? true : Boolean(row.is_active),
     passwordHash: String(row.password_hash),
+    emailVerifiedAt: row.email_verified_at ? new Date(row.email_verified_at).toISOString() : undefined,
+    phoneVerifiedAt: row.phone_verified_at ? new Date(row.phone_verified_at).toISOString() : undefined,
   };
 }
 
@@ -2125,8 +2172,8 @@ export async function getWorkspaceUserById(id: string) {
     async (activePool) => {
       const result = await activePool.query(
         `
-          SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active
+          SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
           FROM workspace_users
           WHERE id = $1
           LIMIT 1
@@ -2144,13 +2191,113 @@ export async function getWorkspaceUserById(id: string) {
   );
 }
 
+export async function getWorkspaceUserByIdentifier(identifier: string) {
+  const trimmed = identifier.trim();
+  const normalizedEmail = trimmed.toLowerCase();
+  const normalizedPhone = identifierLooksLikePhone(trimmed) ? normalizePhoneNumber(trimmed) : null;
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+          FROM workspace_users
+          WHERE LOWER(email) = $1 OR normalized_phone = $2
+          LIMIT 1
+        `,
+        [normalizedEmail, normalizedPhone]
+      );
+
+      const row = result.rows[0];
+      return row ? sanitizeWorkspaceUser(mapWorkspaceUserRow(row)) : null;
+    },
+    async () => {
+      const user =
+        fallbackWorkspaceUsers.find(
+          (entry) =>
+            entry.email.toLowerCase() === normalizedEmail ||
+            (normalizedPhone ? entry.normalizedPhone === normalizedPhone : false)
+        ) || null;
+      return user ? sanitizeWorkspaceUser(user) : null;
+    }
+  );
+}
+
+export async function markWorkspaceUserEmailVerified(userId: string) {
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          UPDATE workspace_users
+          SET email_verified_at = NOW()
+          WHERE id = $1
+          RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+        `,
+        [userId]
+      );
+
+      const row = result.rows[0];
+      return row ? sanitizeWorkspaceUser(mapWorkspaceUserRow(row)) : null;
+    },
+    async () => {
+      const currentIndex = fallbackWorkspaceUsers.findIndex((user) => user.id === userId);
+      if (currentIndex < 0) {
+        return null;
+      }
+
+      const updated = {
+        ...fallbackWorkspaceUsers[currentIndex],
+        emailVerifiedAt: new Date().toISOString(),
+      };
+      fallbackWorkspaceUsers[currentIndex] = updated;
+      return sanitizeWorkspaceUser(updated);
+    }
+  );
+}
+
+export async function updateWorkspaceUserPassword(userId: string, password: string) {
+  const passwordHash = createPasswordHash(password);
+
+  return useDatabase(
+    async (activePool) => {
+      const result = await activePool.query(
+        `
+          UPDATE workspace_users
+          SET password_hash = $2
+          WHERE id = $1
+          RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
+        `,
+        [userId, passwordHash]
+      );
+
+      const row = result.rows[0];
+      return row ? sanitizeWorkspaceUser(mapWorkspaceUserRow(row)) : null;
+    },
+    async () => {
+      const currentIndex = fallbackWorkspaceUsers.findIndex((user) => user.id === userId);
+      if (currentIndex < 0) {
+        return null;
+      }
+
+      fallbackWorkspaceUsers[currentIndex] = {
+        ...fallbackWorkspaceUsers[currentIndex],
+        passwordHash,
+      };
+      return sanitizeWorkspaceUser(fallbackWorkspaceUsers[currentIndex]);
+    }
+  );
+}
+
 export async function listWorkspaceUsers(scope?: WorkspaceScope) {
   const users = await useDatabase(
     async (activePool) => {
       const result = await activePool.query(
         `
-          SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active
+          SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
           FROM workspace_users
           ORDER BY name ASC
         `
@@ -2179,6 +2326,7 @@ export async function createWorkspaceUser(
   assertAdminScope(scope);
 
   const normalizedEmail = normalizeEmailAddress(String(input.email || ""));
+  const normalizedPhone = input.phone ? normalizePhoneNumber(String(input.phone)) : undefined;
   const name = String(input.name || "").trim();
   const password = String(input.password || "").trim();
   const role = input.role;
@@ -2214,6 +2362,8 @@ export async function createWorkspaceUser(
     id: randomUUID(),
     name,
     email: normalizedEmail,
+    phone: normalizedPhone,
+    normalizedPhone,
     role,
     officeName,
     teamName,
@@ -2222,6 +2372,7 @@ export async function createWorkspaceUser(
     planName,
     isActive,
     passwordHash: createPasswordHash(password),
+    emailVerifiedAt: undefined,
   };
 
   return useDatabase(
@@ -2237,8 +2388,8 @@ export async function createWorkspaceUser(
       }
 
       const duplicate = await activePool.query(
-        `SELECT id FROM workspace_users WHERE LOWER(email) = $1 LIMIT 1`,
-        [normalizedEmail]
+        `SELECT id FROM workspace_users WHERE LOWER(email) = $1 OR normalized_phone = $2 LIMIT 1`,
+        [normalizedEmail, normalizedPhone ?? null]
       );
 
       if (duplicate.rows[0]) {
@@ -2248,17 +2399,19 @@ export async function createWorkspaceUser(
       const result = await activePool.query(
         `
           INSERT INTO workspace_users (
-            id, name, email, password_hash, role, office_name, team_name,
-            preferred_language, plan_id, plan_name, is_active
+            id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+            preferred_language, plan_id, plan_name, is_active, email_verified_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-          RETURNING id, name, email, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
         `,
         [
           nextUser.id,
           nextUser.name,
           nextUser.email,
+          nextUser.phone ?? null,
+          nextUser.normalizedPhone ?? null,
           nextUser.passwordHash,
           nextUser.role,
           nextUser.officeName,
@@ -2267,6 +2420,7 @@ export async function createWorkspaceUser(
           nextUser.planId,
           nextUser.planName,
           nextUser.isActive,
+          nextUser.emailVerifiedAt ?? null,
         ]
       );
 
@@ -2274,7 +2428,9 @@ export async function createWorkspaceUser(
     },
     async () => {
       const duplicate = fallbackWorkspaceUsers.find(
-        (user) => user.email.toLowerCase() === normalizedEmail
+        (user) =>
+          user.email.toLowerCase() === normalizedEmail ||
+          (normalizedPhone ? user.normalizedPhone === normalizedPhone : false)
       );
 
       if (duplicate) {
@@ -2298,8 +2454,8 @@ export async function updateWorkspaceUser(
     async (activePool) => {
       const currentResult = await activePool.query(
         `
-          SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active
+          SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
           FROM workspace_users
           WHERE id = $1
           LIMIT 1
@@ -2317,11 +2473,14 @@ export async function updateWorkspaceUser(
       const nextEmail = input.email
         ? normalizeEmailAddress(String(input.email))
         : current.email.toLowerCase();
+      const nextPhone =
+        input.phone !== undefined ? normalizeOptionalString(String(input.phone)) : current.phone;
+      const normalizedPhone = nextPhone ? normalizePhoneNumber(nextPhone) : null;
 
       if (nextEmail !== current.email.toLowerCase()) {
         const duplicate = await activePool.query(
-          `SELECT id FROM workspace_users WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`,
-          [nextEmail, id]
+          `SELECT id FROM workspace_users WHERE (LOWER(email) = $1 OR normalized_phone = $3) AND id <> $2 LIMIT 1`,
+          [nextEmail, id, normalizedPhone]
         );
 
         if (duplicate.rows[0]) {
@@ -2341,6 +2500,8 @@ export async function updateWorkspaceUser(
         ...current,
         name: normalizeOptionalString(input.name) || current.name,
         email: nextEmail,
+        phone: nextPhone ?? current.phone,
+        normalizedPhone: normalizedPhone ?? current.normalizedPhone,
         role: input.role || current.role,
         officeName: normalizeOptionalString(input.officeName) || current.officeName,
         teamName: normalizeOptionalString(input.teamName) || current.teamName,
@@ -2360,22 +2521,26 @@ export async function updateWorkspaceUser(
           SET
             name = $2,
             email = $3,
-            password_hash = $4,
-            role = $5,
-            office_name = $6,
-            team_name = $7,
-            preferred_language = $8,
-            plan_id = $9,
-            plan_name = $10,
-            is_active = $11
+            phone = $4,
+            normalized_phone = $5,
+            password_hash = $6,
+            role = $7,
+            office_name = $8,
+            team_name = $9,
+            preferred_language = $10,
+            plan_id = $11,
+            plan_name = $12,
+            is_active = $13
           WHERE id = $1
-          RETURNING id, name, email, password_hash, role, office_name, team_name,
-                    preferred_language, plan_id, plan_name, is_active
+          RETURNING id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                    preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
         `,
         [
           id,
           nextUser.name,
           nextUser.email,
+          nextUser.phone ?? null,
+          nextUser.normalizedPhone ?? null,
           nextUser.passwordHash,
           nextUser.role,
           nextUser.officeName,
@@ -2400,9 +2565,15 @@ export async function updateWorkspaceUser(
       const nextEmail = input.email
         ? normalizeEmailAddress(String(input.email))
         : current.email.toLowerCase();
+      const nextPhone =
+        input.phone !== undefined ? normalizeOptionalString(String(input.phone)) : current.phone;
+      const normalizedPhone = nextPhone ? normalizePhoneNumber(nextPhone) : null;
 
       const duplicate = fallbackWorkspaceUsers.find(
-        (user) => user.id !== id && user.email.toLowerCase() === nextEmail
+        (user) =>
+          user.id !== id &&
+          (user.email.toLowerCase() === nextEmail ||
+            (normalizedPhone ? user.normalizedPhone === normalizedPhone : false))
       );
 
       if (duplicate) {
@@ -2421,6 +2592,8 @@ export async function updateWorkspaceUser(
         ...current,
         name: normalizeOptionalString(input.name) || current.name,
         email: nextEmail,
+        phone: nextPhone ?? current.phone,
+        normalizedPhone: normalizedPhone ?? current.normalizedPhone,
         role: input.role || current.role,
         officeName: normalizeOptionalString(input.officeName) || current.officeName,
         teamName: normalizeOptionalString(input.teamName) || current.teamName,
@@ -2461,20 +2634,24 @@ export async function deleteWorkspaceUser(id: string, scope?: WorkspaceScope | n
   );
 }
 
-export async function authenticateWorkspaceUser(email: string, password: string) {
-  const normalizedEmail = email.trim().toLowerCase();
+export async function authenticateWorkspaceUser(identifier: string, password: string) {
+  const trimmedIdentifier = identifier.trim();
+  const normalizedEmail = trimmedIdentifier.toLowerCase();
+  const normalizedPhone = identifierLooksLikePhone(trimmedIdentifier)
+    ? normalizePhoneNumber(trimmedIdentifier)
+    : undefined;
 
   const record = await useDatabase(
     async (activePool) => {
       const result = await activePool.query(
         `
-          SELECT id, name, email, password_hash, role, office_name, team_name,
-                 preferred_language, plan_id, plan_name, is_active
+          SELECT id, name, email, phone, normalized_phone, password_hash, role, office_name, team_name,
+                 preferred_language, plan_id, plan_name, is_active, email_verified_at, phone_verified_at
           FROM workspace_users
-          WHERE LOWER(email) = $1
+          WHERE LOWER(email) = $1 OR normalized_phone = $2
           LIMIT 1
         `,
-        [normalizedEmail]
+        [normalizedEmail, normalizedPhone ?? null]
       );
 
       const row = result.rows[0];
@@ -2486,7 +2663,7 @@ export async function authenticateWorkspaceUser(email: string, password: string)
 
       if (isPrimaryAdminEmail(mapped.email)) {
         await activePool.query(
-          `
+          ` 
             UPDATE workspace_users
             SET
               name = $2,
@@ -2518,7 +2695,12 @@ export async function authenticateWorkspaceUser(email: string, password: string)
       return mapped;
     },
     async () => {
-      const user = fallbackWorkspaceUsers.find((entry) => entry.email.toLowerCase() === normalizedEmail) || null;
+      const user =
+        fallbackWorkspaceUsers.find(
+          (entry) =>
+            entry.email.toLowerCase() === normalizedEmail ||
+            (normalizedPhone ? entry.normalizedPhone === normalizedPhone : false)
+        ) || null;
       return user ? enforcePrimaryAdminRecord(user) : null;
     }
   );

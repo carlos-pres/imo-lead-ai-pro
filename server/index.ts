@@ -80,6 +80,8 @@ if (clientBuildPath) {
     "/contacto",
     "/entrar",
     "/criar-conta",
+    "/verificar-email",
+    "/redefinir-senha",
     "/register",
     "/app",
     "/app/*",

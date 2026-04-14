@@ -143,6 +143,7 @@ export type WorkspaceUser = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: WorkspaceRole;
   officeName: string;
   teamName: string;
@@ -155,6 +156,7 @@ export type WorkspaceUser = {
 export type CreateAdminUserInput = {
   name: string;
   email: string;
+  phone?: string;
   password: string;
   role: WorkspaceRole;
   officeName: string;
@@ -167,6 +169,7 @@ export type CreateAdminUserInput = {
 export type UpdateAdminUserInput = {
   name?: string;
   email?: string;
+  phone?: string;
   password?: string;
   role?: WorkspaceRole;
   officeName?: string;
@@ -571,18 +574,54 @@ export async function deleteAdminUser(id: string) {
   }
 }
 
-export async function login(email: string, password: string) {
+export async function login(identifier: string, password: string) {
   const response = await apiFetch("/api/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: identifier, identifier, password }),
   });
 
   const session = await readJson<AuthSession>(response);
   setSessionToken(session.token);
   return session;
+}
+
+export async function requestEmailVerification(identifier: string) {
+  const response = await apiFetch("/api/auth/request-email-verification", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email: identifier, identifier }),
+  });
+
+  return readJson<{ ok: boolean; sent?: boolean; message: string }>(response);
+}
+
+export async function requestPasswordReset(identifier: string) {
+  const response = await apiFetch("/api/auth/request-password-reset", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email: identifier, identifier }),
+  });
+
+  return readJson<{ ok: boolean; sent?: boolean; message: string }>(response);
+}
+
+export async function resetPassword(token: string, password: string) {
+  const response = await apiFetch("/api/auth/reset-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token, password }),
+  });
+
+  return readJson<{ ok: boolean; message: string }>(response);
 }
 
 export async function getCurrentSession() {

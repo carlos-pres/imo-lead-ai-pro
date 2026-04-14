@@ -106,7 +106,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 export async function sendVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
   const baseUrl = getAppBaseUrl();
   
-  const verificationUrl = `${baseUrl}/verificar-email?token=${token}`;
+  const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
   
   const html = `
     <!DOCTYPE html>

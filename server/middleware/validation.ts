@@ -32,14 +32,21 @@ export const validateRegistration = [
 ];
 
 export const validateLogin = [
+  body().custom((value) => Boolean(value?.email || value?.identifier)).withMessage('Email ou telefone obrigatorio'),
   body('email')
+    .optional({ nullable: true })
     .trim()
     .isEmail()
     .normalizeEmail()
-    .withMessage('Email inv√°lido'),
+    .withMessage('Email inv·lido'),
+  body('identifier')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ min: 3, max: 120 })
+    .withMessage('Identificador inv·lido'),
   body('password')
     .notEmpty()
-    .withMessage('Password √© obrigat√≥ria'),
+    .withMessage('Password È obrigatÛria'),
   handleValidationErrors
 ];
 
@@ -130,3 +137,4 @@ export const validateTrialRequest = [
     .withMessage('Aceite do uso de IA obrigatorio'),
   handleValidationErrors
 ];
+

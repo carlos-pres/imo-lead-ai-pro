@@ -1,9 +1,11 @@
 import { Router } from "express";
+import jwt from "jsonwebtoken";
 import { healthRouter } from "./health";
 import { leadsRouter } from "./leads";
 import { getComplianceSummary, getPrivacyContactEmail, LEGAL_POLICY_VERSION } from "../compliance";
 import * as storage from "../storage";
 import { generateToken, verifyToken } from "../auth";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email";
 import { stripeService } from "../lib/stripeService";
 import { authRateLimiter } from "../middleware/rateLimit";
 import { validateContact, validateLogin, validateTrialRequest } from "../middleware/validation";
@@ -20,6 +22,18 @@ type BillingInterval = "month" | "year";
 function getBearerToken(header?: string | null) {
   if (!header) return "";
   return header.toLowerCase().startsWith("bearer ") ? header.slice(7) : "";
+}
+
+function getAccountTokenSecret() {
+  return process.env.JWT_SECRET || process.env.SESSION_SECRET || "dev-secret";
+}
+
+function signAccountToken(payload: object, expiresIn: string) {
+  return jwt.sign(payload, getAccountTokenSecret(), { expiresIn });
+}
+
+function verifyAccountToken<T extends object>(token: string): T {
+  return jwt.verify(token, getAccountTokenSecret()) as T;
 }
 
 async function resolveUserFromRequest(req: any) {
@@ -194,6 +208,16 @@ router.get("/admin/users", requireAdmin(async (_req, res, _user, scope) => {
 router.post("/admin/users", requireAdmin(async (req, res, _user, scope) => {
   try {
     const created = await storage.createWorkspaceUser(req.body || {}, scope);
+    const createdUser = await storage.getWorkspaceUserByIdentifier(created.email);
+
+    if (createdUser) {
+      const token = signAccountToken(
+        { userId: createdUser.id, purpose: "email-verify" },
+        "7d"
+      );
+      await sendVerificationEmail(createdUser.email, createdUser.name, token);
+    }
+
     res.status(201).json(created);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao criar utilizador";
@@ -344,13 +368,15 @@ router.post("/payments/customer-portal-session", requireAuth(async (req, res, us
 }));
 
 router.post("/auth/login", authRateLimiter, validateLogin, async (req, res) => {
-  const { email, password } = req.body as { email?: string; password?: string };
-  if (!email || !password) {
-    res.status(400).json({ error: "Email e palavra-passe sao obrigatorios" });
+  const { email, identifier, password } = req.body as { email?: string; identifier?: string; password?: string };
+  const loginIdentifier = email || identifier;
+
+  if (!loginIdentifier || !password) {
+    res.status(400).json({ error: "Email, telefone e palavra-passe sao obrigatorios" });
     return;
   }
 
-  const user = await storage.authenticateWorkspaceUser(email, password);
+  const user = await storage.authenticateWorkspaceUser(loginIdentifier, password);
   if (!user) {
     res.status(401).json({ error: "Credenciais invalidas" });
     return;
@@ -362,6 +388,88 @@ router.post("/auth/login", authRateLimiter, validateLogin, async (req, res) => {
 
 router.post("/auth/logout", (_req, res) => {
   res.json({ ok: true });
+});
+
+router.post("/auth/request-email-verification", authRateLimiter, async (req, res) => {
+  const { email, identifier } = req.body as { email?: string; identifier?: string };
+  const loginIdentifier = email || identifier;
+
+  if (!loginIdentifier) {
+    res.status(400).json({ ok: false, message: "Email ou telefone sao obrigatorios" });
+    return;
+  }
+
+  const user = await storage.getWorkspaceUserByIdentifier(loginIdentifier);
+  if (!user) {
+    res.json({ ok: true, message: "Se existir uma conta, o email de verificacao foi enviado." });
+    return;
+  }
+
+  const token = signAccountToken({ userId: user.id, purpose: "email-verify" }, "7d");
+  const sent = await sendVerificationEmail(user.email, user.name, token);
+
+  res.json({
+    ok: true,
+    sent,
+    message: sent
+      ? "Email de verificacao enviado."
+      : "Conta encontrada, mas nao foi possivel enviar o email neste momento.",
+  });
+});
+
+router.get("/auth/verify-email", async (req, res) => {
+  const token = typeof req.query.token === "string" ? req.query.token : "";
+
+  if (!token) {
+    res.status(400).json({ ok: false, message: "Token em falta" });
+    return;
+  }
+
+  try {
+    const payload = verifyAccountToken<{ userId: string; purpose: string }>(token);
+    if (payload.purpose !== "email-verify") {
+      throw new Error("Token invalido");
+    }
+
+    const updated = await storage.markWorkspaceUserEmailVerified(payload.userId);
+    if (!updated) {
+      throw new Error("Utilizador nao encontrado");
+    }
+
+    const baseUrl = process.env.APP_BASE_URL || req.get("origin") || "http://localhost:3000";
+    res.redirect(`${baseUrl}/entrar?verified=1`);
+  } catch (error) {
+    const baseUrl = process.env.APP_BASE_URL || req.get("origin") || "http://localhost:3000";
+    const message = error instanceof Error ? error.message : "Nao foi possivel verificar o email";
+    res.redirect(`${baseUrl}/entrar?verified=0&error=${encodeURIComponent(message)}`);
+  }
+});
+
+router.post("/auth/request-password-reset", authRateLimiter, async (req, res) => {
+  const { email, identifier } = req.body as { email?: string; identifier?: string };
+  const loginIdentifier = email || identifier;
+
+  if (!loginIdentifier) {
+    res.status(400).json({ ok: false, message: "Email ou telefone sao obrigatorios" });
+    return;
+  }
+
+  const user = await storage.getWorkspaceUserByIdentifier(loginIdentifier);
+  if (!user) {
+    res.json({ ok: true, message: "Se existir uma conta, recebera instrucoes por email." });
+    return;
+  }
+
+  const token = signAccountToken({ userId: user.id, purpose: "password-reset" }, "2h");
+  const sent = await sendPasswordResetEmail(user.email, user.name, token);
+
+  res.json({
+    ok: true,
+    sent,
+    message: sent
+      ? "Email de recuperacao enviado."
+      : "Conta encontrada, mas nao foi possivel enviar o email neste momento.",
+  });
 });
 
 router.post("/auth/register", authRateLimiter, validateTrialRequest, async (req, res) => {
@@ -382,11 +490,38 @@ router.post("/auth/register", authRateLimiter, validateTrialRequest, async (req,
   }
 });
 
-router.post("/auth/reset-password", authRateLimiter, validateLogin, async (_req, res) => {
-  res.json({
-    ok: true,
-    message: "Se existir uma conta com esse email, vai receber instruções por email.",
-  });
+router.post("/auth/reset-password", authRateLimiter, async (req, res) => {
+  const { token, password } = req.body as { token?: string; password?: string };
+
+  if (!token || !password) {
+    res.status(400).json({ ok: false, message: "Token e nova password sao obrigatorios" });
+    return;
+  }
+
+  if (password.length < 8) {
+    res.status(400).json({ ok: false, message: "A password deve ter pelo menos 8 caracteres" });
+    return;
+  }
+
+  try {
+    const payload = verifyAccountToken<{ userId: string; purpose: string }>(token);
+    if (payload.purpose !== "password-reset") {
+      throw new Error("Token invalido");
+    }
+
+    const updated = await storage.updateWorkspaceUserPassword(payload.userId, password);
+    if (!updated) {
+      throw new Error("Utilizador nao encontrado");
+    }
+
+    res.json({
+      ok: true,
+      message: "Password atualizada com sucesso.",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Nao foi possivel atualizar a password";
+    res.status(400).json({ ok: false, message });
+  }
 });
 
 router.get("/auth/me", async (req, res) => {

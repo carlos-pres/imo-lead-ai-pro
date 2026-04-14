@@ -128,7 +128,7 @@ export async function sendOutlookEmail(options: OutlookEmailOptions): Promise<bo
 export async function sendOutlookVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
   const baseUrl = getAppBaseUrl();
   
-  const verificationUrl = `${baseUrl}/verificar-email?token=${token}`;
+  const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
   
   const html = `
     <!DOCTYPE html>

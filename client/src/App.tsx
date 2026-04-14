@@ -39,9 +39,12 @@ import {
   getTeams,
   login,
   logout,
+  requestEmailVerification,
+  requestPasswordReset,
   updateAdminPlan,
   updateAdminUser,
   updateLeadWorkflow,
+  resetPassword,
   type AuthSession,
   type AdminSystemStatus,
   type ComplianceSummary,
@@ -105,7 +108,15 @@ type ViewId =
   | "reports"
   | "pricing"
   | "admin";
-type PublicPageId = "home" | "features" | "pricing" | "contact" | "login" | "createAccount";
+type PublicPageId =
+  | "home"
+  | "features"
+  | "pricing"
+  | "contact"
+  | "login"
+  | "createAccount"
+  | "verifyEmail"
+  | "resetPassword";
 type BillingMode = "month" | "year";
 type WorkflowDraftMap = Record<string, UpdateLeadWorkflowInput>;
 type LoginForm = {
@@ -167,6 +178,7 @@ type AdminPlanDraft = {
 type AdminUserDraft = {
   name: string;
   email: string;
+  phone: string;
   password: string;
   role: WorkspaceRole;
   officeName: string;
@@ -253,6 +265,8 @@ const PUBLIC_PAGE_PATHS: Record<PublicPageId, string> = {
   contact: "/contacto",
   login: "/entrar",
   createAccount: "/criar-conta",
+  verifyEmail: "/verificar-email",
+  resetPassword: "/redefinir-senha",
 };
 
 const INTERNAL_PAGE_PATHS: Record<ViewId, string> = {
@@ -539,6 +553,7 @@ function createEmptyAdminUserDraft(): AdminUserDraft {
   return {
     name: "",
     email: "",
+    phone: "",
     password: "",
     role: "consultant",
     officeName: "Lisboa HQ",
@@ -553,6 +568,7 @@ function buildAdminUserDraft(user: WorkspaceUser): AdminUserDraft {
   return {
     name: user.name,
     email: user.email,
+    phone: user.phone || "",
     password: "",
     role: user.role,
     officeName: user.officeName,
@@ -567,6 +583,7 @@ function toAdminUserCreatePayload(draft: AdminUserDraft): CreateAdminUserInput {
   return {
     name: draft.name.trim(),
     email: draft.email.trim(),
+    phone: draft.phone.trim(),
     password: draft.password,
     role: draft.role,
     officeName: draft.officeName.trim(),
@@ -581,6 +598,7 @@ function toAdminUserUpdatePayload(draft: AdminUserDraft): UpdateAdminUserInput {
   return {
     name: draft.name.trim(),
     email: draft.email.trim(),
+    phone: draft.phone.trim(),
     password: draft.password.trim() ? draft.password : undefined,
     role: draft.role,
     officeName: draft.officeName.trim(),
@@ -691,7 +709,7 @@ function getPublicPageFromPath(pathname: string): PublicPageId {
 }
 
 function isAuthPage(page: PublicPageId) {
-  return page === "login" || page === "createAccount";
+  return page === "login" || page === "createAccount" || page === "verifyEmail" || page === "resetPassword";
 }
 
 function getViewFromPath(pathname: string): ViewId | null {
@@ -1093,6 +1111,15 @@ function App() {
     email: PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "",
     password: PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].password : "",
   });
+  const [passwordResetForm, setPasswordResetForm] = useState({
+    token: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [passwordResetSubmitting, setPasswordResetSubmitting] = useState(false);
+  const [passwordResetFeedback, setPasswordResetFeedback] = useState("");
+  const [passwordResetTone, setPasswordResetTone] = useState<"success" | "error" | "info">("info");
+  const [authNotice, setAuthNotice] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStats | null>(null);
   const [teamOverview, setTeamOverview] = useState<TeamOverview | null>(null);
@@ -1234,6 +1261,28 @@ function App() {
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get("token") || params.get("resetToken");
+    const verified = params.get("verified");
+    const error = params.get("error");
+
+    if (resetToken) {
+      setPasswordResetForm((current) => ({ ...current, token: resetToken }));
+      setPublicPage("resetPassword");
+    }
+
+    if (verified === "1") {
+      setAuthNotice("Email verificado com sucesso. Já podes entrar na conta.");
+    } else if (verified === "0" && error) {
+      setAuthNotice(`Não foi possível verificar o email: ${error}`);
+    }
+  }, [publicPage]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !session) {
@@ -1561,9 +1610,9 @@ function App() {
       const nextSession = await login(loginForm.email, loginForm.password);
 
       startTransition(() => {
-        setSession(nextSession);
-        setActivePlanId(nextSession.user.planId);
-      });
+      setSession(nextSession);
+      setActivePlanId(nextSession.user.planId);
+    });
 
       await loadWorkspace();
       navigateTo("dashboard");
@@ -1627,6 +1676,7 @@ function App() {
     startTransition(() => {
       setPublicPage("home");
       setSession(null);
+      setAuthNotice("");
       setLeads([]);
       setStats(null);
       setTeamOverview(null);
@@ -1716,6 +1766,82 @@ function App() {
       setError(submitError instanceof Error ? submitError.message : "Falha ao criar lead");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handlePasswordReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordResetSubmitting(true);
+    setPasswordResetFeedback("");
+
+    try {
+      if (passwordResetForm.password !== passwordResetForm.confirmPassword) {
+        throw new Error("As passwords não coincidem.");
+      }
+
+      if (!passwordResetForm.token) {
+        throw new Error("Token de recuperação em falta.");
+      }
+
+      const response = await resetPassword(passwordResetForm.token, passwordResetForm.password);
+      setPasswordResetTone("success");
+      setPasswordResetFeedback(response.message);
+      setPasswordResetForm({ token: "", password: "", confirmPassword: "" });
+      setAuthNotice("Password atualizada com sucesso. Podes entrar novamente.");
+      navigatePublicPage("login");
+    } catch (resetError) {
+      setPasswordResetTone("error");
+      setPasswordResetFeedback(
+        resetError instanceof Error ? resetError.message : "Não foi possível redefinir a password."
+      );
+    } finally {
+      setPasswordResetSubmitting(false);
+    }
+  }
+
+  async function handleRequestPasswordReset() {
+    if (!loginForm.email.trim()) {
+      setError("Escreve o email ou telefone para receber o link de recuperação.");
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setError("");
+
+    try {
+      const response = await requestPasswordReset(loginForm.email.trim());
+      setAuthNotice(response.message);
+    } catch (resetRequestError) {
+      setError(
+        resetRequestError instanceof Error
+          ? resetRequestError.message
+          : "Não foi possível pedir a recuperação."
+      );
+    } finally {
+      setAuthSubmitting(false);
+    }
+  }
+
+  async function handleRequestVerificationEmail() {
+    if (!loginForm.email.trim()) {
+      setError("Escreve o email ou telefone para reenviar a verificação.");
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setError("");
+
+    try {
+      const response = await requestEmailVerification(loginForm.email.trim());
+      setAuthNotice(response.message);
+    } catch (verificationError) {
+      setError(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Não foi possível pedir a verificação."
+      );
+    } finally {
+      setAuthSubmitting(false);
     }
   }
 
@@ -5861,6 +5987,16 @@ function App() {
           />
         </label>
 
+        <label>
+          Telefone
+          <input
+            type="tel"
+            value={draft.phone}
+            onChange={(event) => onChange({ phone: event.target.value })}
+            placeholder="+351 912 345 678"
+          />
+        </label>
+
         {includePassword ? (
           <label>
             Password
@@ -7298,6 +7434,122 @@ function App() {
       );
     }
 
+    if (page === "verifyEmail") {
+      return (
+        <div className="public-stage public-stage-login">
+          <div className="public-stage-head">
+            <span>Confirmação de email</span>
+            <strong>Validando acesso e preparando a conta</strong>
+          </div>
+
+          <article className="public-stage-card public-stage-card-accent public-stage-card-large">
+            <span>Estado atual</span>
+            <strong>Se o email foi confirmado, já podes entrar na conta.</strong>
+            <p>{authNotice || "A verificação é tratada automaticamente quando abres o link do email."}</p>
+            <div className="public-stage-pill-row">
+              <span>Email protegido</span>
+              <span>Trial e login ativos</span>
+            </div>
+          </article>
+
+          <div className="public-stage-cluster public-stage-cluster-compact">
+            <article className="public-stage-card">
+              <span>Próximo passo</span>
+              <strong>Aceder ao login</strong>
+              <p>Usa email ou telefone e entra na conta com o novo fluxo de acesso.</p>
+            </article>
+            <article className="public-stage-card">
+              <span>Recuperação</span>
+              <strong>Pedido de password</strong>
+              <p>Se precisares, pede um link novo de recuperação pela própria app.</p>
+            </article>
+          </div>
+        </div>
+      );
+    }
+
+    if (page === "resetPassword") {
+      return (
+        <div className="public-stage public-stage-login">
+          <div className="public-stage-head">
+            <span>Nova password</span>
+            <strong>Redefine o acesso com segurança</strong>
+          </div>
+
+          <article className="public-stage-card public-stage-card-accent public-stage-card-large">
+            <form className="public-auth-form" onSubmit={handlePasswordReset}>
+              <label className="public-form-field">
+                <span>Token de recuperação</span>
+                <input
+                  id="reset-token"
+                  value={passwordResetForm.token}
+                  onChange={(event) =>
+                    setPasswordResetForm((current) => ({ ...current, token: event.target.value }))
+                  }
+                  placeholder="Token do email"
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="public-form-field">
+                <span>Nova password</span>
+                <input
+                  id="reset-password"
+                  type="password"
+                  value={passwordResetForm.password}
+                  onChange={(event) =>
+                    setPasswordResetForm((current) => ({ ...current, password: event.target.value }))
+                  }
+                  placeholder="Nova password"
+                  autoComplete="new-password"
+                />
+              </label>
+
+              <label className="public-form-field">
+                <span>Confirmar password</span>
+                <input
+                  id="reset-password-confirm"
+                  type="password"
+                  value={passwordResetForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordResetForm((current) => ({
+                      ...current,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                  placeholder="Confirmar password"
+                  autoComplete="new-password"
+                />
+              </label>
+
+              {passwordResetFeedback ? (
+                <div
+                  className={`public-feedback ${
+                    passwordResetTone === "success" ? "success" : passwordResetTone === "error" ? "error" : ""
+                  }`}
+                >
+                  {passwordResetFeedback}
+                </div>
+              ) : null}
+
+              <div className="public-auth-actions">
+                <button className="primary-button" type="submit" disabled={passwordResetSubmitting}>
+                  {passwordResetSubmitting ? "A guardar..." : "Atualizar password"}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => navigatePublicPage("login")}
+                >
+                  Voltar ao login
+                </button>
+              </div>
+            </form>
+          </article>
+        </div>
+      );
+    }
+
     if (page === "login") {
       return (
         <div className="public-stage public-stage-login">
@@ -8039,14 +8291,15 @@ function App() {
 
         <form className="lead-form auth-form" onSubmit={handleLogin}>
           <label>
-            Email
+            Email ou telefone
             <input
               id="login-email"
+              type="text"
               value={loginForm.email}
               onChange={(event) =>
                 setLoginForm((current) => ({ ...current, email: event.target.value }))
               }
-              placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt"}
+              placeholder={PUBLIC_DEMO_ENABLED ? DEMO_ACCESS[0].email : "equipa@agencia.pt ou +351..."}
               required
             />
           </label>
@@ -8066,10 +8319,30 @@ function App() {
 
           {error ? <p className="feedback error">{error}</p> : null}
           {authBooting ? <p className="feedback">A validar sessão existente...</p> : null}
+          {authNotice ? <p className="feedback success">{authNotice}</p> : null}
 
           <button className="primary-button" type="submit" disabled={authSubmitting || authBooting}>
             {authSubmitting ? "A entrar..." : "Entrar no workspace"}
           </button>
+
+          <div className="auth-helper-actions auth-helper-actions-stack">
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={handleRequestPasswordReset}
+              disabled={authSubmitting || authBooting}
+            >
+              Esqueci a password
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={handleRequestVerificationEmail}
+              disabled={authSubmitting || authBooting}
+            >
+              Reenviar verificação
+            </button>
+          </div>
         </form>
 
         {activePlanTrialDays > 0 ? (
