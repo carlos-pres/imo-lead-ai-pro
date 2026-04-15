@@ -8608,18 +8608,6 @@ function App() {
                 >
                   Ver funcionalidades
                 </button>
-                <button
-                  className="whatsapp-button subtle"
-                  type="button"
-                  onClick={() =>
-                    handleOpenExternal(
-                      salesWhatsAppDemoUrl,
-                      "Não foi possível abrir o WhatsApp comercial neste momento."
-                    )
-                  }
-                >
-                  Falar no WhatsApp
-                </button>
               </div>
 
               <div className="public-home-chips">
@@ -8735,7 +8723,6 @@ function App() {
         </section>
 
         {renderFinalCtaSection()}
-        {renderLegalSection()}
       </>
     );
   }
@@ -8983,7 +8970,6 @@ function App() {
           </article>
         </section>
         {renderFinalCtaSection()}
-        {renderLegalSection()}
       </>
     );
   }
@@ -9015,7 +9001,6 @@ function App() {
                   : publicPage === "pricing"
                     ? renderPricingPage()
                     : renderHomePage()}
-                {renderFinalCtaSection()}
                 {renderLegalSection()}
               </>
             )}
@@ -9357,3 +9342,4 @@ function App() {
 }
 
 export default App;
+
