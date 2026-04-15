@@ -5094,8 +5094,23 @@ p {
 }
 
 .marketing-identity-original .marketing-nav {
-  background: rgba(255, 255, 255, 0.98);
-  border-bottom-color: rgba(19, 34, 55, 0.12);
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.985);
+  border-bottom: 1px solid rgba(19, 34, 55, 0.12);
+  box-shadow: 0 16px 36px rgba(10, 18, 30, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.marketing-identity-original .marketing-nav .marketing-brand p,
+.marketing-identity-original .marketing-nav .marketing-brand span,
+.marketing-identity-original .marketing-nav-links a {
+  color: #132237 !important;
+}
+
+.marketing-identity-original .marketing-nav-links a:hover,
+.marketing-identity-original .marketing-nav-links a.active {
+  color: #174dbb !important;
 }
 
 .marketing-identity-original .marketing-nav .primary-button,

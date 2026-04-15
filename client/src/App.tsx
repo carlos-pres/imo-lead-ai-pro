@@ -219,7 +219,7 @@ type PublicNavItem = {
 const NAV_ITEMS: NavItem[] = [
   {
     id: "dashboard",
-    label: "Cockpit AI",
+    label: "Cockpit IA",
     eyebrow: "Agente",
     description: "Decisão, prioridade comercial e próxima ação no mesmo cockpit.",
   },
@@ -806,7 +806,7 @@ function localizeAgentLabel(label: string) {
     return "Assistente IA";
   }
 
-  return label.replace(/\bAI\b/g, "IA");
+  return label.replace(/\bIA\b/g, "IA");
 }
 
 function getStageLabel(stage: PipelineStage) {
@@ -961,7 +961,7 @@ function buildLeadEmailSubject(lead: Lead) {
 
 function buildLeadEmailBody(lead: Lead) {
   return [
-    `Ola ${lead.name},`,
+    `Ol? ${lead.name},`,
     "",
     lead.outreachMessage,
     "",
@@ -976,7 +976,7 @@ function buildLeadEmailBody(lead: Lead) {
 
 function buildLeadWhatsAppMessage(lead: Lead) {
   return [
-    `Ola ${lead.name},`,
+    `Ol? ${lead.name},`,
     "",
     lead.outreachMessage,
     "",
@@ -1336,7 +1336,7 @@ function App() {
     if (checkoutState === "success") {
       setCheckoutFeedbackTitle("Subscrição ativada");
       setCheckoutFeedback(
-        "O checkout foi concluido e o plano ficou em ativação. O passo seguinte e entrar no workspace, validar equipa e começar a operar com o agente certo."
+        "O checkout foi concluído e o plano ficou em ativação. O passo seguinte é entrar no workspace, validar equipa e começar a operar com o agente certo."
       );
       setCheckoutFeedbackTone("success");
       setCheckoutFeedbackKind("success");
@@ -2495,7 +2495,7 @@ function App() {
   const canSwitchPlan = !session;
   const canManageLeads = session?.user.role !== "consultant";
   const activeAdminUserCount = adminUsers.filter((user) => user.isActive).length;
-  const planAllowsAI = Boolean(activePlan?.advancedAI);
+  const planAllowsIA = Boolean(activePlan?.advancedAI);
   const planAllowsAutoContact = Boolean(activePlan?.autoContact);
   const planAllowsMultiLocation = Boolean(activePlan?.multiLocation);
   const planAllowsMultiLanguage = Boolean(activePlan?.multiLanguage);
@@ -2504,10 +2504,10 @@ function App() {
   const marketingAiLabel = aiMode === "hybrid" ? "Agente IA ativo" : "Motor inteligente ativo";
   const resolvedAgentLabel = localizeAgentLabel(activePlan?.agentLabel || marketingAiLabel);
   const salesWhatsAppDemoUrl = buildSalesWhatsAppUrl(
-    "Ola, quero agendar uma demonstração do ImoLead AI Pro e perceber o plano mais indicado para a minha operação."
+    "Olá, quero agendar uma demonstração do ImoLead AI Pro e perceber o plano mais indicado para a minha operação."
   );
   const salesWhatsAppProposalUrl = buildSalesWhatsAppUrl(
-    "Ola, quero receber uma proposta comercial do ImoLead AI Pro para a minha operação."
+    "Olá, quero receber uma proposta comercial do ImoLead AI Pro para a minha operação."
   );
   const hotLeadRatio =
     dashboardStats.total > 0 ? Math.round((dashboardStats.quente / dashboardStats.total) * 100) : 0;
@@ -2519,7 +2519,7 @@ function App() {
   const dominantDeskLabel =
     routingMix.slice().sort((left, right) => right.value - left.value)[0]?.label || "Crescimento";
   const strategistModeLabel =
-    strategistRadar?.mode === "hybrid" ? "Estrategista AI ativo" : "Estrategista heurístico";
+    strategistRadar?.mode === "hybrid" ? "Estrategista IA ativo" : "Estrategista heurístico";
   const strategistHeadline =
     strategistRadar?.headline ||
     (topStrategistOpportunity
@@ -2537,7 +2537,7 @@ function App() {
       ? strategistRadar.strategicActions
       : [
           "Proteger follow-ups e owners na frente com mais urgência.",
-          "Reforcar a captação nas fontes com melhor rendimento.",
+          "Reforçar a captação nas fontes com melhor rendimento.",
           "Escalar a mesa certa consoante o plano ativo.",
         ];
   const commandSignals = [
@@ -2584,7 +2584,7 @@ function App() {
     },
     {
       eyebrow: "Governance",
-      title: "Planos, equipas e agente AI controlados pelo workspace",
+      title: "Planos, equipas e agente IA controlados pelo workspace",
       description:
         "Cada plano define cobertura geográfica, profundidade do agente, mensagens e capacidade comercial do workspace.",
     },
@@ -2628,12 +2628,12 @@ function App() {
     {
       quote:
         "Quando a equipa ve agente, radar e follow-up no mesmo cockpit, a adesao deixa de depender de improviso.",
-      author: "Gestão de Expansao",
+      author: "Gestão de Expansão",
       role: "Mesa Ibéria",
     },
     {
       quote:
-        "A diferenca esta em mostrar o que a plataforma faz logo na demo, sem slides a compensar falta de produto.",
+        "A diferença está em mostrar o que a plataforma faz logo na demo, sem slides a compensar falta de produto.",
       author: "Operação / Produto",
       role: "ImoLead AI Pro",
     },
@@ -2646,23 +2646,23 @@ function App() {
   ];
   const landingFaqs = [
     {
-      question: "Isto e um CRM generico?",
+      question: "Isto é um CRM genérico?",
       answer:
         "Não. É uma camada operacional para imobiliário com triagem, routing, radar de mercado e execução comercial.",
     },
     {
-      question: "Serve so para Portugal?",
+      question: "Serve só para Portugal?",
       answer:
         "Portugal é o mercado de entrada. A estrutura já nasce preparada para a Ibéria, idiomas e crescimento europeu.",
     },
     {
-      question: "O agente AI muda por plano?",
+      question: "O agente IA muda por plano?",
       answer:
         "Sim. O plano define cobertura geográfica, nível do agente, relatórios e capacidade operacional entregue ao cliente.",
     },
   ];
   const planGateCopy = {
-    ai: planAllowsAI ? "IA avançada ativa neste plano." : "IA avançada indisponível neste plano.",
+    ai: planAllowsIA ? "IA avançada ativa neste plano." : "IA avançada indisponível neste plano.",
     autoContact: planAllowsAutoContact
       ? "Auto-contacto ativo neste plano."
       : "Auto-contacto indisponível neste plano.",
@@ -2709,7 +2709,7 @@ function App() {
         canAdmin: user.role === "admin",
         canManagePlans: user.role === "admin",
         canManageLeads: user.role !== "consultant",
-        canUseAI: Boolean(plan?.advancedAI),
+        canUseIA: Boolean(plan?.advancedAI),
         canAutoContact: Boolean(plan?.autoContact),
         canWorkMultiLocation: Boolean(plan?.multiLocation),
         canWorkMultiLanguage: Boolean(plan?.multiLanguage),
@@ -2732,7 +2732,7 @@ function App() {
         return false;
       }
 
-      if (item.id === "reports" && !planAllowsAI) {
+      if (item.id === "reports" && !planAllowsIA) {
         return false;
       }
 
@@ -3187,13 +3187,13 @@ function App() {
         <div className="form-helper">
           <strong>{activePlan?.publicName || "ImoLead Pro"}</strong>
           <span>
-            {(activePlan?.agentLabel || "AI Copiloto") + " · mercados ativos: "}
+            {(activePlan?.agentLabel || "IA Copiloto") + " · mercados ativos: "}
             {activePlan?.includedMarkets.join(", ") || "Portugal, Espanha"}
           </span>
         </div>
 
         <label>
-          Nome do proprietario
+          Nome do proprietário
           <input
             value={form.name}
             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -3354,19 +3354,19 @@ function App() {
         <section className="hero-panel shell-panel command-panel">
           <div className="hero-copy command-copy">
             <p className="eyebrow">ImoLead AI Pro Enterprise</p>
-            <h2>Agente AI, radar de mercado e comunicação prontos no mesmo cockpit.</h2>
+            <h2>Agente IA, radar de mercado e comunicação prontos no mesmo cockpit.</h2>
             <p className="hero-text">
-              O workspace passa a mostrar quem o agente vai atacar, onde o radar esta a aquecer
+              O workspace passa a mostrar quem o agente vai atacar, onde o radar está a aquecer
               e que mensagem sai por email ou WhatsApp para a equipa agir no momento certo.
             </p>
 
             <div className="hero-actions hero-actions-grid">
               <div className="status-chip">{apiState}</div>
               <div className="status-chip muted">
-                AI {aiMode === "hybrid" ? "externa + heurística" : "heurística"}
+                IA {aiMode === "hybrid" ? "externa + heurística" : "heurística"}
               </div>
               <div className="status-chip muted">
-                {dashboardStats.average_ai_score} score médio AI
+                {dashboardStats.average_ai_score} score médio IA
               </div>
               <div className="status-chip muted">
                 {dashboardStats.active_offices} lojas ativas
@@ -3473,7 +3473,7 @@ function App() {
                     <p>{lead.location} · {lead.officeName}</p>
                   </div>
                   <div className="stack-meta">
-                    <span>AI {lead.aiScore}</span>
+                    <span>IA {lead.aiScore}</span>
                     <span>{formatCurrency(lead.price, lead.currencyCode)}</span>
                   </div>
                 </article>
@@ -3485,7 +3485,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Radar do mercado</p>
-                <h3>Mercado, origem e desk em leitura unica</h3>
+                <h3>Mercado, origem e desk em leitura única</h3>
               </div>
               <button className="ghost-button" type="button" onClick={() => navigateTo("reports")}>
                 Abrir radar
@@ -3598,8 +3598,8 @@ function App() {
 
     const communicationWhatsAppFallback = buildSalesWhatsAppUrl(
       communicationLead
-        ? `Ola, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Ação sugerida: ${communicationLead.recommendedAction}.`
-        : "Ola, preciso de apoio para operacionalizar o próximo passo comercial no cockpit."
+        ? `Olá, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Ação sugerida: ${communicationLead.recommendedAction}.`
+        : "Olá, preciso de apoio para operacionalizar o próximo passo comercial no cockpit."
     );
 
     const communicationEmailLaunchUrl = communicationEmail
@@ -3625,7 +3625,7 @@ function App() {
         value: `${aiConversionScore}%`,
         detail: communicationLead
           ? `${communicationLead.name} e a melhor aposta para acelerar hoje.`
-          : "A IA esta a priorizar os primeiros movimentos comerciais.",
+          : "A IA está a priorizar os primeiros movimentos comerciais.",
       },
       {
         label: "Janela de contacto",
@@ -3703,7 +3703,7 @@ function App() {
               <p>{resolvedAgentLabel}</p>
             </article>
             <article className="dashboard-glance-card">
-              <span>Estado AI</span>
+              <span>Estado IA</span>
               <strong>{aiMode === "hybrid" ? "Hybrid" : "Heurístico"}</strong>
               <p>{dashboardStats.average_ai_score} score médio</p>
             </article>
@@ -3749,7 +3749,7 @@ function App() {
                 <span>Lead em foco</span>
                 <strong>{communicationLead.name}</strong>
                 <p>
-                  {communicationLead.location} · {communicationLead.officeName} · AI {communicationLead.aiScore}
+                  {communicationLead.location} · {communicationLead.officeName} · IA {communicationLead.aiScore}
                 </p>
                 <p>{communicationLead.recommendedAction}</p>
               </article>
@@ -3765,7 +3765,7 @@ function App() {
                     <p>{lead.location} · {lead.assignedOwner}</p>
                   </div>
                   <div className="dashboard-list-meta dashboard-compact-meta">
-                    <span>AI {lead.aiScore}</span>
+                    <span>IA {lead.aiScore}</span>
                     <span>{formatCurrency(lead.price, lead.currencyCode)}</span>
                   </div>
                 </article>
@@ -4015,11 +4015,11 @@ function App() {
             )}
           </article>
 
-          {planAllowsAI ? (
+          {planAllowsIA ? (
             <article className="shell-panel dashboard-agent-panel">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Agente AI</p>
+                  <p className="eyebrow">Agente IA</p>
                   <h3>Capacidades ativas</h3>
                 </div>
                 <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
@@ -4049,7 +4049,7 @@ function App() {
             <article className="shell-panel dashboard-agent-panel">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Agente AI</p>
+                  <p className="eyebrow">Agente IA</p>
                   <h3>Bloqueado pelo plano ativo</h3>
                 </div>
                 <button className="ghost-button" type="button" onClick={() => navigateTo("pricing")}>
@@ -4101,8 +4101,8 @@ function App() {
 
     const communicationWhatsAppFallback = buildSalesWhatsAppUrl(
       communicationLead
-        ? `Ola, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Ação sugerida: ${communicationLead.recommendedAction}.`
-        : "Ola, preciso de apoio para operacionalizar o próximo passo comercial no cockpit."
+        ? `Olá, preciso de apoio para operacionalizar ${communicationLead.name} em ${communicationLead.location}. Ação sugerida: ${communicationLead.recommendedAction}.`
+        : "Olá, preciso de apoio para operacionalizar o próximo passo comercial no cockpit."
     );
 
     const communicationEmailLaunchUrl = communicationEmail
@@ -4128,7 +4128,7 @@ function App() {
         value: `${aiConversionScore}%`,
         detail: communicationLead
           ? `${communicationLead.name} e a melhor aposta para acelerar hoje.`
-          : "A IA esta a priorizar os primeiros movimentos comerciais.",
+          : "A IA está a priorizar os primeiros movimentos comerciais.",
       },
       {
         label: "Janela de contacto",
@@ -4251,11 +4251,11 @@ function App() {
                 <p>
                   {communicationLead
                     ? `${communicationLead.location} · ${communicationLead.officeName} · ${communicationLead.outreachChannel}`
-                    : "A carteira ainda esta a aquecer e o agente assume o primeiro lote util assim que entra."}
+                    : "A carteira ainda está a aquecer e o agente assume o primeiro lote útil assim que entra."}
                 </p>
                 <div className="dashboard-rail-metrics">
                   <div>
-                    <small>AI</small>
+                    <small>IA</small>
                     <strong>{communicationLead?.aiScore || dashboardStats.average_ai_score}</strong>
                   </div>
                   <div>
@@ -4303,7 +4303,7 @@ function App() {
                     <p>{lead.location} · {lead.assignedOwner} · {getStageLabel(lead.pipelineStage)}</p>
                   </div>
                   <div className="dashboard-list-meta">
-                    <span>AI {lead.aiScore}</span>
+                    <span>IA {lead.aiScore}</span>
                     <span>{lead.slaHours}h</span>
                   </div>
                 </article>
@@ -5592,7 +5592,7 @@ function App() {
                   </div>
 
                   <div className="pricing-section">
-                    <p className="pricing-section-title">Agente AI</p>
+                    <p className="pricing-section-title">Agente IA</p>
                     <div className="agent-box">
                       <span>{plan.agentLabel}</span>
                       <ul className="feature-list compact-list">
@@ -5779,7 +5779,7 @@ function App() {
           <input
             value={draft.agentLabel}
             onChange={(event) => onChange({ agentLabel: event.target.value })}
-            placeholder="AI Orchestrator"
+            placeholder="Orquestrador IA"
           />
         </label>
 
@@ -6081,7 +6081,7 @@ function App() {
               <p>Conta principal com governance total do workspace.</p>
             </article>
             <article className="signal-card">
-              <span>Catalogo ativo</span>
+              <span>Cat?logo ativo</span>
               <strong>{adminPlans.filter((plan) => plan.isActive && plan.isPublic).length}</strong>
               <p>Planos visíveis neste momento no pricing público.</p>
             </article>
@@ -6099,7 +6099,7 @@ function App() {
               <span>Integrações</span>
               <strong>
                 {[
-                  adminSystemStatus?.ai ? "AI" : null,
+                  adminSystemStatus?.ai ? "IA" : null,
                   adminSystemStatus?.stripe ? "Stripe" : null,
                   adminSystemStatus?.whatsapp ? "WhatsApp" : null,
                   adminSystemStatus?.googleCalendar ? "Calendar" : null,
@@ -6189,7 +6189,7 @@ function App() {
                     {plan.users} utilizadores · {plan.leads} leads · {plan.messages}
                   </p>
                   <p>
-                    AI {plan.ai} · Auto-contacto {plan.autoContact} · Multi-loja {plan.multiLocation}
+                    IA {plan.ai} · Auto-contacto {plan.autoContact} · Multi-loja {plan.multiLocation}
                   </p>
                   <p>
                     Multi-idioma {plan.multiLanguage} · {plan.support} · {plan.reports}
@@ -6235,8 +6235,8 @@ function App() {
                       <strong>{user.permissions.canManageLeads ? "Sim" : "Não"}</strong>
                     </article>
                     <article>
-                      <span>AI</span>
-                      <strong>{user.permissions.canUseAI ? "Sim" : "Não"}</strong>
+                      <span>IA</span>
+                      <strong>{user.permissions.canUseIA ? "Sim" : "Não"}</strong>
                     </article>
                     <article>
                       <span>Auto-contacto</span>
@@ -6567,7 +6567,7 @@ function App() {
               <article className="marketing-showcase-card featured">
                 <div className="marketing-showcase-copy">
                   <span>Funcionalidades</span>
-                  <strong>Blocos claros para explicar valor sem parecer software generico</strong>
+                  <strong>Blocos claros para explicar valor sem parecer software genérico</strong>
                   <p>
                     Captação, classificação, mensagens, agenda e relatórios apresentados de forma
                     simples, vendavel e orientada ao mercado.
@@ -6603,7 +6603,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Tudo o que precisa para automatizar</p>
-                <h3>Captação, classificação, mensagens e controlo num unico sistema</h3>
+                <h3>Captação, classificação, mensagens e controlo num único sistema</h3>
               </div>
             </div>
 
@@ -6641,7 +6641,7 @@ function App() {
             <article className="shell-panel marketing-story-card">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Percepcao de valor</p>
+                  <p className="eyebrow">Perceção de valor</p>
                   <h3>Como deve soar para um diretor comercial</h3>
                 </div>
               </div>
@@ -6903,7 +6903,7 @@ function App() {
               <p className="eyebrow">Fecho comercial</p>
               <h3>Vender isto deve parecer uma demonstração, não uma promessa vaga</h3>
               <p className="hero-text">
-                O passo seguinte e simples: usar esta landing como frente comercial e manter
+                O passo seguinte é simples: usar esta landing como frente comercial e manter
                 o cockpit para utilizadores autenticados, com a mesma identidade de marca.
               </p>
 
@@ -6928,7 +6928,7 @@ function App() {
                     openLandingPricing(
                       "custom",
                       "Oferta enterprise em foco",
-                      "A secao de planos abre com a camada enterprise destacada para conversa de valor e escala."
+                      "A secção de planos abre com a camada enterprise destacada para conversa de valor e escala.",
                     )
                   }
                 >
@@ -7017,7 +7017,7 @@ function App() {
               onClick={() =>
                 openLandingPricing(
                   activePlanId,
-                  "Revisao rapida do plano selecionado",
+                  "Revisão rápida do plano selecionado",
                   "Voltamos a oferta mantendo o plano atual ativo para comparação imediata."
                 )
               }
@@ -7049,7 +7049,7 @@ function App() {
               </div>
 
               <p className="trial-copy">
-                O trial fica limitado a um unico email e um unico telefone, para evitar
+                O trial fica limitado a um único email e um único telefone, para evitar
                 reutilização do período inicial. Antes de reservar, confirmas privacidade,
                 termos e uso de IA.
               </p>
@@ -7062,7 +7062,7 @@ function App() {
                     onChange={(event) =>
                       setTrialForm((current) => ({ ...current, name: event.target.value }))
                     }
-                    placeholder="Nome do responsavel"
+                    placeholder="Nome do responsável"
                     required
                   />
                 </label>
@@ -7105,7 +7105,7 @@ function App() {
                     required
                   />
                   <span>
-                    Aceito a <a href="#legal-privacy">Politica de Privacidade</a> e o tratamento
+                    Aceito a <a href="#legal-privacy">Política de Privacidade</a> e o tratamento
                     dos meus dados para contacto comercial e operação do trial.
                   </span>
                 </label>
@@ -7141,7 +7141,7 @@ function App() {
                     required
                   />
                   <span>
-                    Compreendo a nota de <a href="#legal-ai">uso de IA</a> e que algumas funcoes
+                    Compreendo a nota de <a href="#legal-ai">uso de IA</a> e que algumas funções
                     podem envolver processamento por fornecedores externos quando o plano o permitir.
                   </span>
                 </label>
@@ -7246,7 +7246,7 @@ function App() {
 
           <div className="auth-legal-stack">
             <article className="auth-legal-card">
-              <span>Politica ativa</span>
+              <span>Política ativa</span>
               <strong>Versão {policyVersion}</strong>
               <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
             </article>
@@ -7314,7 +7314,7 @@ function App() {
         <div className="public-stage public-stage-features">
           <div className="public-stage-head">
             <span>Motor do produto</span>
-            <strong>Seis blocos que explicam valor sem parecer software generico</strong>
+            <strong>Seis blocos que explicam valor sem parecer software genérico</strong>
           </div>
 
           <div className="public-stage-cluster">
@@ -7393,7 +7393,7 @@ function App() {
         <div className="public-stage public-stage-contact">
           <div className="public-stage-head">
             <span>Fecho e governance</span>
-            <strong>Contacto real, linguagem clara e compliance visível antes da reuniao</strong>
+            <strong>Contacto real, linguagem clara e compliance visível antes da reunião</strong>
           </div>
 
           <div className="public-stage-cluster">
@@ -7416,7 +7416,7 @@ function App() {
             </article>
 
             <article className="public-stage-card">
-              <span>Politica ativa</span>
+              <span>Política ativa</span>
               <strong>{policyVersion}</strong>
               <p>Trial com consentimento, uso de IA explicado e documentos legais ligados ao fluxo.</p>
             </article>
@@ -7599,7 +7599,7 @@ function App() {
               ? `${topMarket.totalLeads} leads ativas, score médio ${topMarket.averageAiScore} e ${dashboardStats.urgent_actions} ações urgentes visíveis.`
               : publicTotalLeads > 0
                 ? `${publicTotalLeads} leads ativas públicas, ${publicHotLeads} quentes, ${publicUrgent} urgentes em SLA curto.`
-                : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com criterio comercial."}
+                : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com critério comercial."}
           </p>
           <div className="public-stage-pill-row">
             <span>{coverageLabel}</span>
@@ -8103,7 +8103,7 @@ function App() {
           <article className="marketing-final-card">
             <span>Compliance</span>
             <strong>{privacyContactEmail}</strong>
-            <p>Politica {policyVersion} com trial protegido, consentimento explicito e contacto RGPD.</p>
+            <p>Política {policyVersion} com trial protegido, consentimento explícito e contacto RGPD.</p>
           </article>
         </div>
       </section>
@@ -8271,7 +8271,7 @@ function App() {
             onClick={() =>
               openLandingPricing(
                 activePlanId,
-                "Revisao rapida do plano selecionado",
+                "Revisão rápida do plano selecionado",
                 "Voltamos a oferta mantendo o plano atual ativo para comparação imediata."
               )
             }
@@ -8346,7 +8346,7 @@ function App() {
             </div>
 
             <p className="trial-copy">
-              O trial fica limitado a um unico email e um unico telefone, para evitar reutilização
+              O trial fica limitado a um único email e um único telefone, para evitar reutilização
               do período inicial. Antes de reservar, confirmas privacidade, termos e uso de IA.
             </p>
 
@@ -8359,7 +8359,7 @@ function App() {
                   onChange={(event) =>
                     setTrialForm((current) => ({ ...current, name: event.target.value }))
                   }
-                  placeholder="Nome do responsavel"
+                  placeholder="Nome do responsável"
                   required
                 />
               </label>
@@ -8410,7 +8410,7 @@ function App() {
                       navigatePublicPage("contact", "legal-privacy");
                     }}
                   >
-                    Politica de Privacidade
+                    Política de Privacidade
                   </a>{" "}
                   e o tratamento dos meus dados para contacto comercial e operação do trial.
                 </span>
@@ -8467,7 +8467,7 @@ function App() {
                   >
                     uso de IA
                   </a>{" "}
-                  e que algumas funcoes podem envolver processamento por fornecedores externos quando
+                  e que algumas funções podem envolver processamento por fornecedores externos quando
                   o plano o permitir.
                 </span>
               </label>
@@ -8534,7 +8534,7 @@ function App() {
 
         <div className="auth-legal-stack">
           <article className="auth-legal-card">
-            <span>Politica ativa</span>
+            <span>Política ativa</span>
             <strong>Versão {policyVersion}</strong>
             <p>{compliance?.dataUseSummary || LEGAL_SECTIONS[0].summary}</p>
           </article>
@@ -8732,7 +8732,7 @@ function App() {
       <>
         {renderPageHero({
           eyebrow: "Tudo o que precisa para automatizar",
-          title: "Captação, classificação, mensagens e controlo num unico sistema.",
+          title: "Captação, classificação, mensagens e controlo num único sistema.",
           text:
             "Hero mostra prova viva (leads ativas, SLA, mercados). CTA principal = demo guiada; CTA secundario = rever planos.",
           stage: "features",
@@ -8804,7 +8804,7 @@ function App() {
           <article className="shell-panel marketing-story-card">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Percepcao de valor</p>
+                <p className="eyebrow">Perceção de valor</p>
                 <h3>Como isto deve soar para um diretor comercial</h3>
               </div>
             </div>
@@ -8828,7 +8828,7 @@ function App() {
             <div className="section-head">
               <div>
                 <p className="eyebrow">Resultado</p>
-                <h3>O produto mostra valor antes de pedirmos a reuniao seguinte</h3>
+                <h3>O produto mostra valor antes de pedirmos a reunião seguinte</h3>
               </div>
             </div>
 
@@ -8929,9 +8929,9 @@ function App() {
       <>
         {renderPageHero({
           eyebrow: "Contacto e compliance",
-          title: "Fechar a conversa com contacto real, governance e politicas visíveis.",
+          title: "Fechar a conversa com contacto real, governance e políticas visíveis.",
           text:
-            "Esta pagina concentra fecho comercial, contacto RGPD, oferta enterprise e os documentos que sustentam a operação pública.",
+            "Esta página concentra fecho comercial, contacto RGPD, oferta enterprise e os documentos que sustentam a operação pública.",
           stage: "contact",
           primaryLabel: "Falar no WhatsApp",
           secondaryLabel: "Abrir demo enterprise",
@@ -8966,7 +8966,7 @@ function App() {
           <article className="public-contact-card">
             <span>Versão legal</span>
             <strong>{policyVersion}</strong>
-            <p>Politicas visíveis, trial com consentimento e uso de IA explicado sem esconder riscos.</p>
+            <p>Políticas visíveis, trial com consentimento e uso de IA explicado sem esconder riscos.</p>
           </article>
         </section>
         {renderFinalCtaSection()}
@@ -9243,7 +9243,7 @@ function App() {
             <p>{activePlan?.includedMarkets.join(" · ") || coverageLabel}</p>
             <p>{dashboardStats.total} leads ativas</p>
             <p>{dashboardStats.overdue_followups} follow-ups</p>
-            <p>{aiMode === "hybrid" ? "AI externa" : "AI heurística"}</p>
+            <p>{aiMode === "hybrid" ? "IA externa" : "IA heurística"}</p>
           </div>
         </div>
 
