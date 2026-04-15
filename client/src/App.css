@@ -3524,6 +3524,249 @@
   border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
+.public-home-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(82, 128, 255, 0.22), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(52, 211, 153, 0.12), transparent 28%),
+    linear-gradient(135deg, #0b1220 0%, #132237 52%, #1f3b68 100%);
+  color: #ffffff;
+  box-shadow: 0 26px 60px rgba(10, 18, 30, 0.18);
+}
+
+.public-home-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% auto auto -8%;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 68%);
+  pointer-events: none;
+}
+
+.public-home-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -18% auto;
+  width: 340px;
+  height: 340px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.public-home-hero .marketing-nav {
+  position: relative;
+  z-index: 1;
+  background: rgba(7, 14, 26, 0.76);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.public-home-hero .marketing-brand p {
+  color: #ffffff;
+}
+
+.public-home-hero .marketing-brand span,
+.public-home-hero .marketing-nav-links a {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.public-home-hero .marketing-nav-links a:hover,
+.public-home-hero .marketing-nav-links a.active {
+  color: #ffffff;
+}
+
+.public-home-hero .marketing-nav .ghost-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.public-home-hero .marketing-nav .primary-button {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.28);
+}
+
+.public-home-hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.82fr);
+  gap: 28px;
+  padding: 34px;
+  align-items: stretch;
+}
+
+.public-home-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  padding: 8px 4px 8px 6px;
+}
+
+.public-home-copy h1 {
+  margin: 0;
+  max-width: 10ch;
+  color: #ffffff;
+  font-size: clamp(3rem, 5vw, 5.6rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+}
+
+.public-home-copy .hero-text,
+.public-home-copy .eyebrow {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.public-home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.public-home-chips .status-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.public-home-chips .status-chip.muted {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.public-home-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.public-home-summary-card {
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid rgba(19, 34, 55, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  color: #132237;
+  box-shadow: 0 18px 36px rgba(10, 18, 30, 0.16);
+}
+
+.public-home-summary-card-featured {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.95));
+}
+
+.public-home-summary-card span,
+.public-home-summary-tile span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-home-summary-card span {
+  color: #8a6d54;
+}
+
+.public-home-summary-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.55rem;
+  line-height: 1.2;
+  color: #132237;
+}
+
+.public-home-summary-card p {
+  margin: 10px 0 0;
+  color: #53647a;
+  line-height: 1.6;
+}
+
+.public-home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-home-summary-tile {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+}
+
+.public-home-summary-tile:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.public-home-summary-tile strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.public-home-summary-tile p {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.55;
+}
+
+.public-home-highlights,
+.public-home-proof {
+  margin-top: 6px;
+}
+
+.public-home-highlights .home-feature-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.public-home-proof .marketing-results-copy {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.95));
+}
+
+@media (max-width: 980px) {
+  .public-home-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-home-copy h1 {
+    max-width: none;
+  }
+
+  .public-home-summary-grid,
+  .public-home-highlights .home-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-home-summary-tile:nth-child(3) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .public-home-hero-grid {
+    padding: 20px;
+  }
+
+  .public-home-copy {
+    padding: 6px 0 0;
+  }
+
+  .public-home-summary-card,
+  .public-home-summary-tile {
+    border-radius: 20px;
+  }
+}
+
 /* Original light palette baseline for the full app. */
 :root {
   --ink: #132237;

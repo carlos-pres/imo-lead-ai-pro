@@ -2638,28 +2638,6 @@ function App() {
       role: "ImoLead AI Pro",
     },
   ];
-  const landingMetricBar = [
-    {
-      label: "Leads vivas",
-      value: String(dashboardStats.total || 0),
-      detail: "pipeline monitorizada em tempo real",
-    },
-    {
-      label: "Score médio",
-      value: String(dashboardStats.average_ai_score || 0),
-      detail: "classificação com contexto comercial",
-    },
-    {
-      label: "Mercados",
-      value: String(dashboardStats.european_markets || 0),
-      detail: "Portugal, Ibéria e expansão",
-    },
-    {
-      label: "Follow-ups",
-      value: String(dashboardStats.overdue_followups || 0),
-      detail: "rastreio de backlog e urgência",
-    },
-  ];
   const landingBenefitBullets = [
     "Landing comercial que transmite confiança antes do primeiro clique.",
     "Cockpit interno com leads, pipeline, equipas, mercado e ADM no mesmo workspace.",
@@ -3003,77 +2981,6 @@ function App() {
       setPortalSubmitting(false);
     }
   }
-
-  const guidedUseCases = [
-    {
-      id: "starter",
-      eyebrow: "Consultor independente",
-      title: "Entrar no Starter com trial protegido e valor imediato",
-      detail:
-        "Ideal para mostrar triagem, foco comercial e validação do trial sem expor uma demo solta na frente pública.",
-      tags: ["15 dias trial", "1 utilizador", "Portugal"],
-      primaryLabel: "Abrir jornada Starter",
-      primaryAction: () =>
-        openLandingLogin(
-          "basic",
-          "Starter pronto para trial protegido",
-          "Mostramos a entrada mais leve do produto, com controlo de trial e caminho claro para evolução comercial.",
-          DEMO_ACCESS[2]
-        ),
-      secondaryLabel: "Comparar com Pro",
-      secondaryAction: () =>
-        openLandingPricing(
-          "pro",
-          "Comparação entre Starter e Pro",
-          "Levamos-te para a oferta Pro para veres onde a automação e a operação de equipa sobem de nível."
-        ),
-    },
-    {
-      id: "pro",
-      eyebrow: "Agencia ou equipa comercial",
-      title: "Ver o Pro como workspace vendavel para a maioria das equipas",
-      detail:
-        "A entrada certa para mostrar owners, desks, SLA, pipeline e o agente a trabalhar como copiloto operacional.",
-      tags: ["Plano mais vendável", "Até 7 utilizadores", "Portugal + Ibéria"],
-      primaryLabel: "Abrir jornada Pro",
-      primaryAction: () =>
-        openLandingLogin(
-          "pro",
-          "Pro pronto para demonstração comercial",
-          "Entramos diretamente na configuração certa para mostrar ganho de tempo, visibilidade e controlo comercial.",
-          DEMO_ACCESS[1]
-        ),
-      secondaryLabel: "Ver plano Pro",
-      secondaryAction: () =>
-        openLandingPricing(
-          "pro",
-          "Oferta Pro em foco",
-          "Mantemos o Pro selecionado para veres utilizadores, relatórios e progressão de forma imediata."
-        ),
-    },
-    {
-      id: "enterprise",
-      eyebrow: "Rede multi-loja ou direção",
-      title: "Abrir a leitura enterprise para decisores e expansão",
-      detail:
-        "Mostra governance, cobertura geográfica, controlo ADM e estrutura preparada para Portugal hoje e Europa a seguir.",
-      tags: ["25 utilizadores", "ADM e governance", "Expansão europeia"],
-      primaryLabel: "Abrir jornada Enterprise",
-      primaryAction: () =>
-        openLandingLogin(
-          "custom",
-          "Enterprise preparado para decisores",
-          "Levamos a demonstração para a leitura executiva certa, com foco em governance, equipas e escala.",
-          DEMO_ACCESS[0]
-        ),
-      secondaryLabel: "WhatsApp comercial",
-      secondaryAction: () =>
-        handleOpenExternal(
-          salesWhatsAppProposalUrl,
-          "Não foi possível abrir o WhatsApp comercial neste momento."
-        ),
-    },
-  ];
 
   const visibleLeads = leads.filter((lead) => {
     const term = deferredSearch.trim().toLowerCase();
@@ -8642,140 +8549,134 @@ function App() {
   }
 
   function renderHomePage() {
+    const homeHighlights = landingFeatureCards.slice(0, 3);
+    const homeSignals = [
+      {
+        label: "Mercado em foco",
+        value: topMarket?.market || "Portugal",
+        detail: topMarket
+          ? `${topMarket.totalLeads} leads ativas e score médio ${topMarket.averageAiScore}.`
+          : "Entrada comercial pronta para captar o primeiro lote de leads.",
+      },
+      {
+        label: "Automação",
+        value: `${followUpQueue.length} follow-ups`,
+        detail:
+          followUpQueue.length > 0
+            ? "Cadência preparada com prioridade e próxima ação visível."
+            : "Cadência pronta para disparar a partir da primeira entrada.",
+      },
+      {
+        label: "Cobertura",
+        value: coverageLabel,
+        detail: "Portugal como base, com estrutura preparada para crescer sem recomeçar.",
+      },
+    ];
+
     return (
       <>
-        {renderPageHero({
-          eyebrow: "Automação inteligente para imobiliário em Portugal",
-          title: "Automatize a prospecção imobiliária com IA.",
-          text:
-            "O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais contexto e menos trabalho manual para a equipa comercial.",
-          stage: "home",
-          primaryLabel: "Começar agora",
-          secondaryLabel: "Ver funcionalidades",
-          onPrimaryClick: () =>
-            openLandingLogin(
-              "pro",
-              "Demonstração preparada para impacto imediato",
-              "Levamos-te diretamente para a experiência que melhor mostra como a plataforma acelera follow-up, priorização e controlo comercial."
-            ),
-          onSecondaryClick: () => navigatePublicPage("features"),
-        })}
+        <section className="public-home-hero">
+          {renderPublicNav()}
 
-        <section className="marketing-metric-ribbon">
-          {landingMetricBar.map((item) => (
-            <article className="marketing-metric-card" key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <p>{item.detail}</p>
-            </article>
-          ))}
-        </section>
+          <div className="public-home-hero-grid">
+            <div className="public-home-copy">
+              <p className="eyebrow">Automação inteligente para imobiliário em Portugal</p>
+              <h1>Automatize a prospeção imobiliária com IA.</h1>
+              <p className="hero-text">
+                O ImoLead AI Pro encontra, qualifica e organiza leads com mais velocidade, mais
+                contexto e menos trabalho manual para a equipa comercial.
+              </p>
 
-        <section className="marketing-section public-sales-grid">
-          <article className="public-sales-card public-sales-card-featured">
-            <span>Camada operacional</span>
-            <strong>{resolvedAgentLabel} a ler mercado, equipa e ritmo na mesma mesa.</strong>
-            <p>
-              A home passa a mostrar o que interessa logo na entrada: agente, radar, comunicação
-              e automação em vez de uma promessa vaga de software.
-            </p>
-            <div className="public-stage-pill-row">
-              <span>{activePlan?.publicName || "ImoLead Pro"}</span>
-              <span>{coverageLabel}</span>
-              <span>{dashboardStats.urgent_actions} ações urgentes</span>
+              <div className="marketing-cta-row">
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    openLandingLogin(
+                      "pro",
+                      "Demonstração preparada para impacto imediato",
+                      "Levamos-te diretamente para a experiência que melhor mostra como a plataforma acelera follow-up, priorização e controlo comercial."
+                    )
+                  }
+                >
+                  Começar agora
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => navigatePublicPage("features")}
+                >
+                  Ver funcionalidades
+                </button>
+                <button
+                  className="whatsapp-button subtle"
+                  type="button"
+                  onClick={() =>
+                    handleOpenExternal(
+                      salesWhatsAppDemoUrl,
+                      "Não foi possível abrir o WhatsApp comercial neste momento."
+                    )
+                  }
+                >
+                  Falar no WhatsApp
+                </button>
+              </div>
+
+              <div className="public-home-chips">
+                <div className="status-chip">Mercado {topMarket?.market || "Portugal"}</div>
+                <div className="status-chip muted">
+                  {publicTotalLeads > 0
+                    ? `${publicTotalLeads} leads ativas · ${publicHotLeads} quentes`
+                    : activePlan?.publicName || "ImoLead Pro"}
+                </div>
+                <div className="status-chip muted">
+                  {publicUrgent > 0 ? `${publicUrgent} ações urgentes hoje` : "Pronto para demo guiada"}
+                </div>
+              </div>
             </div>
-          </article>
 
-          <article className="public-sales-card">
-            <span>Radar do mercado</span>
-            <strong>{topMarket?.market || "Portugal"}</strong>
-            <p>{radarHighlight}</p>
-          </article>
-
-          <article className="public-sales-card">
-            <span>Comunicação</span>
-            <strong>Email e WhatsApp no mesmo fluxo</strong>
-            <p>O agente prepara a mensagem e a equipa abre o canal certo sem sair do cockpit.</p>
-          </article>
-
-          <article className="public-sales-card">
-            <span>Automação</span>
-            <strong>{followUpQueue.length} follow-ups ativos</strong>
-            <p>Cadência comercial pronta com prioridade, owner e próxima melhor ação.</p>
-          </article>
-        </section>
-
-        <section className="marketing-section">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Entradas por cenario</p>
-              <h3>O cliente entra pelo contexto certo em vez de cair numa demo generica</h3>
-            </div>
-          </div>
-
-          <div className="marketing-scenario-grid">
-            {guidedUseCases.map((useCase) => (
-              <article
-                className={useCase.id === "pro" ? "marketing-scenario-card featured" : "marketing-scenario-card"}
-                key={useCase.id}
-              >
-                <span>{useCase.eyebrow}</span>
-                <strong>{useCase.title}</strong>
-                <p>{useCase.detail}</p>
+            <aside className="public-home-summary">
+              <article className="public-home-summary-card public-home-summary-card-featured">
+                <span>Entrada comercial viva</span>
+                <strong>{topMarket?.market || "Portugal"} lidera a operação atual</strong>
+                <p>
+                  {topMarket
+                    ? `${topMarket.totalLeads} leads ativas, score médio ${topMarket.averageAiScore} e ${dashboardStats.urgent_actions} ações urgentes visíveis.`
+                    : publicTotalLeads > 0
+                      ? `${publicTotalLeads} leads ativas públicas, ${publicHotLeads} quentes e ${publicUrgent} urgentes em SLA curto.`
+                      : "Workspace pronto para captar, classificar e distribuir o primeiro lote de leads com critério comercial."}
+                </p>
 
                 <div className="mini-tags">
-                  {useCase.tags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-
-                <div className="marketing-inline-actions">
-                  <button className="primary-button" type="button" onClick={useCase.primaryAction}>
-                    {useCase.primaryLabel}
-                  </button>
-                  <button className="ghost-button" type="button" onClick={useCase.secondaryAction}>
-                    {useCase.secondaryLabel}
-                  </button>
+                  <span>{coverageLabel}</span>
+                  <span>{activePlan?.publicName || "ImoLead Pro"}</span>
+                  <span>{resolvedAgentLabel}</span>
                 </div>
               </article>
-            ))}
+
+              <div className="public-home-summary-grid">
+                {homeSignals.map((signal) => (
+                  <article className="public-home-summary-tile" key={signal.label}>
+                    <span>{signal.label}</span>
+                    <strong>{signal.value}</strong>
+                    <p>{signal.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </aside>
           </div>
         </section>
 
-        <section className="marketing-section public-sales-grid">
-          <article className="public-sales-card public-sales-card-featured">
-            <span>Pitch de venda</span>
-            <strong>Uma entrada que vende autoridade e uma área interna que entrega operação.</strong>
-            <p>
-              A conversa deixa de ser "mais um CRM" e passa a ser controlo comercial, triagem com
-              IA, desks claros e crescimento preparado para Portugal e Europa.
-            </p>
-            <div className="public-stage-pill-row">
-              <span>{coverageLabel}</span>
-              <span>{dominantDeskLabel}</span>
-              <span>{activePlan?.publicName || "ImoLead Pro"}</span>
-            </div>
-          </article>
-
-          {commandSignals.map((signal) => (
-            <article className="public-sales-card" key={signal.label}>
-              <span>{signal.label}</span>
-              <strong>{signal.value}</strong>
-              <p>{signal.detail}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="marketing-section" id="landing-features">
+        <section className="marketing-section public-home-highlights">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Tudo o que precisa para automatizar</p>
-              <h3>Captação, classificação, mensagens e controlo num unico sistema</h3>
+              <p className="eyebrow">O essencial</p>
+              <h3>Menos ruído na primeira dobra. Mais clareza para vender.</h3>
             </div>
           </div>
 
           <div className="marketing-feature-grid home-feature-grid">
-            {landingFeatureCards.map((feature) => (
+            {homeHighlights.map((feature) => (
               <article className="marketing-feature-card" key={feature.title}>
                 <span>{feature.eyebrow}</span>
                 <strong>{feature.title}</strong>
@@ -8785,40 +8686,12 @@ function App() {
           </div>
         </section>
 
-        <section className="marketing-section marketing-results-shell">
-          <article className="shell-panel marketing-results-visual">
-            <div className="marketing-results-board">
-              <div className="marketing-results-head">
-                <span>Vista executiva</span>
-                <strong>{topMarket?.market || "Portugal"} em destaque</strong>
-              </div>
-
-              <div className="marketing-results-grid">
-                <article>
-                  <span>Equipa</span>
-                  <strong>{dominantDeskLabel}</strong>
-                </article>
-                <article>
-                  <span>Fonte lider</span>
-                  <strong>{dominantSource}</strong>
-                </article>
-                <article>
-                  <span>Quentes</span>
-                  <strong>{dashboardStats.quente}</strong>
-                </article>
-                <article>
-                  <span>SLA urgente</span>
-                  <strong>{dashboardStats.urgent_actions}</strong>
-                </article>
-              </div>
-            </div>
-          </article>
-
+        <section className="marketing-section public-home-proof">
           <article className="shell-panel marketing-results-copy">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Resultado pedido</p>
-                <h3>Uma estrutura que explica valor sem parecer improviso</h3>
+                <p className="eyebrow">Sinal de valor</p>
+                <h3>O que o cliente percebe antes de falar com a equipa</h3>
               </div>
             </div>
 
@@ -8835,7 +8708,7 @@ function App() {
                 onClick={() =>
                   openLandingLogin(
                     activePlanId,
-                    "Entrar agora e ver o ganho de tempo na pratica",
+                    "Entrar agora e ver o ganho de tempo na prática",
                     "Já escolhemos um perfil demo compatível com este plano para reduzires atrito e entrares direto na experiência certa."
                   )
                 }
@@ -8861,9 +8734,8 @@ function App() {
           </article>
         </section>
 
-        {renderPricingCardsSection()}
-        {renderSocialProofSection()}
         {renderFinalCtaSection()}
+        {renderLegalSection()}
       </>
     );
   }
