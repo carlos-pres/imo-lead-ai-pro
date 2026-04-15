@@ -4804,7 +4804,7 @@ p {
   }
 }
 
-/* Optional legacy-inspired public identity (opt-in via VITE_MARKETING_VISUAL_IDENTITY=original). */
+/* Public identity: original Replit-inspired visual baseline. */
 .marketing-identity-original.public-marketing-shell,
 .marketing-identity-original.public-login-shell {
   background: #f2f4f7;

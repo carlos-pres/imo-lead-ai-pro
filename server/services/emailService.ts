@@ -2,6 +2,10 @@ import OpenAI from "openai";
 import { getOpenAIHeavyModel } from "../lib/aiModelConfig.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const APP_BASE_URL =
+  process.env.APP_BASE_URL ||
+  process.env.PUBLIC_APP_URL ||
+  "http://localhost:3000";
 
 interface EmailConfig {
   provider: "sendgrid" | "resend" | "smtp";
@@ -162,7 +166,7 @@ Para continuar a usar a plataforma com AI, pipeline e relatorios de mercado, pod
 
 Todos os planos anuais incluem 20% de desconto fixo.
 
-Aceda a sua conta em: https://imo-lead-ai-pro.replit.app/loja
+  Aceda a sua conta em: ${APP_BASE_URL}/loja
 
 Se tiver alguma questao, responda a este email.
 
@@ -216,7 +220,7 @@ Equipa ImoLead AI Pro`;
       </div>
       
       <center>
-        <a href="https://imo-lead-ai-pro.replit.app/loja" class="btn">Ver Planos</a>
+        <a href="${APP_BASE_URL}/loja" class="btn">Ver Planos</a>
       </center>
       
       <p style="margin-top: 30px;">Se tiver alguma questao, responda a este email.</p>
