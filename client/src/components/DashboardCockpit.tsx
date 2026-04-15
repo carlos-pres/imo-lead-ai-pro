@@ -45,7 +45,7 @@ export function AICopilotHero({
           </div>
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#5c6b80]">
-              Copiloto Comercial IA
+              Agente em ação
             </p>
             <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-[#132237] sm:text-4xl lg:text-5xl">
               {greeting} {summary}
@@ -89,21 +89,21 @@ export function AICopilotHero({
         </div>
 
         <div className="rounded-3xl border border-[#1322371a] bg-white/90 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8698]">Oportunidade principal</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8698]">Estado agora</p>
           <div className="mt-3 space-y-3">
             <h2 className="text-2xl font-semibold text-[#132237]">{bestOpportunityTitle}</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-[#13223724] bg-[#fffaf4] p-3">
-                <span className="text-xs uppercase tracking-wider text-[#7a8698]">Estado</span>
+                <span className="text-xs uppercase tracking-wider text-[#7a8698]">Lead em foco</span>
                 <strong className="mt-1 block text-lg text-[#132237]">Prioridade máxima</strong>
               </div>
               <div className="rounded-2xl border border-[#13223724] bg-[#fffaf4] p-3">
-                <span className="text-xs uppercase tracking-wider text-[#7a8698]">Janela</span>
+                <span className="text-xs uppercase tracking-wider text-[#7a8698]">SLA</span>
                 <strong className="mt-1 block text-lg text-[#132237]">Hoje</strong>
               </div>
             </div>
             <div className="rounded-2xl border border-[#174dbb35] bg-[#174dbb14] p-4">
-              <p className="text-sm font-semibold text-[#174dbb]">Próxima ação</p>
+              <p className="text-sm font-semibold text-[#174dbb]">Ação seguinte</p>
               <p className="mt-1 text-sm leading-relaxed text-[#415066]">{recommendation}</p>
             </div>
             <button
@@ -136,14 +136,14 @@ export function PriorityActionCard({
     <section className="rounded-3xl border border-[#1322371a] bg-white/90 p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#174dbb]">Ação imediata</p>
-          <h2 className="text-xl font-semibold text-[#132237]">O que fazer agora</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#174dbb]">Agora</p>
+          <h2 className="text-xl font-semibold text-[#132237]">O que fazer primeiro</h2>
         </div>
       </div>
-      <p className="mt-2 text-sm text-[#415066]">{leadName ? `Ações para ${leadName}.` : "Comece por aqui."}</p>
+      <p className="mt-2 text-sm text-[#415066]">{leadName ? `Passo imediato para ${leadName}.` : "Comece por aqui."}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <button className="rounded-2xl border border-[#13223724] bg-[#fffaf4] p-4 text-left transition hover:border-[#174dbb68]" onClick={onOpenWhatsApp} type="button">
-          <p className="text-xs uppercase tracking-wider text-[#7a8698]">1. WhatsApp</p>
+          <p className="text-xs uppercase tracking-wider text-[#7a8698]">1. Contacto</p>
           <strong className="mt-1 block text-[#132237]">{leadName ? `Abrir WhatsApp de ${leadName}` : "Abrir WhatsApp"}</strong>
           <p className="mt-2 text-sm text-[#415066]">Abre a conversa.</p>
         </button>
@@ -245,14 +245,16 @@ export function KPIOverviewRow({ kpis }: { kpis: KpiItem[] }) {
 export function QuickActionsBar({
   onOpenPipeline,
   onOpenWhatsApp,
+  onOpenProposal,
 }: {
   onOpenPipeline?: () => void;
   onOpenWhatsApp?: () => void;
+  onOpenProposal?: () => void;
 }) {
   const actions = [
     { label: "Abrir WhatsApp", handler: onOpenWhatsApp },
     { label: "Ver pipeline", handler: onOpenPipeline },
-    { label: "Ver proposta", handler: onOpenPipeline },
+    { label: "Abrir proposta", handler: onOpenProposal },
   ];
 
   return (

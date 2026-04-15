@@ -66,17 +66,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const nextAction = selectRecommendedNextAction(priorityLead);
 
   const heroData = {
-    greeting: "Hoje o foco está certo.",
-    summary: `Tem ${Math.max(5, urgentCount || 0)} oportunidades urgentes hoje.`,
+    greeting: "Agente em ação.",
+    summary: `${Math.max(5, urgentCount || 0)} oportunidades urgentes pedem resposta hoje.`,
     bestOpportunityTitle: priorityLead ? priorityLead.name : "Sem lead prioritário",
     bestOpportunity: priorityLead
-      ? `A melhor oportunidade é ${priorityLead.name}.`
-      : "A melhor oportunidade aparece aqui assim que houver leads com prioridade alta.",
+      ? `Lead em foco: ${priorityLead.name}.`
+      : "A próxima oportunidade aparece aqui quando houver leads com prioridade alta.",
     recommendation: priorityLead
-      ? `Ação recomendada agora: ${priorityLead.recommendedAction}`
-      : "Ação recomendada agora: abrir pipeline.",
+      ? `Próxima ação: ${priorityLead.recommendedAction}`
+      : "Próxima ação: abrir pipeline.",
     justification: priorityLead
-      ? `Motivo da prioridade: score elevado, contacto recente e forte intenção.`
+      ? "Prioridade definida por score, contacto recente e potencial de conversão."
       : "Ainda não há leads suficientes para recomendar um lead prioritário.",
     primaryCta: priorityLead ? `Abrir WhatsApp de ${priorityLead.name}` : "Abrir WhatsApp",
     secondaryCta: priorityLead ? `Abrir proposta de ${priorityLead.name}` : "Abrir proposta",
@@ -125,6 +125,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
           onSecondaryAction={onOpenProposal}
           onTertiaryAction={onOpenPipeline}
         />
+        <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <PriorityActionCard
+            onOpenWhatsApp={onOpenWhatsApp}
+            onOpenProposal={onOpenProposal}
+            onScheduleFollowUp={onScheduleFollowUp}
+            leadName={priorityLeadCard.name}
+          />
+          <div id="agent-panel">
+            <PriorityLeadCard {...priorityLeadCard} onFocusLead={onFocusLead} />
+          </div>
+        </div>
         <OnboardingPanel
           totalLeads={stats.total}
           priorityLeadName={priorityLeadCard.name !== "Sem lead prioritário" ? priorityLeadCard.name : undefined}
@@ -138,20 +149,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
         <RoiPanel metrics={roiMetrics} />
         <KPIOverviewRow kpis={kpis} />
-        <PriorityActionCard
-          onOpenWhatsApp={onOpenWhatsApp}
-          onOpenProposal={onOpenProposal}
-          onScheduleFollowUp={onScheduleFollowUp}
-          leadName={priorityLeadCard.name}
-        />
-        <div id="agent-panel">
-          <PriorityLeadCard {...priorityLeadCard} onFocusLead={onFocusLead} />
-        </div>
         <section className="grid gap-4 lg:grid-cols-2">
           <TasksPanel leads={followUpQueue} onScheduleFollowUp={onScheduleFollowUp} onOpenAutomation={onOpenAutomation} />
           <ActivityFeed leads={[...heatingLeads, ...coolingLeads]} />
         </section>
-        <QuickActionsBar onOpenPipeline={onOpenPipeline} onOpenWhatsApp={onOpenWhatsApp} />
+        <QuickActionsBar onOpenPipeline={onOpenPipeline} onOpenWhatsApp={onOpenWhatsApp} onOpenProposal={onOpenProposal} />
         <PipelineSummaryPanel
           priorityLeadName={priorityLeadCard.name}
           recommendedAction={nextAction}

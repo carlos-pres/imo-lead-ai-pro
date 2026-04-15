@@ -4867,8 +4867,48 @@ function App() {
   }
 
   function renderPipelineView() {
+    const pipelineFocusLead = selectPriorityLead(visibleLeads.length ? visibleLeads : topHotLeads);
+    const pipelineNextAction = selectRecommendedNextAction(pipelineFocusLead);
+    const pipelineFocusDetail = pipelineFocusLead
+      ? `${pipelineFocusLead.location} · IA ${pipelineFocusLead.aiScore} · ${pipelineFocusLead.status}`
+      : "A pipeline entra em ação quando chega o primeiro lead.";
+
     return (
       <div className="page-stack">
+        <section className="shell-panel">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Agente em ação</p>
+              <h3>Pipeline pronta para a próxima decisão</h3>
+            </div>
+            <div className="flex gap-2">
+              <button className="ghost-button" type="button" onClick={() => navigateTo("dashboard")}>
+                Ver dashboard
+              </button>
+              <button className="ghost-button" type="button" onClick={() => navigateTo("automation")}>
+                Abrir automações
+              </button>
+            </div>
+          </div>
+
+          <p className="hero-text">{pipelineFocusDetail}</p>
+
+          <div className="dashboard-mini-stat-grid">
+            <article className="dashboard-mini-stat">
+              <span>Lead em foco</span>
+              <strong>{pipelineFocusLead ? pipelineFocusLead.name : "Sem lead prioritário"}</strong>
+            </article>
+            <article className="dashboard-mini-stat">
+              <span>Ação seguinte</span>
+              <strong>{pipelineNextAction}</strong>
+            </article>
+            <article className="dashboard-mini-stat">
+              <span>Leads visíveis</span>
+              <strong>{visibleLeads.length}</strong>
+            </article>
+          </div>
+        </section>
+
         <section className="pipeline-layout">
           <aside className="shell-panel intake-panel">
             <div className="section-head">
