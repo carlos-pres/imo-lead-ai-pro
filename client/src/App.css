@@ -3562,33 +3562,35 @@
 .public-home-hero .marketing-nav {
   position: relative;
   z-index: 1;
-  background: rgba(7, 14, 26, 0.76);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.985) !important;
+  border-bottom-color: rgba(19, 34, 55, 0.12) !important;
+  box-shadow: 0 10px 28px rgba(10, 18, 30, 0.08);
+  backdrop-filter: blur(12px);
 }
 
 .public-home-hero .marketing-brand p {
-  color: #ffffff;
+  color: #132237 !important;
 }
 
 .public-home-hero .marketing-brand span,
 .public-home-hero .marketing-nav-links a {
-  color: rgba(255, 255, 255, 0.82);
+  color: #4f6074 !important;
 }
 
 .public-home-hero .marketing-nav-links a:hover,
 .public-home-hero .marketing-nav-links a.active {
-  color: #ffffff;
+  color: #174dbb !important;
 }
 
 .public-home-hero .marketing-nav .ghost-button {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #132237 !important;
+  border-color: rgba(19, 34, 55, 0.12) !important;
 }
 
 .public-home-hero .marketing-nav .primary-button {
   background: linear-gradient(135deg, #2563eb, #3b82f6);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(23, 77, 187, 0.2);
   box-shadow: 0 16px 32px rgba(37, 99, 235, 0.28);
 }
 
